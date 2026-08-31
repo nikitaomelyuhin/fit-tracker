@@ -5,6 +5,8 @@
       <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
     </header>
 
+    <DashboardSummary />
+
     <nav :class="$style.tabs">
       <button
         v-for="tab in tabs"
@@ -41,6 +43,9 @@
         </BaseCard>
         <BaseCard title="Состав тела">
           <BodyComposition />
+        </BaseCard>
+        <BaseCard title="Жир и мышцы во времени">
+          <BodyCompositionTrend />
         </BaseCard>
         <BaseCard title="Цели по замерам">
           <MeasurementTargets />
@@ -83,7 +88,9 @@ import { BodyComposition } from '@/widgets/BodyComposition'
 import { MeasurementTrendChart } from '@/widgets/MeasurementTrendChart'
 import { MeasurementHistory } from '@/widgets/MeasurementHistory'
 import { MeasurementTargets } from '@/widgets/MeasurementTargets'
+import { BodyCompositionTrend } from '@/widgets/BodyCompositionTrend'
 import { WorkoutHistory } from '@/widgets/WorkoutHistory'
+import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { BaseButton, BaseCard } from '@/shared/ui'
 
 type TabKey = 'weight' | 'measurements' | 'workouts'

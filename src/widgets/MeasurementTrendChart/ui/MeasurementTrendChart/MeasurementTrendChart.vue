@@ -27,11 +27,20 @@ const option = computed(() => {
   const muted = cssToken('--text-muted', '#6b7280')
   const accent = cssToken('--accent', '#4f8cff')
   const success = cssToken('--success', '#35c07a')
+  const warning = cssToken('--warning', '#e0a63a')
+
+  const metrics = [
+    { name: 'Талия', color: accent, data: rows.map((r) => r.waist) },
+    { name: 'Плечи', color: success, data: rows.map((r) => r.shoulders) },
+    { name: 'Грудь', color: warning, data: rows.map((r) => r.chest) },
+    { name: 'Рука', color: '#b57bff', data: rows.map((r) => r.arm) },
+    { name: 'Предпл.', color: '#5ec8c8', data: rows.map((r) => r.forearm) },
+  ]
 
   return {
-    grid: { left: 40, right: 16, top: 36, bottom: 32 },
+    grid: { left: 40, right: 16, top: 36, bottom: 28 },
     tooltip: { trigger: 'axis' },
-    legend: { data: ['Талия', 'Плечи'], textStyle: { color: muted }, top: 0 },
+    legend: { data: metrics.map((m) => m.name), textStyle: { color: muted }, top: 0 },
     xAxis: {
       type: 'category',
       data: rows.map((row) => formatHuman(row.date)),
@@ -44,26 +53,16 @@ const option = computed(() => {
       splitLine: { lineStyle: { color: border } },
       axisLabel: { color: muted },
     },
-    series: [
-      {
-        name: 'Талия',
-        type: 'line',
-        smooth: true,
-        connectNulls: true,
-        data: rows.map((row) => row.waist),
-        lineStyle: { color: accent, width: 2 },
-        itemStyle: { color: accent },
-      },
-      {
-        name: 'Плечи',
-        type: 'line',
-        smooth: true,
-        connectNulls: true,
-        data: rows.map((row) => row.shoulders),
-        lineStyle: { color: success, width: 2 },
-        itemStyle: { color: success },
-      },
-    ],
+    series: metrics.map((metric) => ({
+      name: metric.name,
+      type: 'line',
+      smooth: true,
+      connectNulls: true,
+      symbolSize: 6,
+      data: metric.data,
+      lineStyle: { color: metric.color, width: 2 },
+      itemStyle: { color: metric.color },
+    })),
   }
 })
 </script>
@@ -71,7 +70,7 @@ const option = computed(() => {
 <style module>
 .chart {
   width: 100%;
-  height: 280px;
+  height: 300px;
 }
 
 .canvas {

@@ -4,18 +4,17 @@
       <li v-for="row in rows" :key="row.label" :class="$style.row">
         <span :class="[$style.dot, $style['dot_' + row.status]]" />
         <span :class="$style.label">{{ row.label }}</span>
-        <span :class="[$style.current, $style[row.status]]">
-          {{ row.currentText }}<sup v-if="row.fatCaveat">*</sup>
-        </span>
+        <span :class="[$style.current, $style[row.status]]">{{ row.currentText }}</span>
+        <span :class="$style.adjusted">{{ row.adjustedText }}</span>
         <span :class="$style.arrow">→</span>
         <span :class="$style.target">{{ row.targetText }}</span>
       </li>
     </ul>
     <p :class="$style.hint">
-      🟢 в цели · 🟡 близко · 🔴 далеко · ⚪ пока не показатель. Жир — с погрешностью формулы ±{{ fatTolerance }}%.
+      🟢 в цели · 🟡 близко · 🔴 далеко. Жир — с погрешностью ±{{ fatTolerance }}%.
     </p>
-    <p v-if="hasFatCaveat" :class="$style.hint">
-      * обхват сейчас раздут жиром — засчитаю в цель, когда станешь сухим (≈{{ fatTargetMax }}%).
+    <p v-if="hasAdjust" :class="$style.hint">
+      Обхваты «на рост» пересчитаны на сухой вес (поправка на жир сверх цели) — зона по сухой оценке.
     </p>
   </div>
 </template>
@@ -38,7 +37,6 @@ type RowStatus = TargetStatus | 'muted'
 
 const store = useMeasurementStore()
 const fatTolerance = BODY_FAT_TOLERANCE
-const fatTargetMax = BODY_FAT_TARGET.max
 
 const latest = computed(() => store.byDateDesc[0] ?? null)
 
@@ -48,9 +46,9 @@ const bodyFat = computed(() => {
   return waist != null && neck != null ? navyBodyFatMale(waist, neck, HEIGHT_CM) : null
 })
 
-// «Сухой» — когда жир в пределах цели с допуском. До этого обхваты «на рост» раздуты жиром.
-const isLean = computed(
-  () => bodyFat.value != null && bodyFat.value <= BODY_FAT_TARGET.max + BODY_FAT_TOLERANCE,
+/** Жир сверх верхней границы цели — на него делаем поправку обхватов. */
+const excessFat = computed(() =>
+  bodyFat.value != null ? Math.max(0, bodyFat.value - BODY_FAT_TARGET.max) : 0,
 )
 
 interface Def {
@@ -59,6 +57,10 @@ interface Def {
   unit: string
   target: MetricTarget
   tolerance: number
+}
+
+function round1(value: number): number {
+  return Math.round(value * 10) / 10
 }
 
 const rows = computed(() => {
@@ -74,23 +76,30 @@ const rows = computed(() => {
 
   return defs.map((def) => {
     if (def.value == null) {
-      return { label: def.label, status: 'muted' as RowStatus, currentText: '—', targetText: rangeText(def), fatCaveat: false }
+      return { label: def.label, status: 'muted' as RowStatus, currentText: '—', adjustedText: '', targetText: rangeText(def) }
     }
 
-    let status: RowStatus = targetStatus(def.value, def.target, def.tolerance)
-    let fatCaveat = false
-
-    // «Растущие» обхваты не засчитываем в цель, пока не сухой: значение раздуто жиром.
-    if (def.target.direction === 'up' && !isLean.value && status === 'reached') {
-      status = 'muted'
-      fatCaveat = true
+    // «Растущие» обхваты оцениваем на сухой вес: убираем «жировую» надбавку.
+    let evalValue = def.value
+    let adjustedText = ''
+    if (def.target.direction === 'up' && def.target.fatCoef && excessFat.value > 0) {
+      const adjusted = round1(def.value - def.target.fatCoef * excessFat.value)
+      evalValue = adjusted
+      adjustedText = `≈ ${adjusted} сух.`
     }
 
-    return { label: def.label, status, currentText: `${def.value}${def.unit}`, targetText: rangeText(def), fatCaveat }
+    const status: RowStatus = targetStatus(evalValue, def.target, def.tolerance)
+    return {
+      label: def.label,
+      status,
+      currentText: `${def.value}${def.unit}`,
+      adjustedText,
+      targetText: rangeText(def),
+    }
   })
 })
 
-const hasFatCaveat = computed(() => rows.value.some((row) => row.fatCaveat))
+const hasAdjust = computed(() => rows.value.some((row) => row.adjustedText !== ''))
 
 function rangeText(def: Def): string {
   return `${def.target.min}–${def.target.max}${def.unit}`
@@ -113,7 +122,7 @@ function rangeText(def: Def): string {
 
 .row {
   display: grid;
-  grid-template-columns: auto 1fr auto auto auto;
+  grid-template-columns: auto auto 1fr auto auto auto;
   align-items: center;
   gap: var(--space-s);
   padding: var(--space-s) var(--space-m);
@@ -166,6 +175,11 @@ function rangeText(def: Def): string {
 }
 
 .muted {
+  color: var(--text-muted);
+}
+
+.adjusted {
+  font-size: var(--font-size-s);
   color: var(--text-muted);
 }
 

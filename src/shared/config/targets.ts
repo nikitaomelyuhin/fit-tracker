@@ -5,15 +5,17 @@ export interface MetricTarget {
   max: number
   /** 'down' — хотим уменьшить (талия, жир); 'up' — увеличить (плечи, рука). */
   direction: TargetDirection
+  /** Для «растущих» обхватов: см поправки на 1% жира сверх цели (оценка сухого обхвата). */
+  fatCoef?: number
 }
 
 /** Целевые обхваты (см) из плана. */
 export const MEASUREMENT_TARGETS = {
   waist: { min: 82, max: 84, direction: 'down' },
-  shoulders: { min: 127, max: 132, direction: 'up' },
-  chest: { min: 108, max: 112, direction: 'up' },
-  arm: { min: 40, max: 42, direction: 'up' },
-  forearm: { min: 31, max: 33, direction: 'up' },
+  shoulders: { min: 127, max: 132, direction: 'up', fatCoef: 0.1 },
+  chest: { min: 108, max: 112, direction: 'up', fatCoef: 0.25 },
+  arm: { min: 40, max: 42, direction: 'up', fatCoef: 0.2 },
+  forearm: { min: 31, max: 33, direction: 'up', fatCoef: 0.08 },
 } satisfies Record<string, MetricTarget>
 
 /** Цель по проценту жира. */
