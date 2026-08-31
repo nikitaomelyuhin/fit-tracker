@@ -68,7 +68,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, defineAsyncComponent, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSessionStore } from '@/entities/Session'
 import { useWeightLogStore } from '@/entities/WeightLog'
@@ -77,17 +77,25 @@ import { useWorkoutStore } from '@/entities/Workout'
 import { AddWeightForm } from '@/features/AddWeightEntry'
 import { AddMeasurementForm } from '@/features/AddMeasurementEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
-import { WeightTrendChart } from '@/widgets/WeightTrendChart'
 import { WeightHistory } from '@/widgets/WeightHistory'
 import { WeightGoal } from '@/widgets/WeightGoal'
-import { PaceForecast } from '@/widgets/PaceForecast'
 import { BodyComposition } from '@/widgets/BodyComposition'
 import { MeasurementHistory } from '@/widgets/MeasurementHistory'
 import { MeasurementTargets } from '@/widgets/MeasurementTargets'
-import { BodyCompositionTrend } from '@/widgets/BodyCompositionTrend'
 import { WorkoutHistory } from '@/widgets/WorkoutHistory'
 import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { BaseButton, BaseCard } from '@/shared/ui'
+
+// Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.
+const WeightTrendChart = defineAsyncComponent(() =>
+  import('@/widgets/WeightTrendChart').then((m) => m.WeightTrendChart),
+)
+const PaceForecast = defineAsyncComponent(() =>
+  import('@/widgets/PaceForecast').then((m) => m.PaceForecast),
+)
+const BodyCompositionTrend = defineAsyncComponent(() =>
+  import('@/widgets/BodyCompositionTrend').then((m) => m.BodyCompositionTrend),
+)
 
 type TabKey = 'weight' | 'measurements' | 'workouts'
 
