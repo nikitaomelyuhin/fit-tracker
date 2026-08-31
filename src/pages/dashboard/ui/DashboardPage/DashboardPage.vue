@@ -29,6 +29,9 @@
         <BaseCard title="Прогресс">
           <ProgressSummary />
         </BaseCard>
+        <BaseCard title="Анализ">
+          <Analysis />
+        </BaseCard>
         <BaseCard title="Динамика веса">
           <WeightTrendChart />
         </BaseCard>
@@ -92,6 +95,7 @@ import { WorkoutHistory } from '@/widgets/WorkoutHistory'
 import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { GymProgress } from '@/widgets/GymProgress'
+import { Analysis } from '@/widgets/Analysis'
 import { BaseButton, BaseCard } from '@/shared/ui'
 
 // Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.
