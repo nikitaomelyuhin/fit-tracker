@@ -26,6 +26,9 @@
         <BaseCard title="Цель">
           <WeightGoal />
         </BaseCard>
+        <BaseCard title="Прогресс">
+          <ProgressSummary />
+        </BaseCard>
         <BaseCard title="Динамика веса">
           <WeightTrendChart />
         </BaseCard>
@@ -59,6 +62,9 @@
         <BaseCard title="Записать тренировку">
           <WorkoutSessionForm />
         </BaseCard>
+        <BaseCard title="Прогрессия весов">
+          <GymProgress />
+        </BaseCard>
         <BaseCard title="История тренировок">
           <WorkoutHistory />
         </BaseCard>
@@ -84,6 +90,8 @@ import { MeasurementHistory } from '@/widgets/MeasurementHistory'
 import { MeasurementTargets } from '@/widgets/MeasurementTargets'
 import { WorkoutHistory } from '@/widgets/WorkoutHistory'
 import { DashboardSummary } from '@/widgets/DashboardSummary'
+import { ProgressSummary } from '@/widgets/ProgressSummary'
+import { GymProgress } from '@/widgets/GymProgress'
 import { BaseButton, BaseCard } from '@/shared/ui'
 
 // Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.

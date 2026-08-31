@@ -12,16 +12,13 @@
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
-import { useWorkoutStore } from '@/entities/Workout'
 import { navyBodyFatMale } from '@/shared/lib/bodyfat'
 import { HEIGHT_CM } from '@/shared/config/profile'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { MEASUREMENT_TARGETS } from '@/shared/config/targets'
-import { todayISO, addDays } from '@/shared/lib/date'
 
 const weightLog = useWeightLogStore()
 const measurement = useMeasurementStore()
-const workout = useWorkoutStore()
 
 const weight = computed(
   () => weightLog.currentWeekAverage ?? weightLog.byDateDesc[0]?.weight ?? null,
@@ -39,22 +36,6 @@ const bodyFat = computed(() => {
 })
 const waist = computed(() => latestMeasurement.value?.waist ?? null)
 
-const workoutsWeek = computed(
-  () => workout.sessions.filter((session) => session.date >= addDays(todayISO(), -6)).length,
-)
-
-const streak = computed(() => {
-  const dates = new Set(weightLog.items.map((item) => item.date))
-  let cursor = weightLog.byDateDesc[0]?.date
-  if (!cursor) return 0
-  let count = 0
-  while (dates.has(cursor)) {
-    count++
-    cursor = addDays(cursor, -1)
-  }
-  return count
-})
-
 const waistTargetText = `→ ${MEASUREMENT_TARGETS.waist.min}–${MEASUREMENT_TARGETS.waist.max}`
 
 const tiles = computed(() => [
@@ -71,15 +52,13 @@ const tiles = computed(() => [
   },
   { label: 'Жир', value: bodyFat.value != null ? `${bodyFat.value}%` : '—', sub: '' },
   { label: 'Талия', value: waist.value != null ? `${waist.value} см` : '—', sub: waistTargetText },
-  { label: 'Тренировок/нед', value: `${workoutsWeek.value}`, sub: '' },
-  { label: 'Серия', value: `${streak.value} дн`, sub: '' },
 ])
 </script>
 
 <style module>
 .summary {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-s);
 }
 
