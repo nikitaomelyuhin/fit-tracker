@@ -6,11 +6,15 @@ import { useSessionStore } from '@/entities/Session'
 import '@/app/styles/tokens.css'
 import '@/app/styles/global.css'
 
-const app = createApp(App)
-app.use(createPinia())
+async function bootstrap() {
+  const app = createApp(App)
+  app.use(createPinia())
 
-// Восстанавливаем сессию до маунта, чтобы гвард роутера знал статус авторизации.
-await useSessionStore().init()
+  // Восстанавливаем сессию до маунта, чтобы гвард роутера знал статус авторизации.
+  await useSessionStore().init()
 
-app.use(router)
-app.mount('#app')
+  app.use(router)
+  app.mount('#app')
+}
+
+void bootstrap()
