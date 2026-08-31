@@ -17,7 +17,7 @@ export const WORKOUT_TEMPLATES: Record<WorkoutType, ExerciseDef[]> = {
     { name: 'Плечи — махи' },
   ],
   B: [
-    { name: 'Жим лёжа' },
+    { name: 'Многоповторный жим' },
     { name: 'Подтягивания (гравитрон)', assist: true },
     { name: 'Ноги — перёд/зад бедра' },
     { name: 'Плечи — махи' },
