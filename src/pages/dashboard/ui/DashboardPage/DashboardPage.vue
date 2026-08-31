@@ -12,7 +12,7 @@
         v-for="tab in tabs"
         :key="tab.key"
         :class="[$style.tab, activeTab === tab.key && $style.active]"
-        @click="activeTab = tab.key"
+        @click="selectTab(tab.key)"
       >
         {{ tab.label }}
       </button>
@@ -50,9 +50,6 @@
         <BaseCard title="Цели по замерам">
           <MeasurementTargets />
         </BaseCard>
-        <BaseCard title="Динамика: талия и плечи">
-          <MeasurementTrendChart />
-        </BaseCard>
         <BaseCard title="История замеров">
           <MeasurementHistory />
         </BaseCard>
@@ -71,8 +68,8 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useSessionStore } from '@/entities/Session'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
@@ -85,7 +82,6 @@ import { WeightHistory } from '@/widgets/WeightHistory'
 import { WeightGoal } from '@/widgets/WeightGoal'
 import { PaceForecast } from '@/widgets/PaceForecast'
 import { BodyComposition } from '@/widgets/BodyComposition'
-import { MeasurementTrendChart } from '@/widgets/MeasurementTrendChart'
 import { MeasurementHistory } from '@/widgets/MeasurementHistory'
 import { MeasurementTargets } from '@/widgets/MeasurementTargets'
 import { BodyCompositionTrend } from '@/widgets/BodyCompositionTrend'
@@ -101,10 +97,15 @@ const tabs: { key: TabKey; label: string }[] = [
   { key: 'workouts', label: 'Тренировки' },
 ]
 
-const activeTab = ref<TabKey>('weight')
+const route = useRoute()
+const router = useRouter()
+const activeTab = computed<TabKey>(() => (route.params.tab as TabKey) || 'weight')
+
+function selectTab(tab: TabKey) {
+  router.push({ name: 'dashboard', params: { tab } })
+}
 
 const session = useSessionStore()
-const router = useRouter()
 const weightLog = useWeightLogStore()
 const measurements = useMeasurementStore()
 const workouts = useWorkoutStore()
