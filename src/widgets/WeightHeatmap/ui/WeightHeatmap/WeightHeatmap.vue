@@ -1,24 +1,25 @@
 <template>
-  <div v-if="weeks.length" :class="$style.heatmap">
+  <div v-if="weeks.length" ref="container" :class="$style.heatmap">
     <div :class="$style.scroll">
       <div :class="$style.months">
         <span v-for="(label, index) in monthLabels" :key="index" :class="$style.month">{{ label }}</span>
       </div>
-      <div :class="$style.grid">
+      <div :class="$style.grid" @mouseleave="hideTip">
         <div v-for="(week, wi) in weeks" :key="wi" :class="$style.week">
           <div
             v-for="cell in week"
             :key="cell.date"
-            :class="[$style.cell, $style[cell.cls], selectedDate === cell.date && $style.selected]"
-            :title="cell.title"
-            @mouseenter="select(cell.date)"
-            @click="select(cell.date)"
+            :class="[$style.cell, $style[cell.cls]]"
+            @mouseenter="showTip($event, cell.date)"
+            @click="showTip($event, cell.date)"
           />
         </div>
       </div>
     </div>
 
-    <p :class="$style.detail">{{ detail || 'Наведи или нажми на квадрат — покажу день' }}</p>
+    <div v-if="tip" :class="$style.tooltip" :style="{ left: tip.left + 'px', top: tip.top + 'px' }">
+      {{ tip.text }}
+    </div>
 
     <div :class="$style.legend">
       <span :class="[$style.dot, $style.down]" />вниз
@@ -39,7 +40,9 @@ import { todayISO, addDays, formatHuman } from '@/shared/lib/date'
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
 const store = useWeightLogStore()
-const selectedDate = ref<string | null>(null)
+
+const container = ref<HTMLElement | null>(null)
+const tip = ref<{ text: string; left: number; top: number } | null>(null)
 
 interface DayInfo {
   weight: number
@@ -94,15 +97,15 @@ const weeks = computed(() => {
   const endOfYear = dayjs().endOf('year').format('YYYY-MM-DD')
   const yearFromStart = addDays(start, 364)
   const end = [todayISO(), endOfYear, yearFromStart].sort()[2]
-  const result: { date: string; cls: string; title: string }[][] = []
 
+  const result: { date: string; cls: string }[][] = []
   let cursor = start
   let guard = 0
-  while (cursor <= end && guard < 300) {
-    const week: { date: string; cls: string; title: string }[] = []
+  while (cursor <= end && guard < 400) {
+    const week: { date: string; cls: string }[] = []
     for (let d = 0; d < 7; d++) {
       const date = addDays(cursor, d)
-      week.push({ date, cls: cellClass(date), title: describe(date) })
+      week.push({ date, cls: cellClass(date) })
     }
     result.push(week)
     cursor = addDays(cursor, 7)
@@ -119,15 +122,26 @@ const monthLabels = computed(() =>
   }),
 )
 
-const detail = computed(() => (selectedDate.value ? describe(selectedDate.value) : ''))
+function showTip(event: MouseEvent, date: string) {
+  const cell = event.currentTarget as HTMLElement
+  const box = container.value?.getBoundingClientRect()
+  if (!box) return
+  const rect = cell.getBoundingClientRect()
+  tip.value = {
+    text: describe(date),
+    left: rect.left - box.left + rect.width / 2,
+    top: rect.top - box.top,
+  }
+}
 
-function select(date: string) {
-  selectedDate.value = date
+function hideTip() {
+  tip.value = null
 }
 </script>
 
 <style module>
 .heatmap {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-s);
@@ -173,11 +187,6 @@ function select(date: string) {
   cursor: pointer;
 }
 
-.selected {
-  outline: 2px solid var(--text-primary);
-  outline-offset: 1px;
-}
-
 .blank {
   background: var(--bg-elevated);
 }
@@ -199,10 +208,19 @@ function select(date: string) {
   background: var(--text-muted);
 }
 
-.detail {
+.tooltip {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 6px));
+  padding: var(--space-xs) var(--space-s);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
   font-size: var(--font-size-s);
-  color: var(--text-secondary);
-  min-height: 18px;
+  color: var(--text-primary);
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .legend {
