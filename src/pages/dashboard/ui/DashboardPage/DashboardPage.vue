@@ -14,7 +14,7 @@
     <header :class="$style.header">
       <h1 :class="$style.brand">Fit Tracker</h1>
       <div :class="$style.actions">
-        <BaseButton variant="ghost" @click="reloadAll">⟳ Обновить</BaseButton>
+        <BaseButton variant="ghost" @click="reloadPage">⟳ Обновить</BaseButton>
         <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
       </div>
     </header>
@@ -137,13 +137,17 @@ const weightLog = useWeightLogStore()
 const measurements = useMeasurementStore()
 const workouts = useWorkoutStore()
 
-function reloadAll() {
+function loadAll() {
   weightLog.load()
   measurements.load()
   workouts.load()
 }
 
-onMounted(reloadAll)
+function reloadPage() {
+  window.location.reload()
+}
+
+onMounted(loadAll)
 
 async function onSignOut() {
   await session.signOut()

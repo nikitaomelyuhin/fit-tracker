@@ -9,12 +9,17 @@
           <div
             v-for="cell in week"
             :key="cell.date"
-            :class="[$style.cell, $style[cell.cls]]"
+            :class="[$style.cell, $style[cell.cls], selectedDate === cell.date && $style.selected]"
             :title="cell.title"
+            @mouseenter="select(cell.date)"
+            @click="select(cell.date)"
           />
         </div>
       </div>
     </div>
+
+    <p :class="$style.detail">{{ detail || 'Наведи или нажми на квадрат — покажу день' }}</p>
+
     <div :class="$style.legend">
       <span :class="[$style.dot, $style.down]" />вниз
       <span :class="[$style.dot, $style.flat]" />стоит
@@ -26,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { todayISO, addDays, formatHuman } from '@/shared/lib/date'
@@ -34,19 +39,24 @@ import { todayISO, addDays, formatHuman } from '@/shared/lib/date'
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 
 const store = useWeightLogStore()
+const selectedDate = ref<string | null>(null)
 
-const weightByDate = computed(() => {
-  const map = new Map<string, number>()
-  for (const item of store.items) map.set(item.date, item.weight)
-  return map
-})
+interface DayInfo {
+  weight: number
+  prev: number | null
+  delta: number | null
+}
 
-/** Изменение веса относительно предыдущей записи. */
-const deltaByDate = computed(() => {
-  const map = new Map<string, number>()
+const infoByDate = computed(() => {
+  const map = new Map<string, DayInfo>()
   const items = store.byDateAsc
-  for (let i = 1; i < items.length; i++) {
-    map.set(items[i].date, items[i].weight - items[i - 1].weight)
+  for (let i = 0; i < items.length; i++) {
+    const prev = i > 0 ? items[i - 1].weight : null
+    map.set(items[i].date, {
+      weight: items[i].weight,
+      prev,
+      delta: prev != null ? Math.round((items[i].weight - prev) * 10) / 10 : null,
+    })
   }
   return map
 })
@@ -58,13 +68,22 @@ function mondayOf(dateISO: string): string {
 }
 
 function cellClass(date: string): string {
-  if (!weightByDate.value.has(date)) return 'blank'
-  const delta = deltaByDate.value.get(date)
-  if (delta == null) return 'first'
-  if (delta <= -0.15) return 'down'
-  if (delta < 0.15) return 'flat'
-  if (delta < 0.7) return 'up'
+  const info = infoByDate.value.get(date)
+  if (!info) return 'blank'
+  if (info.delta == null) return 'first'
+  if (info.delta <= -0.15) return 'down'
+  if (info.delta < 0.15) return 'flat'
+  if (info.delta < 0.7) return 'up'
   return 'strong'
+}
+
+function describe(date: string): string {
+  const info = infoByDate.value.get(date)
+  const human = formatHuman(date)
+  if (!info) return `${human} · нет записи`
+  if (info.delta == null) return `${human} · ${info.weight} кг · первая запись`
+  const sign = info.delta >= 0 ? '+' : '−'
+  return `${human} · ${info.weight} кг · было ${info.prev} · ${sign}${Math.abs(info.delta).toFixed(1)} кг`
 }
 
 const weeks = computed(() => {
@@ -80,9 +99,7 @@ const weeks = computed(() => {
     const week: { date: string; cls: string; title: string }[] = []
     for (let d = 0; d < 7; d++) {
       const date = addDays(cursor, d)
-      const weight = weightByDate.value.get(date)
-      const title = weight != null ? `${formatHuman(date)} — ${weight} кг` : formatHuman(date)
-      week.push({ date, cls: cellClass(date), title })
+      week.push({ date, cls: cellClass(date), title: describe(date) })
     }
     result.push(week)
     cursor = addDays(cursor, 7)
@@ -98,13 +115,19 @@ const monthLabels = computed(() =>
     return month !== prev ? MONTHS[month] : ''
   }),
 )
+
+const detail = computed(() => (selectedDate.value ? describe(selectedDate.value) : ''))
+
+function select(date: string) {
+  selectedDate.value = date
+}
 </script>
 
 <style module>
 .heatmap {
   display: flex;
   flex-direction: column;
-  gap: var(--space-m);
+  gap: var(--space-s);
 }
 
 .scroll {
@@ -144,17 +167,16 @@ const monthLabels = computed(() =>
   border-radius: 3px;
   background: var(--bg-elevated);
   flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.selected {
+  outline: 2px solid var(--text-primary);
+  outline-offset: 1px;
 }
 
 .blank {
   background: var(--bg-elevated);
-}
-
-.empty {
-  color: var(--text-muted);
-  font-size: var(--font-size-m);
-  text-align: center;
-  padding: var(--space-l);
 }
 
 .down {
@@ -174,6 +196,12 @@ const monthLabels = computed(() =>
   background: var(--text-muted);
 }
 
+.detail {
+  font-size: var(--font-size-s);
+  color: var(--text-secondary);
+  min-height: 18px;
+}
+
 .legend {
   display: flex;
   align-items: center;
@@ -188,5 +216,12 @@ const monthLabels = computed(() =>
   height: 12px;
   border-radius: 3px;
   margin-left: var(--space-s);
+}
+
+.empty {
+  color: var(--text-muted);
+  font-size: var(--font-size-m);
+  text-align: center;
+  padding: var(--space-l);
 }
 </style>
