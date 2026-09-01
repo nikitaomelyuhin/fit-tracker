@@ -90,7 +90,10 @@ const weeks = computed(() => {
   const items = store.byDateAsc
   if (!items.length) return []
   const start = mondayOf(items[0].date)
-  const end = todayISO()
+  // До конца года минимум, но не меньше ~года от старта.
+  const endOfYear = dayjs().endOf('year').format('YYYY-MM-DD')
+  const yearFromStart = addDays(start, 364)
+  const end = [todayISO(), endOfYear, yearFromStart].sort()[2]
   const result: { date: string; cls: string; title: string }[][] = []
 
   let cursor = start
