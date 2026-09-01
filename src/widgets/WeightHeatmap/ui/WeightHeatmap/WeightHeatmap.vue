@@ -58,7 +58,7 @@ function mondayOf(dateISO: string): string {
 }
 
 function cellClass(date: string): string {
-  if (!weightByDate.value.has(date)) return 'empty'
+  if (!weightByDate.value.has(date)) return 'blank'
   const delta = deltaByDate.value.get(date)
   if (delta == null) return 'first'
   if (delta <= -0.15) return 'down'
@@ -142,6 +142,11 @@ const monthLabels = computed(() =>
   width: 13px;
   height: 13px;
   border-radius: 3px;
+  background: var(--bg-elevated);
+  flex: 0 0 auto;
+}
+
+.blank {
   background: var(--bg-elevated);
 }
 
