@@ -157,7 +157,7 @@ async function onSignOut() {
 
 <style module>
 .dashboard {
-  max-width: 720px;
+  max-width: 900px;
   margin: 0 auto;
   padding: var(--space-l);
   display: flex;

@@ -1,48 +1,72 @@
 <template>
-  <div v-if="weeks.length" ref="container" :class="$style.heatmap">
-    <div :class="$style.scroll">
-      <div :class="$style.months">
-        <span v-for="(label, index) in monthLabels" :key="index" :class="$style.month">{{ label }}</span>
+  <div ref="wrap" :class="$style.wrap">
+    <div :class="$style.calendar">
+      <div v-if="years.length > 1" :class="$style.header">
+        <select v-model.number="selectedYear" :class="$style.yearSelect">
+          <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
+        </select>
       </div>
-      <div :class="$style.grid" @mouseleave="hideTip">
-        <div v-for="(week, wi) in weeks" :key="wi" :class="$style.week">
-          <div
-            v-for="cell in week"
-            :key="cell.date"
-            :class="[$style.cell, $style[cell.cls]]"
-            @mouseenter="showTip($event, cell.date)"
-            @click="showTip($event, cell.date)"
-          />
+
+      <div :class="$style.monthsRow">
+        <span :class="$style.dayspacer" />
+        <div :class="$style.months">
+          <span v-for="(label, index) in monthLabels" :key="index" :class="$style.month">{{ label }}</span>
         </div>
+      </div>
+
+      <div :class="$style.body">
+        <div :class="$style.days">
+          <span v-for="(label, index) in DAY_LABELS" :key="index" :class="$style.dayLabel">{{ label }}</span>
+        </div>
+        <div :class="$style.grid" @mouseleave="hideTip">
+          <div v-for="(week, wi) in weeks" :key="wi" :class="$style.week">
+            <div
+              v-for="cell in week"
+              :key="cell.date"
+              :class="[$style.cell, $style[cell.cls]]"
+              @mouseenter="showTip($event, cell.date)"
+              @click="showTip($event, cell.date)"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div :class="$style.legend">
+        <span :class="[$style.dot, $style.down]" />вниз
+        <span :class="[$style.dot, $style.flat]" />стоит
+        <span :class="[$style.dot, $style.up]" />вверх
+        <span :class="[$style.dot, $style.strong]" />сильно вверх
       </div>
     </div>
 
     <div v-if="tip" :class="$style.tooltip" :style="{ left: tip.left + 'px', top: tip.top + 'px' }">
       {{ tip.text }}
     </div>
-
-    <div :class="$style.legend">
-      <span :class="[$style.dot, $style.down]" />вниз
-      <span :class="[$style.dot, $style.flat]" />стоит
-      <span :class="[$style.dot, $style.up]" />вверх
-      <span :class="[$style.dot, $style.strong]" />сильно вверх
-    </div>
   </div>
-  <p v-else :class="$style.empty">Веди вес каждый день — здесь появится календарь.</p>
 </template>
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { todayISO, addDays, formatHuman } from '@/shared/lib/date'
+import { addDays, formatHuman } from '@/shared/lib/date'
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
+const DAY_LABELS = ['Пн', '', 'Ср', '', 'Пт', '', '']
 
 const store = useWeightLogStore()
 
-const container = ref<HTMLElement | null>(null)
+const wrap = ref<HTMLElement | null>(null)
 const tip = ref<{ text: string; left: number; top: number } | null>(null)
+
+const selectedYear = ref(dayjs().year())
+
+const years = computed(() => {
+  const set = new Set<number>()
+  for (const item of store.byDateAsc) set.add(dayjs(item.date).year())
+  set.add(dayjs().year())
+  return [...set].sort((a, b) => b - a)
+})
 
 interface DayInfo {
   weight: number
@@ -90,18 +114,12 @@ function describe(date: string): string {
 }
 
 const weeks = computed(() => {
-  const items = store.byDateAsc
-  if (!items.length) return []
-  const start = mondayOf(items[0].date)
-  // До конца года минимум, но не меньше ~года от старта.
-  const endOfYear = dayjs().endOf('year').format('YYYY-MM-DD')
-  const yearFromStart = addDays(start, 364)
-  const end = [todayISO(), endOfYear, yearFromStart].sort()[2]
-
+  const start = mondayOf(`${selectedYear.value}-01-01`)
+  const end = `${selectedYear.value}-12-31`
   const result: { date: string; cls: string }[][] = []
   let cursor = start
   let guard = 0
-  while (cursor <= end && guard < 400) {
+  while (cursor <= end && guard < 60) {
     const week: { date: string; cls: string }[] = []
     for (let d = 0; d < 7; d++) {
       const date = addDays(cursor, d)
@@ -124,7 +142,7 @@ const monthLabels = computed(() =>
 
 function showTip(event: MouseEvent, date: string) {
   const cell = event.currentTarget as HTMLElement
-  const box = container.value?.getBoundingClientRect()
+  const box = wrap.value?.getBoundingClientRect()
   if (!box) return
   const rect = cell.getBoundingClientRect()
   tip.value = {
@@ -140,57 +158,105 @@ function hideTip() {
 </script>
 
 <style module>
-.heatmap {
+.wrap {
   position: relative;
+  display: flex;
+  gap: var(--space-m);
+  align-items: flex-start;
+}
+
+.calendar {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-s);
 }
 
-.scroll {
-  overflow-x: auto;
-  padding-bottom: var(--space-xs);
+.header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.yearSelect {
+  padding: var(--space-xs) var(--space-s);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  color: var(--text-primary);
+  font-size: var(--font-size-s);
+}
+
+.monthsRow {
+  display: flex;
+  gap: 4px;
+}
+
+.dayspacer {
+  flex: 0 0 22px;
 }
 
 .months {
+  flex: 1;
   display: flex;
-  gap: 3px;
-  margin-bottom: 4px;
+  gap: 2px;
 }
 
 .month {
-  width: 13px;
-  flex: 0 0 13px;
-  font-size: 10px;
+  flex: 1 1 0;
+  min-width: 0;
+  font-size: 9px;
   color: var(--text-muted);
   white-space: nowrap;
   overflow: visible;
 }
 
-.grid {
+.body {
   display: flex;
-  gap: 3px;
+  gap: 4px;
+  align-items: stretch;
+}
+
+.days {
+  flex: 0 0 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dayLabel {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  color: var(--text-muted);
+}
+
+.grid {
+  flex: 1;
+  display: flex;
+  gap: 2px;
 }
 
 .week {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
 .cell {
-  width: 13px;
-  height: 13px;
-  border-radius: 3px;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: 2px;
   background: var(--bg-elevated);
-  flex: 0 0 auto;
   cursor: pointer;
 }
 
 .blank {
   background: var(--bg-elevated);
 }
-
 .down {
   background: var(--success);
 }
@@ -206,6 +272,28 @@ function hideTip() {
 }
 .first {
   background: var(--text-muted);
+}
+
+.years {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.year {
+  padding: 2px 10px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  font-size: var(--font-size-s);
+  text-align: right;
+}
+
+.yearActive {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  font-weight: 600;
 }
 
 .tooltip {
@@ -237,12 +325,5 @@ function hideTip() {
   height: 12px;
   border-radius: 3px;
   margin-left: var(--space-s);
-}
-
-.empty {
-  color: var(--text-muted);
-  font-size: var(--font-size-m);
-  text-align: center;
-  padding: var(--space-l);
 }
 </style>
