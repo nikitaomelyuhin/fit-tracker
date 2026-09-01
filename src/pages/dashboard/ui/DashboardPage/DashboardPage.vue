@@ -38,6 +38,9 @@
         <BaseCard title="Динамика веса">
           <WeightTrendChart />
         </BaseCard>
+        <BaseCard title="Календарь веса">
+          <WeightHeatmap />
+        </BaseCard>
         <BaseCard title="Идеальный темп vs текущий">
           <PaceForecast />
         </BaseCard>
@@ -99,6 +102,7 @@ import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { GymProgress } from '@/widgets/GymProgress'
 import { Analysis } from '@/widgets/Analysis'
+import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'
 
 // Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.
