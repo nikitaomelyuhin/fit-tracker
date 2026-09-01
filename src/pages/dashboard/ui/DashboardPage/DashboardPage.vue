@@ -1,12 +1,5 @@
 <template>
   <div :class="$style.dashboard">
-    <header :class="$style.header">
-      <h1 :class="$style.brand">Fit Tracker</h1>
-      <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
-    </header>
-
-    <DashboardSummary />
-
     <nav :class="$style.tabs">
       <button
         v-for="tab in tabs"
@@ -17,6 +10,16 @@
         {{ tab.label }}
       </button>
     </nav>
+
+    <header :class="$style.header">
+      <h1 :class="$style.brand">Fit Tracker</h1>
+      <div :class="$style.actions">
+        <BaseButton variant="ghost" @click="reloadAll">⟳ Обновить</BaseButton>
+        <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
+      </div>
+    </header>
+
+    <DashboardSummary />
 
     <div :class="$style.content">
       <template v-if="activeTab === 'weight'">
@@ -130,11 +133,13 @@ const weightLog = useWeightLogStore()
 const measurements = useMeasurementStore()
 const workouts = useWorkoutStore()
 
-onMounted(() => {
+function reloadAll() {
   weightLog.load()
   measurements.load()
   workouts.load()
-})
+}
+
+onMounted(reloadAll)
 
 async function onSignOut() {
   await session.signOut()
@@ -156,6 +161,12 @@ async function onSignOut() {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--space-m);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-s);
 }
 
 .brand {

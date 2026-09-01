@@ -1,6 +1,6 @@
 <template>
   <div :class="$style.pace">
-    <template v-if="start != null && startDate">
+    <template v-if="hasEnough">
       <div :class="$style.rows">
         <div :class="$style.row">
           <span :class="$style.label"><span :class="$style.dotIdeal" />Идеальный (2200 ккал)</span>
@@ -15,7 +15,9 @@
       <VChart :option="option" autoresize :class="$style.chart" />
       <p :class="$style.hint">Прогноз уточняется по мере взвешиваний — сейчас данных мало.</p>
     </template>
-    <p v-else :class="$style.empty">Добавь вес, чтобы построить прогноз.</p>
+    <p v-else :class="$style.empty">
+      Мало данных для прогноза — веди вес хотя бы пару недель, и здесь появится сравнение твоего темпа с идеальным.
+    </p>
   </div>
 </template>
 
@@ -48,6 +50,13 @@ const startEntry = computed(() => store.byDateAsc[0] ?? null)
 const start = computed(() => startEntry.value?.weight ?? null)
 const startDate = computed(() => startEntry.value?.date ?? null)
 const current = computed(() => store.currentWeekAverage ?? store.byDateDesc[0]?.weight ?? null)
+
+// Прогноз показываем только когда данных достаточно (иначе экстраполяция врёт).
+const hasEnough = computed(() => {
+  const items = store.byDateAsc
+  if (start.value == null || startDate.value == null || items.length < 4) return false
+  return daysBetween(items[0].date, items[items.length - 1].date) >= 14
+})
 
 const ideal = computed(() =>
   start.value != null ? projectIdealPace(start.value, goal, DAILY_KCAL_TARGET) : [],
