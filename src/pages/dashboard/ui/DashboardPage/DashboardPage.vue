@@ -14,6 +14,7 @@
     <header :class="$style.header">
       <h1 :class="$style.brand">Fit Tracker</h1>
       <div :class="$style.actions">
+        <ExportReportButton />
         <BaseButton variant="ghost" @click="reloadPage">⟳ Обновить</BaseButton>
         <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
       </div>
@@ -92,6 +93,7 @@ import { useWorkoutStore } from '@/entities/Workout'
 import { AddWeightForm } from '@/features/AddWeightEntry'
 import { AddMeasurementForm } from '@/features/AddMeasurementEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
+import { ExportReportButton } from '@/features/ExportReport'
 import { WeightHistory } from '@/widgets/WeightHistory'
 import { WeightGoal } from '@/widgets/WeightGoal'
 import { BodyComposition } from '@/widgets/BodyComposition'
