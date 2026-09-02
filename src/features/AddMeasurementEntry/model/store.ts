@@ -10,7 +10,6 @@ interface Form {
   shoulders: string
   arm: string
   forearm: string
-  neck: string
   note: string
 }
 
@@ -20,7 +19,7 @@ interface State {
 }
 
 function initialForm(): Form {
-  return { date: todayISO(), waist: '', chest: '', shoulders: '', arm: '', forearm: '', neck: '', note: '' }
+  return { date: todayISO(), waist: '', chest: '', shoulders: '', arm: '', forearm: '', note: '' }
 }
 
 export const useAddMeasurementStore = defineStore('addMeasurement', {
@@ -28,7 +27,7 @@ export const useAddMeasurementStore = defineStore('addMeasurement', {
 
   getters: {
     hasAnyValue: (state): boolean =>
-      [state.form.waist, state.form.chest, state.form.shoulders, state.form.arm, state.form.forearm, state.form.neck]
+      [state.form.waist, state.form.chest, state.form.shoulders, state.form.arm, state.form.forearm]
         .some((value) => value.trim() !== ''),
     canSubmit(): boolean {
       return this.form.date !== '' && this.hasAnyValue
@@ -48,7 +47,6 @@ export const useAddMeasurementStore = defineStore('addMeasurement', {
         shoulders: toNumber(this.form.shoulders),
         arm: toNumber(this.form.arm),
         forearm: toNumber(this.form.forearm),
-        neck: toNumber(this.form.neck),
         note: this.form.note.trim() || null,
       })
       this.submitting = false

@@ -17,7 +17,6 @@ export interface MeasurementInput {
   shoulders: number | null
   arm: number | null
   forearm: number | null
-  neck: number | null
   note: string | null
 }
 

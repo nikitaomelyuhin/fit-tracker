@@ -44,7 +44,6 @@ export const useMeasurementStore = defineStore('measurement', {
             shoulders: input.shoulders,
             arm: input.arm,
             forearm: input.forearm,
-            neck: input.neck,
             note: input.note,
           },
           { onConflict: 'user_id,date' },

@@ -43,7 +43,6 @@ function metricsOf(entry: Measurement) {
     { label: 'Грудь', value: entry.chest },
     { label: 'Рука', value: entry.arm },
     { label: 'Предпл', value: entry.forearm },
-    { label: 'Шея', value: entry.neck },
   ].filter((metric) => metric.value != null)
 }
 </script>

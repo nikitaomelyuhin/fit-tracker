@@ -7,7 +7,6 @@
       <BaseTextField v-model="store.form.shoulders" label="Плечи" inputmode="decimal" placeholder="127" />
       <BaseTextField v-model="store.form.arm" label="Рука" inputmode="decimal" placeholder="40" />
       <BaseTextField v-model="store.form.forearm" label="Предплечье" inputmode="decimal" placeholder="31" />
-      <BaseTextField v-model="store.form.neck" label="Шея" inputmode="decimal" placeholder="41" />
     </div>
     <BaseTextField v-model="store.form.note" label="Заметка" placeholder="—" />
     <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
