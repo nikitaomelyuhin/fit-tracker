@@ -14,7 +14,7 @@ import { GridComponent, TooltipComponent, LegendComponent } from 'echarts/compon
 import { CanvasRenderer } from 'echarts/renderers'
 import { useMeasurementStore } from '@/entities/Measurement'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { navyBodyFatMale } from '@/shared/lib/bodyfat'
+import { estimateBodyFatMale } from '@/shared/lib/bodyfat'
 import { HEIGHT_CM } from '@/shared/config/profile'
 import { formatHuman, daysBetween } from '@/shared/lib/date'
 import { cssToken } from '@/shared/lib/theme'
@@ -47,8 +47,8 @@ function weightNear(dateISO: string): number | null {
 const points = computed(() =>
   measurement.byDateAsc
     .map((m) => {
-      if (m.waist == null || m.neck == null) return null
-      const bodyFat = navyBodyFatMale(m.waist, m.neck, HEIGHT_CM)
+      if (m.waist == null) return null
+      const bodyFat = estimateBodyFatMale(m.waist, HEIGHT_CM)
       const weight = weightNear(m.date)
       if (bodyFat == null || weight == null) return null
       const fat = (weight * bodyFat) / 100

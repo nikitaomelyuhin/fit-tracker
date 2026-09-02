@@ -16,7 +16,7 @@
         </div>
       </div>
       <p :class="$style.hint">
-        По талии {{ waist }} и шее {{ neck }} (рост {{ height }} см). Вес — {{ weightSourceText }}.
+        По талии {{ waist }} (рост {{ height }} см). Вес — {{ weightSourceText }}.
       </p>
     </template>
     <p v-else :class="$style.empty">Добавь замер талии и шеи — посчитаю % жира.</p>
@@ -27,7 +27,7 @@
 import { computed } from 'vue'
 import { useMeasurementStore } from '@/entities/Measurement'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { navyBodyFatMale } from '@/shared/lib/bodyfat'
+import { estimateBodyFatMale } from '@/shared/lib/bodyfat'
 import { HEIGHT_CM } from '@/shared/config/profile'
 
 const measurements = useMeasurementStore()
@@ -36,12 +36,9 @@ const height = HEIGHT_CM
 
 const latest = computed(() => measurements.byDateDesc[0] ?? null)
 const waist = computed(() => latest.value?.waist ?? null)
-const neck = computed(() => latest.value?.neck ?? null)
 
 const bodyFat = computed(() =>
-  waist.value != null && neck.value != null
-    ? navyBodyFatMale(waist.value, neck.value, height)
-    : null,
+  waist.value != null ? estimateBodyFatMale(waist.value, height) : null,
 )
 
 const weekAverage = computed(() => weightLog.currentWeekAverage)

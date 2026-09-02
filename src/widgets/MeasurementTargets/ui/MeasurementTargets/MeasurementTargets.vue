@@ -26,7 +26,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useMeasurementStore } from '@/entities/Measurement'
-import { navyBodyFatMale } from '@/shared/lib/bodyfat'
+import { estimateBodyFatMale } from '@/shared/lib/bodyfat'
 import { targetStatus, type TargetStatus } from '@/shared/lib/target'
 import { HEIGHT_CM } from '@/shared/config/profile'
 import {
@@ -47,8 +47,7 @@ const latest = computed(() => store.byDateDesc[0] ?? null)
 
 const bodyFat = computed(() => {
   const waist = latest.value?.waist
-  const neck = latest.value?.neck
-  return waist != null && neck != null ? navyBodyFatMale(waist, neck, HEIGHT_CM) : null
+  return waist != null ? estimateBodyFatMale(waist, HEIGHT_CM) : null
 })
 
 const excessFat = computed(() =>
@@ -67,8 +66,8 @@ const starts = computed<Record<MetricKey, number | null>>(() => {
   }
   let fat: number | null = null
   for (const m of items) {
-    if (m.waist != null && m.neck != null) {
-      fat = navyBodyFatMale(m.waist, m.neck, HEIGHT_CM)
+    if (m.waist != null) {
+      fat = estimateBodyFatMale(m.waist, HEIGHT_CM)
       break
     }
   }

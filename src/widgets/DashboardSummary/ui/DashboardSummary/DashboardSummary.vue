@@ -12,7 +12,7 @@
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
-import { navyBodyFatMale } from '@/shared/lib/bodyfat'
+import { estimateBodyFatMale } from '@/shared/lib/bodyfat'
 import { HEIGHT_CM } from '@/shared/config/profile'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { MEASUREMENT_TARGETS } from '@/shared/config/targets'
@@ -30,9 +30,7 @@ const remaining = computed(() =>
 const latestMeasurement = computed(() => measurement.byDateDesc[0] ?? null)
 const bodyFat = computed(() => {
   const m = latestMeasurement.value
-  return m?.waist != null && m?.neck != null
-    ? navyBodyFatMale(m.waist, m.neck, HEIGHT_CM)
-    : null
+  return m?.waist != null ? estimateBodyFatMale(m.waist, HEIGHT_CM) : null
 })
 const waist = computed(() => latestMeasurement.value?.waist ?? null)
 
