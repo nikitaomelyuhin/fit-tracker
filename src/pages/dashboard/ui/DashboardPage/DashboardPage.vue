@@ -172,11 +172,13 @@ async function onSignOut() {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-m);
+  flex-wrap: wrap;
 }
 
 .actions {
   display: flex;
   gap: var(--space-s);
+  flex-wrap: wrap;
 }
 
 .brand {
@@ -213,5 +215,11 @@ async function onSignOut() {
   display: flex;
   flex-direction: column;
   gap: var(--space-l);
+}
+
+@media (max-width: 520px) {
+  .dashboard {
+    padding: var(--space-m);
+  }
 }
 </style>
