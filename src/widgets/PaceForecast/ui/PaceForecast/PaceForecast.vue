@@ -13,7 +13,7 @@
       </div>
 
       <VChart :option="option" autoresize :class="$style.chart" />
-      <p :class="$style.hint">Прогноз уточняется по мере взвешиваний — сейчас данных мало.</p>
+      <p :class="$style.hint">{{ hint }}</p>
     </template>
     <p v-else :class="$style.empty">
       Мало данных для прогноза — веди вес хотя бы пару недель, и здесь появится сравнение твоего темпа с идеальным.
@@ -38,7 +38,7 @@ import { useWeightLogStore } from '@/entities/WeightLog'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { projectIdealPace } from '@/shared/lib/pace'
-import { addDays, daysBetween, todayISO, formatHuman } from '@/shared/lib/date'
+import { addDays, todayISO, formatHuman } from '@/shared/lib/date'
 import { cssToken } from '@/shared/lib/theme'
 
 use([LineChart, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, CanvasRenderer])
@@ -46,52 +46,59 @@ use([LineChart, GridComponent, TooltipComponent, LegendComponent, MarkLineCompon
 const store = useWeightLogStore()
 const goal = WEIGHT_GOAL_KG
 
-const startEntry = computed(() => store.byDateAsc[0] ?? null)
-const start = computed(() => startEntry.value?.weight ?? null)
-const startDate = computed(() => startEntry.value?.date ?? null)
-const current = computed(() => store.currentWeekAverage ?? store.byDateDesc[0]?.weight ?? null)
+const start = computed(() => store.byDateAsc[0]?.weight ?? null)
+const current = computed(() => store.smoothedWeight)
 
-// Прогноз показываем только когда данных достаточно (иначе экстраполяция врёт).
-const hasEnough = computed(() => {
-  const items = store.byDateAsc
-  if (start.value == null || startDate.value == null || items.length < 4) return false
-  return daysBetween(items[0].date, items[items.length - 1].date) >= 14
+// «Чистая» точка отсчёта — без стартового слива воды (см. cleanStart в сторе).
+const cleanStart = computed(() => store.cleanStart)
+const pace = computed(() => store.paceVsPlan)
+
+// Прогноз показываем только когда после окна адаптации накопилось достаточно данных.
+const hasEnough = computed(() => Boolean(cleanStart.value?.ready))
+
+const ideal = computed(() => {
+  const baseline = cleanStart.value
+  if (!baseline || !baseline.ready) return []
+  return projectIdealPace(baseline.baselineWeight, goal, DAILY_KCAL_TARGET).map((point) => ({
+    day: point.day,
+    weight: point.weight,
+    date: addDays(baseline.baselineDate, point.day),
+  }))
+})
+const idealText = computed(() => {
+  const p = pace.value
+  if (!p) return '—'
+  return `~${months(daysFromToday(p.planEtaDate))} мес · до ${formatHuman(p.planEtaDate)}`
 })
 
-const ideal = computed(() =>
-  start.value != null ? projectIdealPace(start.value, goal, DAILY_KCAL_TARGET) : [],
-)
-const idealDays = computed(() => (ideal.value.length ? ideal.value[ideal.value.length - 1].day : 0))
-const idealText = computed(() =>
-  startDate.value
-    ? `~${months(idealDays.value)} мес · до ${formatHuman(addDays(startDate.value, idealDays.value))}`
-    : '—',
-)
-
-const elapsed = computed(() =>
-  startDate.value ? Math.max(1, daysBetween(startDate.value, todayISO())) : 0,
-)
-const lost = computed(() =>
-  start.value != null && current.value != null ? start.value - current.value : 0,
-)
-const rate = computed(() => (elapsed.value > 0 ? lost.value / elapsed.value : 0)) // кг/день
-const actualEtaDays = computed(() =>
-  rate.value > 0 && current.value != null ? (current.value - goal) / rate.value : null,
-)
+const actualEtaDays = computed(() => pace.value?.actualEtaDays ?? null)
 const actualText = computed(() => {
-  if (actualEtaDays.value == null) return 'мало данных (темп ~0)'
-  return `~${months(actualEtaDays.value)} мес · до ${formatHuman(addDays(todayISO(), Math.round(actualEtaDays.value)))}`
+  const p = pace.value
+  if (!p || p.actualEtaDate == null) return 'мало данных (темп ~0)'
+  return `~${months(daysFromToday(p.actualEtaDate))} мес · до ${formatHuman(p.actualEtaDate)}`
 })
-const behind = computed(() => actualEtaDays.value != null && actualEtaDays.value > idealDays.value)
+const behind = computed(() => (pace.value?.diffDays ?? 0) > 0)
 
 const projection = computed(() => {
-  if (actualEtaDays.value == null || current.value == null) return null
-  const etaDate = addDays(todayISO(), Math.round(actualEtaDays.value))
+  const p = pace.value
+  if (!p || p.actualEtaDate == null || current.value == null) return null
   return [
     [dayjs(todayISO()).valueOf(), round1(current.value)],
-    [dayjs(etaDate).valueOf(), goal],
+    [dayjs(p.actualEtaDate).valueOf(), goal],
   ]
 })
+
+const hint = computed(() => {
+  const baseline = cleanStart.value
+  if (!baseline || baseline.waterDropKg < 0.3) {
+    return 'Прогноз уточняется по мере взвешиваний — сейчас данных мало.'
+  }
+  return `Первые ${baseline.windowDays} дн. (~${baseline.waterDropKg.toFixed(1)} кг воды/гликогена) не в счёт — план и темп считаются от ${formatHuman(baseline.baselineDate)}.`
+})
+
+function daysFromToday(dateISO: string): number {
+  return Math.max(0, dayjs(dateISO).diff(dayjs(todayISO()), 'day'))
+}
 
 function months(days: number): number {
   return Math.max(1, Math.round(days / 30.4))
@@ -108,10 +115,7 @@ const option = computed(() => {
   const accent = cssToken('--accent', '#4f8cff')
   const warning = cssToken('--warning', '#e0a63a')
 
-  const idealData = ideal.value.map((point) => [
-    dayjs(addDays(startDate.value!, point.day)).valueOf(),
-    round1(point.weight),
-  ])
+  const idealData = ideal.value.map((point) => [dayjs(point.date).valueOf(), round1(point.weight)])
   const weekly = store.weeklyAverageByDateAsc
   const actualData = store.byDateAsc.map((row, index) => [dayjs(row.date).valueOf(), weekly[index]])
 

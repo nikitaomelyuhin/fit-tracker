@@ -29,12 +29,16 @@ const assistNames = new Set(
     .map((exercise) => exercise.name),
 )
 
-/** Тренд веса за последние ~3 недели (кг/нед), по крайним точкам окна. */
+/**
+ * Тренд веса за последние ~3 недели (кг/нед), по крайним точкам окна.
+ * Считаем только по данным ПОСЛЕ окна адаптации (cleanEntries) — иначе
+ * стартовый слив воды завышает темп, если история короче месяца.
+ */
 const recentRateWeek = computed<number | null>(() => {
   const last = weightLog.byDateDesc[0]
   if (!last) return null
   const windowStart = addDays(last.date, -21)
-  const items = weightLog.byDateAsc.filter((item) => item.date >= windowStart)
+  const items = weightLog.cleanEntries.filter((item) => item.date >= windowStart)
   if (items.length < 2) return null
   const recent = weightLog.currentWeekAverage ?? last.weight
   const days = daysBetween(items[0].date, last.date) || 1

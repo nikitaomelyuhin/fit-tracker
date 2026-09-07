@@ -15,7 +15,9 @@ const routes: RouteRecordRaw[] = [
 ]
 
 export const router = createRouter({
-  history: createWebHistory(),
+  // BASE_URL берётся из Vite --base (см. workflow деплоя) — так роутер работает
+  // и в корне домена, и в подпапке (например, GitHub Pages: /fit-tracker/).
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
 })
 

@@ -33,6 +33,9 @@
         <BaseCard title="Прогресс">
           <ProgressSummary />
         </BaseCard>
+        <BaseCard title="Неделя к неделе">
+          <WeeklyComparison />
+        </BaseCard>
         <BaseCard title="Анализ">
           <Analysis />
         </BaseCard>
@@ -102,6 +105,7 @@ import { MeasurementTargets } from '@/widgets/MeasurementTargets'
 import { WorkoutHistory } from '@/widgets/WorkoutHistory'
 import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { ProgressSummary } from '@/widgets/ProgressSummary'
+import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { GymProgress } from '@/widgets/GymProgress'
 import { Analysis } from '@/widgets/Analysis'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'

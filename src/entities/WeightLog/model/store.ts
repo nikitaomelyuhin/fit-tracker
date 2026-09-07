@@ -1,8 +1,12 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
-import { currentWeekStartISO, weekStartFor } from '@/shared/lib/date'
+import { currentWeekStartISO, weekStartFor, todayISO } from '@/shared/lib/date'
+import { computeCleanStart, comparePaceWithPlan } from '@/shared/lib/pace'
+import type { CleanStart, PaceVsPlan } from '@/shared/lib/pace'
+import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
+import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { mapWeightLog } from '../helpers/mapWeightLog'
-import type { WeightLog, WeightLogInput, WeightLogRow } from './types'
+import type { WeeklyAverage, WeightLog, WeightLogInput, WeightLogRow } from './types'
 
 interface State {
   items: WeightLog[]
@@ -21,6 +25,41 @@ export const useWeightLogStore = defineStore('weightLog', {
     latest(): WeightLog | null {
       return this.byDateDesc[0] ?? null
     },
+
+    /** Недельные средние по возрастанию, с разницей к предыдущей неделе. */
+    weeklyAverages(): WeeklyAverage[] {
+      const buckets = new Map<string, { total: number; count: number }>()
+      for (const row of this.byDateAsc) {
+        const key = weekStartFor(row.date)
+        const bucket = buckets.get(key) ?? { total: 0, count: 0 }
+        bucket.total += row.weight
+        bucket.count += 1
+        buckets.set(key, bucket)
+      }
+
+      const weeks = [...buckets.entries()]
+        .sort((a, b) => (a[0] > b[0] ? 1 : -1))
+        .map(([weekStart, bucket]) => ({
+          weekStart,
+          averageKg: Math.round((bucket.total / bucket.count) * 10) / 10,
+          entries: bucket.count,
+        }))
+
+      return weeks.map((week, index) => {
+        const previous = index > 0 ? weeks[index - 1] : null
+        return {
+          ...week,
+          deltaKg: previous ? Math.round((week.averageKg - previous.averageKg) * 10) / 10 : null,
+          gapWeeks: previous
+            ? Math.round(
+                (new Date(week.weekStart).getTime() - new Date(previous.weekStart).getTime()) /
+                  (7 * 24 * 3600 * 1000),
+              )
+            : null,
+        }
+      })
+    },
+
     /** Средний вес за текущую неделю (среда → вторник). */
     currentWeekAverage(): number | null {
       const start = currentWeekStartISO()
@@ -29,21 +68,66 @@ export const useWeightLogStore = defineStore('weightLog', {
       const sum = week.reduce((acc, item) => acc + item.weight, 0)
       return Math.round((sum / week.length) * 10) / 10
     },
+
+    /** Последняя неделя, в которой есть взвешивания. */
+    latestWeek(): WeeklyAverage | null {
+      const weeks = this.weeklyAverages
+      return weeks.length ? weeks[weeks.length - 1] : null
+    },
+
+    /** Предыдущая неделя с данными (может быть не строго прошлой календарной). */
+    previousWeek(): WeeklyAverage | null {
+      const weeks = this.weeklyAverages
+      return weeks.length > 1 ? weeks[weeks.length - 2] : null
+    },
+
+    /** Сдвиг недельного среднего к прошлой неделе (кг): <0 — снижение. */
+    weekOverWeekDeltaKg(): number | null {
+      return this.latestWeek?.deltaKg ?? null
+    },
+
+    /** Сглаженный текущий вес: недельное среднее вместо одного взвешивания. */
+    smoothedWeight(): number | null {
+      return this.currentWeekAverage ?? this.latestWeek?.averageKg ?? this.latest?.weight ?? null
+    },
+
     /** Для каждой точки byDateAsc — средний вес её недели (для линии на графике). */
     weeklyAverageByDateAsc(): number[] {
-      const rows = this.byDateAsc
-      const buckets = new Map<string, { total: number; count: number }>()
-      for (const row of rows) {
-        const key = weekStartFor(row.date)
-        const bucket = buckets.get(key) ?? { total: 0, count: 0 }
-        bucket.total += row.weight
-        bucket.count += 1
-        buckets.set(key, bucket)
-      }
-      return rows.map((row) => {
-        const bucket = buckets.get(weekStartFor(row.date))!
-        return Math.round((bucket.total / bucket.count) * 10) / 10
+      const byWeek = new Map(this.weeklyAverages.map((week) => [week.weekStart, week.averageKg]))
+      return this.byDateAsc.map((row) => byWeek.get(weekStartFor(row.date))!)
+    },
+
+    /** Точка отсчёта без стартового слива воды — база для темпа и прогнозов. */
+    cleanStart(): CleanStart | null {
+      return computeCleanStart(
+        this.byDateAsc.map((row) => ({ date: row.date, weight: row.weight })),
+        this.smoothedWeight,
+      )
+    },
+
+    /** Темп по жиру (кг/нед, положительный = снижение), без стартовой воды. */
+    cleanRatePerWeek(): number | null {
+      return this.cleanStart?.ratePerWeek ?? null
+    },
+
+    /** Факт против плана: план отсчитывается от «чистой» точки, не от первого взвешивания. */
+    paceVsPlan(): PaceVsPlan | null {
+      const start = this.cleanStart
+      if (!start) return null
+      return comparePaceWithPlan({
+        cleanStart: start,
+        currentWeight: this.smoothedWeight,
+        today: todayISO(),
+        goalWeight: WEIGHT_GOAL_KG,
+        dailyKcal: DAILY_KCAL_TARGET,
       })
+    },
+
+    /** Взвешивания после окна адаптации — на них считается тренд. */
+    cleanEntries(): WeightLog[] {
+      const from = this.cleanStart?.baselineDate
+      if (!from) return this.byDateAsc
+      return this.byDateAsc.filter((row) => row.date >= from)
     },
   },
 

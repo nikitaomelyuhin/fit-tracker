@@ -23,8 +23,18 @@
 
 ## Деплой
 
-`npm run build` → залить папку `dist/` на **Netlify** (или подключить репозиторий: build command `npm run build`, publish dir `dist`).
-Переменные `VITE_SUPABASE_URL` и `VITE_SUPABASE_ANON_KEY` задать в настройках Netlify.
+Автодеплой на **GitHub Pages** через GitHub Actions (`.github/workflows/deploy-pages.yml`) — пуш в `main` собирает
+проект и публикует `dist/`. Сайт доступен из России без VPN (в отличие от Netlify/Cloudflare Pages, которые
+периодически режутся DPI по IP/TLS).
+
+Разовая настройка:
+
+1. Repo → **Settings → Pages → Build and deployment → Source** — выбрать **GitHub Actions**.
+2. Repo → **Settings → Secrets and variables → Actions** — добавить секреты `VITE_SUPABASE_URL` и
+   `VITE_SUPABASE_ANON_KEY` (те же значения, что в локальном `.env`).
+3. Запушить в `main` — через минуту сайт появится на `https://<username>.github.io/<repo>/`.
+
+Дальше каждый пуш в `main` деплоится сам.
 
 ## Архитектура
 

@@ -21,3 +21,16 @@ export interface WeightLogRow {
   body_fat: number | string | null
   note: string | null
 }
+
+/** Недельное среднее (неделя: среда → вторник) и его сдвиг к прошлой неделе. */
+export interface WeeklyAverage {
+  /** ISO-дата среды, с которой начинается неделя. */
+  weekStart: string
+  averageKg: number
+  /** Сколько взвешиваний попало в неделю. */
+  entries: number
+  /** Изменение к предыдущей неделе с данными (кг): <0 — снижение. */
+  deltaKg: number | null
+  /** Сколько недель прошло между этой и предыдущей неделей с данными. */
+  gapWeeks: number | null
+}

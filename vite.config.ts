@@ -15,7 +15,10 @@ export default defineConfig({
         theme_color: '#0f1115',
         background_color: '#0f1115',
         display: 'standalone',
-        start_url: '/',
+        // Относительные пути — манифест работает и в корне, и в подпапке
+        // (GitHub Pages отдаёт сайт с /fit-tracker/, а не с корня домена).
+        start_url: '.',
+        scope: '.',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

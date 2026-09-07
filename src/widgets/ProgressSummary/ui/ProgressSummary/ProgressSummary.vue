@@ -16,6 +16,7 @@
       <span :class="$style.label">vs идеальный темп</span>
       <span :class="[$style.value, $style[paceTone]]">{{ paceText }}</span>
     </div>
+    <p v-if="waterHint" :class="$style.hint">{{ waterHint }}</p>
   </div>
 </template>
 
@@ -23,28 +24,19 @@
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
-import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
-import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
-import { projectIdealPace } from '@/shared/lib/pace'
-import { daysBetween } from '@/shared/lib/date'
 
 const weightLog = useWeightLogStore()
 const measurement = useMeasurementStore()
 
 const first = computed(() => weightLog.byDateAsc[0] ?? null)
-const last = computed(() => weightLog.byDateDesc[0] ?? null)
-const current = computed(() => weightLog.currentWeekAverage ?? last.value?.weight ?? null)
-
-const span = computed(() =>
-  first.value && last.value ? daysBetween(first.value.date, last.value.date) : 0,
-)
+const current = computed(() => weightLog.smoothedWeight)
 
 const lostKg = computed(() =>
   first.value && current.value != null ? first.value.weight - current.value : null,
 )
 
 const lostText = computed(() => {
-  if (lostKg.value == null || (first.value && weightLog.items.length < 2)) return '—'
+  if (lostKg.value == null || weightLog.items.length < 2) return '—'
   const v = lostKg.value
   return v >= 0 ? `−${v.toFixed(1)} кг` : `+${Math.abs(v).toFixed(1)} кг`
 })
@@ -57,10 +49,8 @@ const waistText = computed(() => {
   return d >= 0 ? `−${d.toFixed(1)} см` : `+${Math.abs(d).toFixed(1)} см`
 })
 
-const rateWeek = computed(() => {
-  if (lostKg.value == null || span.value < 7) return null
-  return (lostKg.value / span.value) * 7
-})
+// Темп считаем по жиру — от «чистой» точки отсчёта, без стартового слива воды.
+const rateWeek = computed(() => weightLog.cleanRatePerWeek)
 
 const rateText = computed(() =>
   rateWeek.value != null ? `−${rateWeek.value.toFixed(2)} кг/нед` : '—',
@@ -75,18 +65,7 @@ const band = computed(() => {
   return 'стоит'
 })
 
-const idealDays = computed(() => {
-  if (first.value == null) return 0
-  const ideal = projectIdealPace(first.value.weight, WEIGHT_GOAL_KG, DAILY_KCAL_TARGET)
-  return ideal.length ? ideal[ideal.length - 1].day : 0
-})
-
-const paceDiff = computed(() => {
-  if (rateWeek.value == null || rateWeek.value <= 0 || current.value == null) return null
-  const rateDay = rateWeek.value / 7
-  const actualEtaDays = (current.value - WEIGHT_GOAL_KG) / rateDay
-  return actualEtaDays - idealDays.value // <0 = опережаешь
-})
+const paceDiff = computed(() => weightLog.paceVsPlan?.diffDays ?? null)
 
 const paceText = computed(() => {
   const d = paceDiff.value
@@ -100,6 +79,12 @@ const paceTone = computed(() => {
   const d = paceDiff.value
   if (d == null) return 'muted'
   return d > 3 ? 'warn' : 'good'
+})
+
+const waterHint = computed(() => {
+  const start = weightLog.cleanStart
+  if (!start || start.waterDropKg < 0.3) return null
+  return `Из «сброшено» ~${start.waterDropKg.toFixed(1)} кг — вода первых ${start.windowDays} дней, не жир. Темп и план считаются уже без неё.`
 })
 </script>
 
@@ -142,6 +127,11 @@ const paceTone = computed(() => {
 }
 
 .muted {
+  color: var(--text-muted);
+}
+
+.hint {
+  font-size: var(--font-size-s);
   color: var(--text-muted);
 }
 </style>

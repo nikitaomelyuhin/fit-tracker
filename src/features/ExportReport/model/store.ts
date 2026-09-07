@@ -4,9 +4,9 @@ import { useMeasurementStore } from '@/entities/Measurement'
 import { useWorkoutStore } from '@/entities/Workout'
 import { estimateBodyFatMale } from '@/shared/lib/bodyfat'
 import { downloadJson } from '@/shared/lib/download'
-import { todayISO, weekStartFor } from '@/shared/lib/date'
+import { todayISO } from '@/shared/lib/date'
 import { AGE, HEIGHT_CM } from '@/shared/config/profile'
-import { ACTIVITY_FACTOR, DAILY_KCAL_TARGET, KCAL_PER_KG } from '@/shared/config/pace'
+import { ACTIVITY_FACTOR, DAILY_KCAL_TARGET, KCAL_PER_KG, WATER_ADAPTATION_DAYS } from '@/shared/config/pace'
 import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG } from '@/shared/config/goals'
 import { BODY_FAT_TARGET, MEASUREMENT_TARGETS } from '@/shared/config/targets'
 
@@ -18,22 +18,12 @@ export const useExportReportStore = defineStore('exportReport', {
       const measurements = useMeasurementStore()
       const workouts = useWorkoutStore()
 
-      // Недельные средние веса (среда → вторник) — главный показатель тренда.
-      const buckets = new Map<string, { total: number; count: number }>()
-      for (const row of weightLog.byDateAsc) {
-        const key = weekStartFor(row.date)
-        const bucket = buckets.get(key) ?? { total: 0, count: 0 }
-        bucket.total += row.weight
-        bucket.count += 1
-        buckets.set(key, bucket)
-      }
-      const weeklyAverages = [...buckets.entries()]
-        .sort((a, b) => (a[0] > b[0] ? 1 : -1))
-        .map(([weekStart, bucket]) => ({
-          weekStart,
-          averageKg: Math.round((bucket.total / bucket.count) * 10) / 10,
-          entries: bucket.count,
-        }))
+      // Недельные средние веса (среда → вторник) с разницей к прошлой неделе — главный показатель тренда.
+      const weeklyAverages = weightLog.weeklyAverages
+
+      // Отделяем стартовый слив воды/гликогена от жира — иначе темп в начале завышен.
+      const cleanStart = weightLog.cleanStart
+      const pace = weightLog.paceVsPlan
 
       const report = {
         exportedAt: new Date().toISOString(),
@@ -49,6 +39,7 @@ export const useExportReportStore = defineStore('exportReport', {
           kcalPerKgFat: KCAL_PER_KG,
           bodyFatFormula:
             'Оценка по талии и росту (RFM), привязана к точке отсчёта: талия 108 см = 28.5%. Шея и вес в расчёте не участвуют.',
+          waterAdaptationDays: WATER_ADAPTATION_DAYS,
         },
         targets: {
           bodyFatPct: BODY_FAT_TARGET,
@@ -61,6 +52,24 @@ export const useExportReportStore = defineStore('exportReport', {
             note: entry.note,
           })),
           weeklyAverages,
+        },
+        // «Чистая» точка отсчёта (без стартового слива воды) и факт vs план от неё.
+        cleanStart: cleanStart && {
+          ready: cleanStart.ready,
+          startDate: cleanStart.startDate,
+          startWeightKg: cleanStart.startWeight,
+          baselineDate: cleanStart.baselineDate,
+          baselineWeightKg: cleanStart.baselineWeight,
+          waterDropKg: Math.round(cleanStart.waterDropKg * 10) / 10,
+          fatDropInWindowKg: Math.round(cleanStart.fatDropInWindowKg * 10) / 10,
+          ratePerWeekKg: cleanStart.ratePerWeek != null ? Math.round(cleanStart.ratePerWeek * 100) / 100 : null,
+        },
+        paceVsPlan: pace && {
+          planDays: pace.planDays,
+          planEtaDate: pace.planEtaDate,
+          actualEtaDays: pace.actualEtaDays != null ? Math.round(pace.actualEtaDays) : null,
+          actualEtaDate: pace.actualEtaDate,
+          diffDays: pace.diffDays != null ? Math.round(pace.diffDays) : null,
         },
         measurements: {
           entries: measurements.byDateAsc.map((entry) => ({

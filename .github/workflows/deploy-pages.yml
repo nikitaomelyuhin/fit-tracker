@@ -1,0 +1,63 @@
+name: Деплой на GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Не даём параллельным деплоям затирать друг друга.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # --base подставляет путь подпапки репозитория (GitHub Pages для project-сайтов
+      # отдаёт контент не с корня домена, а с /<repo>/). Роутер и PWA-манифест
+      # читают этот же base через import.meta.env.BASE_URL — см. router/index.ts.
+      - name: Build
+        run: npm run build -- --base=/${{ github.event.repository.name }}/
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      # SPA-фоллбэк: GitHub Pages не умеет rewrite на index.html для любых путей,
+      # но отдаёт 404.html на несуществующий путь — делаем его копией index.html,
+      # тогда прямой заход/рефреш на /weight, /measurements и т.д. не даёт 404.
+      - name: SPA fallback (404 → index)
+        run: cp dist/index.html dist/404.html
+
+      # Отключаем обработку Jekyll (иначе GitHub Pages может проигнорировать
+      # папки/файлы, начинающиеся с "_", и сломать часть ассетов).
+      - name: Disable Jekyll processing
+        run: touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
