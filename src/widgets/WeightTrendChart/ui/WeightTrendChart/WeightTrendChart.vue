@@ -36,17 +36,24 @@ const option = computed(() => {
 
   const weights = rows.map((row) => row.weight)
   const weeklyAvg = store.weeklyAverageByDateAsc
-  const allValues = [...weights, ...weeklyAvg, WEIGHT_GOAL_KG, ...WEIGHT_MILESTONES_KG]
-  const yMin = Math.floor(Math.min(...allValues) - 1)
-  const yMax = Math.ceil(Math.max(...allValues) + 1)
+  // Масштаб — только по факту веса. Если считать по цели/вехам, реальные
+  // колебания (пара кг) тонут в диапазоне до цели (может быть 15+ кг).
+  const yMin = Math.floor(Math.min(...weights, ...weeklyAvg) - 1)
+  const yMax = Math.ceil(Math.max(...weights, ...weeklyAvg) + 1)
+
+  const inRange = (value: number) => value >= yMin && value <= yMax
 
   const markLineData = [
-    {
-      yAxis: WEIGHT_GOAL_KG,
-      lineStyle: { color: success, type: 'dashed', width: 2 },
-      label: { formatter: `Цель ${WEIGHT_GOAL_KG}`, color: success, position: 'insideEndTop' },
-    },
-    ...WEIGHT_MILESTONES_KG.map((milestone) => ({
+    ...(inRange(WEIGHT_GOAL_KG)
+      ? [
+          {
+            yAxis: WEIGHT_GOAL_KG,
+            lineStyle: { color: success, type: 'dashed', width: 2 },
+            label: { formatter: `Цель ${WEIGHT_GOAL_KG}`, color: success, position: 'insideEndTop' },
+          },
+        ]
+      : []),
+    ...WEIGHT_MILESTONES_KG.filter(inRange).map((milestone) => ({
       yAxis: milestone,
       lineStyle: { color: muted, type: 'dotted', width: 1 },
       label: { formatter: `${milestone}`, color: muted, position: 'insideEndTop', fontSize: 10 },
@@ -72,25 +79,27 @@ const option = computed(() => {
     },
     series: [
       {
+        // Недельное среднее меняется скачком раз в неделю, а не плавно —
+        // smooth тут рисовал бы волну там, где на деле плоская ступенька.
+        name: 'Среднее/нед',
+        type: 'line',
+        smooth: false,
+        showSymbol: false,
+        data: weeklyAvg,
+        lineStyle: { color: muted, width: 1.5, type: 'dashed' },
+        itemStyle: { color: muted },
+        markLine: { silent: true, symbol: 'none', data: markLineData },
+      },
+      {
         name: 'Вес (день)',
         type: 'line',
         smooth: true,
         showSymbol: true,
-        symbolSize: 4,
+        symbolSize: 6,
         data: weights,
-        lineStyle: { color: muted, width: 1.5, type: 'dashed' },
-        itemStyle: { color: muted },
-      },
-      {
-        name: 'Среднее/нед',
-        type: 'line',
-        smooth: true,
-        symbolSize: 7,
-        data: weeklyAvg,
         lineStyle: { color: accent, width: 3 },
         itemStyle: { color: accent },
         areaStyle: { opacity: 0.1 },
-        markLine: { silent: true, symbol: 'none', data: markLineData },
       },
     ],
   }

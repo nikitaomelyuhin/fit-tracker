@@ -15,6 +15,7 @@ defineProps<{ title?: string }>()
   flex-direction: column;
   gap: var(--space-m);
   padding: var(--space-l);
+  min-width: 0;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-l);

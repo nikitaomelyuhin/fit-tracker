@@ -15,35 +15,37 @@
       <BaseTextField v-model="store.date" label="Дата" type="date" />
     </div>
 
-    <div v-for="(exercise, index) in store.exercises" :key="exercise.exercise" :class="$style.exercise">
-      <div :class="$style.exHead">
-        <span :class="$style.exName">{{ exercise.exercise }}</span>
-        <span :class="$style.last">{{ lastSummary(exercise.exercise) }}</span>
-      </div>
-      <p v-if="plannedHint(exercise.exercise)" :class="$style.goal">
-        🎯 План был: {{ plannedHint(exercise.exercise) }}
-      </p>
-      <p v-if="exercise.assist" :class="$style.assist">Вес помощи — меньше = лучше ↓</p>
+    <div :class="$style.exercises">
+      <div v-for="(exercise, index) in store.exercises" :key="exercise.exercise" :class="$style.exercise">
+        <div :class="$style.exHead">
+          <span :class="$style.exName">{{ exercise.exercise }}</span>
+          <span :class="$style.last">{{ lastSummary(exercise.exercise) }}</span>
+        </div>
+        <p v-if="plannedHint(exercise.exercise)" :class="$style.goal">
+          🎯 План был: {{ plannedHint(exercise.exercise) }}
+        </p>
+        <p v-if="exercise.assist" :class="$style.assist">Вес помощи — меньше = лучше ↓</p>
 
-      <div :class="$style.inputs">
-        <BaseTextField
-          v-model="store.exercises[index].weight"
-          :label="exercise.assist ? 'Помощь' : 'Вес'"
-          inputmode="decimal"
-        />
-        <BaseTextField v-model="store.exercises[index].sets" label="Подходы" inputmode="numeric" />
-        <BaseTextField v-model="store.exercises[index].reps" label="Повторы" inputmode="numeric" />
-      </div>
+        <div :class="$style.inputs">
+          <BaseTextField
+            v-model="store.exercises[index].weight"
+            :label="exercise.assist ? 'Помощь' : 'Вес'"
+            inputmode="decimal"
+          />
+          <BaseTextField v-model="store.exercises[index].sets" label="Подходы" inputmode="numeric" />
+          <BaseTextField v-model="store.exercises[index].reps" label="Повторы" inputmode="numeric" />
+        </div>
 
-      <span :class="$style.goalLabel">🎯 Цель на следующий раз</span>
-      <div :class="$style.inputs">
-        <BaseTextField
-          v-model="store.exercises[index].nextWeight"
-          :label="exercise.assist ? 'Помощь' : 'Вес'"
-          inputmode="decimal"
-        />
-        <BaseTextField v-model="store.exercises[index].nextSets" label="Подходы" inputmode="numeric" />
-        <BaseTextField v-model="store.exercises[index].nextReps" label="Повторы" inputmode="numeric" />
+        <span :class="$style.goalLabel">🎯 Цель на следующий раз</span>
+        <div :class="$style.inputs">
+          <BaseTextField
+            v-model="store.exercises[index].nextWeight"
+            :label="exercise.assist ? 'Помощь' : 'Вес'"
+            inputmode="decimal"
+          />
+          <BaseTextField v-model="store.exercises[index].nextSets" label="Подходы" inputmode="numeric" />
+          <BaseTextField v-model="store.exercises[index].nextReps" label="Повторы" inputmode="numeric" />
+        </div>
       </div>
     </div>
 
@@ -133,6 +135,13 @@ async function onSubmit() {
 .typeActive {
   background: var(--accent);
   color: var(--accent-contrast);
+}
+
+.exercises {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--space-m);
+  align-items: start;
 }
 
 .exercise {

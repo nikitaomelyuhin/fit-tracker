@@ -36,19 +36,19 @@
         <BaseCard title="Неделя к неделе">
           <WeeklyComparison />
         </BaseCard>
-        <BaseCard title="Анализ">
+        <BaseCard title="Анализ" :class="$style.wide">
           <Analysis />
         </BaseCard>
-        <BaseCard title="Динамика веса">
+        <BaseCard title="Динамика веса" :class="$style.wide">
           <WeightTrendChart />
         </BaseCard>
-        <BaseCard title="Календарь веса">
+        <BaseCard title="Календарь веса" :class="$style.wide">
           <WeightHeatmap />
         </BaseCard>
-        <BaseCard title="Идеальный темп vs текущий">
+        <BaseCard title="Идеальный темп vs текущий" :class="$style.wide">
           <PaceForecast />
         </BaseCard>
-        <BaseCard title="История">
+        <BaseCard title="История" :class="$style.wide">
           <WeightHistory />
         </BaseCard>
       </template>
@@ -60,25 +60,28 @@
         <BaseCard title="Состав тела">
           <BodyComposition />
         </BaseCard>
-        <BaseCard title="Жир и мышцы во времени">
-          <BodyCompositionTrend />
-        </BaseCard>
         <BaseCard title="Цели по замерам">
           <MeasurementTargets />
         </BaseCard>
-        <BaseCard title="История замеров">
+        <BaseCard title="Жир и мышцы во времени" :class="$style.wide">
+          <BodyCompositionTrend />
+        </BaseCard>
+        <BaseCard title="История замеров" :class="$style.wide">
           <MeasurementHistory />
         </BaseCard>
       </template>
 
       <template v-else-if="activeTab === 'workouts'">
-        <BaseCard title="Записать тренировку">
+        <BaseCard title="Активность" :class="$style.wide">
+          <WorkoutVolume />
+        </BaseCard>
+        <BaseCard title="Записать тренировку" :class="$style.wide">
           <WorkoutSessionForm />
         </BaseCard>
-        <BaseCard title="Прогрессия весов">
+        <BaseCard title="Прогрессия весов" :class="$style.wide">
           <GymProgress />
         </BaseCard>
-        <BaseCard title="История тренировок">
+        <BaseCard title="История тренировок" :class="$style.wide">
           <WorkoutHistory />
         </BaseCard>
       </template>
@@ -107,6 +110,7 @@ import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { GymProgress } from '@/widgets/GymProgress'
+import { WorkoutVolume } from '@/widgets/WorkoutVolume'
 import { Analysis } from '@/widgets/Analysis'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'
@@ -163,7 +167,7 @@ async function onSignOut() {
 
 <style module>
 .dashboard {
-  max-width: 900px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: var(--space-l);
   display: flex;
@@ -216,14 +220,23 @@ async function onSignOut() {
 }
 
 .content {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   gap: var(--space-l);
+  align-items: stretch;
+}
+
+.wide {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 520px) {
   .dashboard {
     padding: var(--space-m);
+  }
+
+  .content {
+    grid-template-columns: 1fr;
   }
 }
 </style>

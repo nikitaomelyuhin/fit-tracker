@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
+import { estimateBodyFatMale } from '@/shared/lib/bodyfat'
+import { HEIGHT_CM } from '@/shared/config/profile'
 import { mapMeasurement } from '../helpers/mapMeasurement'
 import type { Measurement, MeasurementInput, MeasurementRow } from './types'
 
@@ -17,6 +19,31 @@ export const useMeasurementStore = defineStore('measurement', {
       [...state.items].sort((a, b) => (a.date > b.date ? 1 : -1)),
     byDateDesc: (state): Measurement[] =>
       [...state.items].sort((a, b) => (a.date < b.date ? 1 : -1)),
+    latest(): Measurement | null {
+      return this.byDateDesc[0] ?? null
+    },
+    /** Предыдущий замер до последнего — точка сравнения "было → стало". */
+    previous(): Measurement | null {
+      return this.byDateDesc[1] ?? null
+    },
+    latestBodyFatPct(): number | null {
+      return this.latest?.waist != null ? estimateBodyFatMale(this.latest.waist, HEIGHT_CM) : null
+    },
+    previousBodyFatPct(): number | null {
+      return this.previous?.waist != null
+        ? estimateBodyFatMale(this.previous.waist, HEIGHT_CM)
+        : null
+    },
+    /** Изменение % жира с прошлого замера: <0 — жира стало меньше. */
+    bodyFatDeltaPct(): number | null {
+      if (this.latestBodyFatPct == null || this.previousBodyFatPct == null) return null
+      return Math.round((this.latestBodyFatPct - this.previousBodyFatPct) * 10) / 10
+    },
+    /** Изменение талии с прошлого замера (см): <0 — талия уменьшилась. */
+    waistDeltaCm(): number | null {
+      if (this.latest?.waist == null || this.previous?.waist == null) return null
+      return Math.round((this.latest.waist - this.previous.waist) * 10) / 10
+    },
   },
 
   actions: {

@@ -32,6 +32,16 @@ export interface WorkoutSession {
   entries: Workout[]
 }
 
+/** Прогресс по упражнению: первая запись vs последняя (вес и тоннаж подхода). */
+export interface ExerciseProgress {
+  name: string
+  /** true — вес это помощь (гравитрон): меньше значит тяжелее. */
+  assist: boolean
+  weightDelta: number
+  /** Тоннаж = вес × подходы × повторы. null — не хватает данных (сеты/повторы) хоть в одной точке. */
+  volumeDelta: number | null
+}
+
 /** Строка из таблицы Supabase workouts. */
 export interface WorkoutRow {
   id: string

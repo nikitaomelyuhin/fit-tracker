@@ -1,8 +1,22 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
-import { exerciseNames, type WorkoutType } from '@/shared/config/workouts'
+import { WORKOUT_TEMPLATES, exerciseNames, type WorkoutType } from '@/shared/config/workouts'
+import { daysBetween, todayISO } from '@/shared/lib/date'
 import { mapWorkout } from '../helpers/mapWorkout'
-import type { Workout, WorkoutEntryInput, WorkoutRow, WorkoutSession } from './types'
+import type {
+  Workout,
+  WorkoutEntryInput,
+  WorkoutRow,
+  WorkoutSession,
+  ExerciseProgress,
+} from './types'
+
+const assistNames = new Set(
+  Object.values(WORKOUT_TEMPLATES)
+    .flat()
+    .filter((exercise) => exercise.assist)
+    .map((exercise) => exercise.name),
+)
 
 interface State {
   items: Workout[]
@@ -52,6 +66,61 @@ export const useWorkoutStore = defineStore('workout', {
           .sort((a, b) => (a.date < b.date ? 1 : -1))
         return matches[0] ?? null
       }
+    },
+
+    /**
+     * Прогресс по упражнению (первая запись vs последняя): вес и тоннаж подхода.
+     * Гравитрон (assist) даёт только вес — тоннаж там не показателен (вес это помощь).
+     */
+    exerciseProgress(): ExerciseProgress[] {
+      const byExercise = new Map<string, Workout[]>()
+      for (const item of this.items) {
+        if (item.weight == null) continue
+        const arr = byExercise.get(item.exercise) ?? []
+        arr.push(item)
+        byExercise.set(item.exercise, arr)
+      }
+
+      const volumeOf = (item: Workout): number | null =>
+        item.weight != null && item.sets != null && item.reps != null
+          ? item.weight * item.sets * item.reps
+          : null
+
+      const result: ExerciseProgress[] = []
+      for (const [name, entries] of byExercise) {
+        if (entries.length < 2) continue
+        entries.sort((a, b) => (a.date < b.date ? -1 : 1))
+        const first = entries[0]
+        const last = entries[entries.length - 1]
+        const assist = assistNames.has(name)
+        const firstVolume = volumeOf(first)
+        const lastVolume = volumeOf(last)
+        result.push({
+          name,
+          assist,
+          weightDelta: last.weight! - first.weight!,
+          volumeDelta: !assist && firstVolume != null && lastVolume != null
+            ? Math.round(lastVolume - firstVolume)
+            : null,
+        })
+      }
+      return result
+    },
+
+    /** Сколько дней прошло с последней тренировки. */
+    daysSinceLastSession(): number | null {
+      const last = this.byDateDesc[0]
+      return last ? daysBetween(last.date, todayISO()) : null
+    },
+
+    /** Тренировок за последние 28 дней и среднее в неделю. */
+    sessionsLast4Weeks(): number {
+      const since = todayISO()
+      return this.sessions.filter((session) => daysBetween(session.date, since) <= 28).length
+    },
+
+    avgSessionsPerWeek(): number {
+      return Math.round((this.sessionsLast4Weeks / 4) * 10) / 10
     },
   },
 

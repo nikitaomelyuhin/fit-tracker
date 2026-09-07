@@ -2,7 +2,16 @@
   <ul v-if="rows.length" :class="$style.list">
     <li v-for="row in rows" :key="row.name" :class="$style.row">
       <span :class="$style.name">{{ row.name }}</span>
-      <span :class="[$style.change, row.positive ? $style.good : $style.muted]">{{ row.text }}</span>
+      <span :class="$style.deltas">
+        <span :class="[$style.change, row.weightPositive ? $style.good : $style.muted]">{{
+          row.weightText
+        }}</span>
+        <span
+          v-if="row.volumeText"
+          :class="[$style.volume, row.volumePositive ? $style.good : $style.warn]"
+          >{{ row.volumeText }}</span
+        >
+      </span>
     </li>
   </ul>
   <p v-else :class="$style.empty">Нужно 2+ тренировки, чтобы показать прогрессию весов.</p>
@@ -11,46 +20,36 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useWorkoutStore } from '@/entities/Workout'
-import { WORKOUT_TEMPLATES } from '@/shared/config/workouts'
 
 const store = useWorkoutStore()
 
-const assistNames = new Set(
-  Object.values(WORKOUT_TEMPLATES)
-    .flat()
-    .filter((exercise) => exercise.assist)
-    .map((exercise) => exercise.name),
-)
-
 interface Row {
   name: string
-  text: string
-  positive: boolean
+  weightText: string
+  weightPositive: boolean
+  volumeText: string
+  volumePositive: boolean
 }
 
-const rows = computed<Row[]>(() => {
-  const byExercise = new Map<string, { date: string; weight: number }[]>()
-  for (const item of store.items) {
-    if (item.weight == null) continue
-    const arr = byExercise.get(item.exercise) ?? []
-    arr.push({ date: item.date, weight: item.weight })
-    byExercise.set(item.exercise, arr)
-  }
+function signed(value: number, digits = 1): string {
+  const rounded = Math.abs(value).toFixed(digits)
+  return value >= 0 ? `+${rounded}` : `−${rounded}`
+}
 
-  const result: Row[] = []
-  for (const [name, entries] of byExercise) {
-    if (entries.length < 2) continue
-    entries.sort((a, b) => (a.date < b.date ? -1 : 1))
-    const rawDelta = entries[entries.length - 1].weight - entries[0].weight
-    const assist = assistNames.has(name)
-    const positive = assist ? rawDelta < 0 : rawDelta > 0
-    const sign = rawDelta >= 0 ? '+' : '−'
-    const abs = Math.abs(rawDelta).toFixed(1)
-    const text = assist ? `помощь ${sign}${abs} кг` : `${sign}${abs} кг`
-    result.push({ name, text, positive })
-  }
-  return result
-})
+const rows = computed<Row[]>(() =>
+  store.exerciseProgress.map((entry) => {
+    const weightPositive = entry.assist ? entry.weightDelta < 0 : entry.weightDelta > 0
+    return {
+      name: entry.name,
+      weightText: entry.assist
+        ? `помощь ${signed(entry.weightDelta)} кг`
+        : `${signed(entry.weightDelta)} кг`,
+      weightPositive,
+      volumeText: entry.volumeDelta != null ? `тоннаж ${signed(entry.volumeDelta, 0)} кг` : '',
+      volumePositive: (entry.volumeDelta ?? 0) > 0,
+    }
+  }),
+)
 </script>
 
 <style module>
@@ -76,13 +75,28 @@ const rows = computed<Row[]>(() => {
   font-size: var(--font-size-m);
 }
 
+.deltas {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-m);
+  flex-shrink: 0;
+}
+
 .change {
   font-weight: 600;
   font-size: var(--font-size-m);
 }
 
+.volume {
+  font-size: var(--font-size-s);
+}
+
 .good {
   color: var(--success);
+}
+
+.warn {
+  color: var(--warning);
 }
 
 .muted {

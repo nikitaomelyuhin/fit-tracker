@@ -7,26 +7,28 @@
         </select>
       </div>
 
-      <div :class="$style.monthsRow">
-        <span :class="$style.dayspacer" />
-        <div :class="$style.months">
-          <span v-for="(label, index) in monthLabels" :key="index" :class="$style.month">{{ label }}</span>
+      <div :class="$style.scrollX">
+        <div :class="$style.monthsRow">
+          <span :class="$style.dayspacer" />
+          <div :class="$style.months">
+            <span v-for="(label, index) in monthLabels" :key="index" :class="$style.month">{{ label }}</span>
+          </div>
         </div>
-      </div>
 
-      <div :class="$style.body">
-        <div :class="$style.days">
-          <span v-for="(label, index) in DAY_LABELS" :key="index" :class="$style.dayLabel">{{ label }}</span>
-        </div>
-        <div :class="$style.grid" @mouseleave="hideTip">
-          <div v-for="(week, wi) in weeks" :key="wi" :class="$style.week">
-            <div
-              v-for="cell in week"
-              :key="cell.date"
-              :class="[$style.cell, $style[cell.cls]]"
-              @mouseenter="showTip($event, cell.date)"
-              @click="showTip($event, cell.date)"
-            />
+        <div :class="$style.body">
+          <div :class="$style.days">
+            <span v-for="(label, index) in DAY_LABELS" :key="index" :class="$style.dayLabel">{{ label }}</span>
+          </div>
+          <div :class="$style.grid" @mouseleave="hideTip">
+            <div v-for="(week, wi) in weeks" :key="wi" :class="$style.week">
+              <div
+                v-for="cell in week"
+                :key="cell.date"
+                :class="[$style.cell, $style[cell.cls]]"
+                @mouseenter="showTip($event, cell.date)"
+                @click="showTip($event, cell.date)"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -187,6 +189,11 @@ function hideTip() {
   font-size: var(--font-size-s);
 }
 
+.scrollX {
+  min-width: 0;
+  overflow-x: auto;
+}
+
 .monthsRow {
   display: flex;
   gap: 4px;
@@ -200,6 +207,24 @@ function hideTip() {
   flex: 1;
   display: flex;
   gap: 2px;
+}
+
+@media (max-width: 520px) {
+  .months {
+    min-width: 700px;
+  }
+
+  .grid {
+    min-width: 700px;
+  }
+
+  .dayspacer,
+  .days {
+    position: sticky;
+    left: 0;
+    background: var(--bg-surface);
+    z-index: 1;
+  }
 }
 
 .month {
