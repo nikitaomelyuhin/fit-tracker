@@ -18,6 +18,12 @@
         </div>
       </div>
 
+      <div :class="$style.intake">
+        <span :class="$style.label">Примерно съедено (по факту веса)</span>
+        <span v-if="intakeText" :class="$style.big">{{ intakeText }}</span>
+        <span v-else :class="$style.meta">рано — ещё сходит вода после старта</span>
+      </div>
+
       <ul :class="$style.list">
         <li v-for="week in recent" :key="week.weekStart" :class="$style.row">
           <span :class="$style.rowWeek">{{ weekLabel(week) }}</span>
@@ -28,7 +34,8 @@
 
       <p :class="$style.hint">
         Неделя считается со среды по вторник. Сравниваются средние за неделю — один день на весах
-        это вода и еда, а не жир.
+        это вода и еда, а не жир. Ккал — грубая оценка (расход по формуле ± изменение веса), не
+        замена дневнику питания, и не считается, пока не пройдёт вода после старта.
       </p>
     </template>
     <p v-else :class="$style.empty">
@@ -50,6 +57,17 @@ const store = useWeightLogStore()
 const current = computed(() => store.latestWeek)
 const previous = computed(() => store.previousWeek)
 const delta = computed(() => store.weekOverWeekDeltaKg)
+
+const intakeKcal = computed(() => store.estimatedIntakeKcal)
+const intakeDeltaKcal = computed(() => store.estimatedIntakeDeltaKcal)
+
+const intakeText = computed(() => {
+  const value = intakeKcal.value
+  if (value == null) return ''
+  const delta = intakeDeltaKcal.value
+  const deltaText = delta == null ? '' : ` (${delta >= 0 ? '+' : '−'}${Math.abs(delta)} к прошлой)`
+  return `~${value} ккал/день${deltaText}`
+})
 
 const recent = computed(() => [...store.weeklyAverages].reverse().slice(0, WEEKS_SHOWN))
 
@@ -155,6 +173,15 @@ function rowDelta(week: WeeklyAverage): string {
 .deltaHint {
   font-size: var(--font-size-s);
   color: var(--text-muted);
+}
+
+.intake {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-s) var(--space-m);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-m);
 }
 
 .list {

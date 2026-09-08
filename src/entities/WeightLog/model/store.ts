@@ -1,9 +1,9 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
 import { currentWeekStartISO, weekStartFor, todayISO } from '@/shared/lib/date'
-import { computeCleanStart, comparePaceWithPlan } from '@/shared/lib/pace'
+import { computeCleanStart, comparePaceWithPlan, maintenanceKcal } from '@/shared/lib/pace'
 import type { CleanStart, PaceVsPlan } from '@/shared/lib/pace'
-import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
+import { DAILY_KCAL_TARGET, KCAL_PER_KG } from '@/shared/config/pace'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { mapWeightLog } from '../helpers/mapWeightLog'
 import type { WeeklyAverage, WeightLog, WeightLogInput, WeightLogRow } from './types'
@@ -26,7 +26,10 @@ export const useWeightLogStore = defineStore('weightLog', {
       return this.byDateDesc[0] ?? null
     },
 
-    /** Недельные средние по возрастанию, с разницей к предыдущей неделе. */
+    /**
+     * Недельные средние по возрастанию, с разницей к прошлой неделе и оценкой
+     * съеденных калорий (по факту изменения веса, а не по записям питания).
+     */
     weeklyAverages(): WeeklyAverage[] {
       const buckets = new Map<string, { total: number; count: number }>()
       for (const row of this.byDateAsc) {
@@ -45,18 +48,40 @@ export const useWeightLogStore = defineStore('weightLog', {
           entries: bucket.count,
         }))
 
-      return weeks.map((week, index) => {
+      // Раньше конца окна адаптации изменение веса — в основном вода, а не
+      // энергобаланс. Оценка калорий по такой неделе была бы фикцией.
+      const baseline = this.cleanStart?.baselineDate ?? null
+
+      const withDelta = weeks.map((week, index) => {
         const previous = index > 0 ? weeks[index - 1] : null
+        const deltaKg = previous ? Math.round((week.averageKg - previous.averageKg) * 10) / 10 : null
+        const pastAdaptation = baseline != null && week.weekStart >= baseline
+        const estimatedIntakeKcal =
+          pastAdaptation && deltaKg != null
+            ? Math.round(maintenanceKcal(week.averageKg) + (deltaKg / 7) * KCAL_PER_KG)
+            : null
         return {
-          ...week,
-          deltaKg: previous ? Math.round((week.averageKg - previous.averageKg) * 10) / 10 : null,
+          weekStart: week.weekStart,
+          averageKg: week.averageKg,
+          entries: week.entries,
+          deltaKg,
           gapWeeks: previous
             ? Math.round(
                 (new Date(week.weekStart).getTime() - new Date(previous.weekStart).getTime()) /
                   (7 * 24 * 3600 * 1000),
               )
             : null,
+          estimatedIntakeKcal,
         }
+      })
+
+      return withDelta.map((week, index) => {
+        const previous = index > 0 ? withDelta[index - 1] : null
+        const estimatedIntakeDeltaKcal =
+          week.estimatedIntakeKcal != null && previous?.estimatedIntakeKcal != null
+            ? week.estimatedIntakeKcal - previous.estimatedIntakeKcal
+            : null
+        return { ...week, estimatedIntakeDeltaKcal }
       })
     },
 
@@ -84,6 +109,16 @@ export const useWeightLogStore = defineStore('weightLog', {
     /** Сдвиг недельного среднего к прошлой неделе (кг): <0 — снижение. */
     weekOverWeekDeltaKg(): number | null {
       return this.latestWeek?.deltaKg ?? null
+    },
+
+    /** Оценка съеденных ккал/день на последней неделе (null — рано, ещё вода). */
+    estimatedIntakeKcal(): number | null {
+      return this.latestWeek?.estimatedIntakeKcal ?? null
+    },
+
+    /** Изменение оценки калорий к прошлой неделе (ккал/день). */
+    estimatedIntakeDeltaKcal(): number | null {
+      return this.latestWeek?.estimatedIntakeDeltaKcal ?? null
     },
 
     /** Сглаженный текущий вес: недельное среднее вместо одного взвешивания. */

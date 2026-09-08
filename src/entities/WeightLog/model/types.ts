@@ -33,4 +33,11 @@ export interface WeeklyAverage {
   deltaKg: number | null
   /** Сколько недель прошло между этой и предыдущей неделей с данными. */
   gapWeeks: number | null
+  /**
+   * Оценка съеденных ккал/день по факту изменения веса (поддержка ± дефицит/профицит).
+   * null — либо нет предыдущей недели, либо неделя ещё внутри окна адаптации (вода).
+   */
+  estimatedIntakeKcal: number | null
+  /** Изменение оценки калорий к прошлой неделе (ккал/день). */
+  estimatedIntakeDeltaKcal: number | null
 }
