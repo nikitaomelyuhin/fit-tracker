@@ -3,6 +3,7 @@ import { supabase } from '@/shared/supabase'
 import { currentWeekStartISO, weekStartFor, todayISO } from '@/shared/lib/date'
 import { computeCleanStart, comparePaceWithPlan, maintenanceKcal } from '@/shared/lib/pace'
 import type { CleanStart, PaceVsPlan } from '@/shared/lib/pace'
+import { classifyDayDelta } from '@/shared/lib/dayDelta'
 import { DAILY_KCAL_TARGET, KCAL_PER_KG } from '@/shared/config/pace'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { mapWeightLog } from '../helpers/mapWeightLog'
@@ -163,6 +164,46 @@ export const useWeightLogStore = defineStore('weightLog', {
       const from = this.cleanStart?.baselineDate
       if (!from) return this.byDateAsc
       return this.byDateAsc.filter((row) => row.date >= from)
+    },
+
+    /**
+     * Классификация каждой записи по дневной дельте (та же логика, что красит
+     * ячейки календаря) — основа для ПП-стрика: «чёрная зона» (delta ≥ 0.7) его рвёт.
+     */
+    dailyDeltaClasses(): ReturnType<typeof classifyDayDelta>[] {
+      const items = this.byDateAsc
+      return items.map((item, index) => {
+        const prev = index > 0 ? items[index - 1].weight : null
+        const delta = prev != null ? Math.round((item.weight - prev) * 10) / 10 : null
+        return classifyDayDelta(delta)
+      })
+    },
+
+    /** Текущий ПП-стрик: подряд идущие записи без «чёрной» зоны, считая с конца. */
+    currentStreak(): number {
+      const classes = this.dailyDeltaClasses
+      let streak = 0
+      for (let i = classes.length - 1; i >= 0; i--) {
+        if (classes[i] === 'strong') break
+        streak++
+      }
+      return streak
+    },
+
+    /** Лучший ПП-стрик за всю историю. */
+    bestStreak(): number {
+      const classes = this.dailyDeltaClasses
+      let best = 0
+      let current = 0
+      for (const cls of classes) {
+        if (cls === 'strong') {
+          current = 0
+        } else {
+          current++
+          best = Math.max(best, current)
+        }
+      }
+      return best
     },
   },
 

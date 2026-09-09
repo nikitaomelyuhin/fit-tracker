@@ -1,8 +1,12 @@
 <template>
   <div ref="wrap" :class="$style.wrap">
     <div :class="$style.calendar">
-      <div v-if="years.length > 1" :class="$style.header">
-        <select v-model.number="selectedYear" :class="$style.yearSelect">
+      <div :class="$style.header">
+        <div :class="$style.streaks">
+          <span :class="$style.streak">🔥 {{ store.currentStreak }} дн.</span>
+          <span :class="$style.streakMuted">лучший — {{ store.bestStreak }} дн.</span>
+        </div>
+        <select v-if="years.length > 1" v-model.number="selectedYear" :class="$style.yearSelect">
           <option v-for="y in years" :key="y" :value="y">{{ y }}</option>
         </select>
       </div>
@@ -37,7 +41,7 @@
         <span :class="[$style.dot, $style.down]" />вниз
         <span :class="[$style.dot, $style.flat]" />стоит
         <span :class="[$style.dot, $style.up]" />вверх
-        <span :class="[$style.dot, $style.strong]" />сильно вверх
+        <span :class="[$style.dot, $style.strong]" />сильно вверх — рвёт ПП-стрик
       </div>
     </div>
 
@@ -52,6 +56,7 @@ import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { addDays, formatHuman } from '@/shared/lib/date'
+import { classifyDayDelta } from '@/shared/lib/dayDelta'
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 const DAY_LABELS = ['Пн', '', 'Ср', '', 'Пт', '', '']
@@ -99,11 +104,7 @@ function mondayOf(dateISO: string): string {
 function cellClass(date: string): string {
   const info = infoByDate.value.get(date)
   if (!info) return 'blank'
-  if (info.delta == null) return 'first'
-  if (info.delta <= -0.15) return 'down'
-  if (info.delta < 0.15) return 'flat'
-  if (info.delta < 0.7) return 'up'
-  return 'strong'
+  return classifyDayDelta(info.delta)
 }
 
 function describe(date: string): string {
@@ -177,7 +178,27 @@ function hideTip() {
 
 .header {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-m);
+}
+
+.streaks {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-s);
+  flex-wrap: wrap;
+}
+
+.streak {
+  font-size: var(--font-size-m);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.streakMuted {
+  font-size: var(--font-size-s);
+  color: var(--text-muted);
 }
 
 .yearSelect {
