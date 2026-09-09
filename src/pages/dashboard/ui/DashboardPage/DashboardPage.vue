@@ -63,9 +63,6 @@
         <BaseCard title="Цели по замерам">
           <MeasurementTargets />
         </BaseCard>
-        <BaseCard title="Жир и мышцы во времени" :class="$style.wide">
-          <BodyCompositionTrend />
-        </BaseCard>
         <BaseCard title="История замеров" :class="$style.wide">
           <MeasurementHistory />
         </BaseCard>
@@ -121,9 +118,6 @@ const WeightTrendChart = defineAsyncComponent(() =>
 )
 const PaceForecast = defineAsyncComponent(() =>
   import('@/widgets/PaceForecast').then((m) => m.PaceForecast),
-)
-const BodyCompositionTrend = defineAsyncComponent(() =>
-  import('@/widgets/BodyCompositionTrend').then((m) => m.BodyCompositionTrend),
 )
 
 type TabKey = 'weight' | 'measurements' | 'workouts'
