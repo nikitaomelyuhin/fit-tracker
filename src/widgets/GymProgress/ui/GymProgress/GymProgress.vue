@@ -14,7 +14,7 @@
       </span>
     </li>
   </ul>
-  <p v-else :class="$style.empty">Нужно 2+ тренировки, чтобы показать прогрессию весов.</p>
+  <p v-else :class="$style.empty">Нужно 3+ тренировки одного упражнения (первая — входная, не считается).</p>
 </template>
 
 <script setup lang="ts">

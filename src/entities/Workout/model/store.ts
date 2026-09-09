@@ -69,7 +69,9 @@ export const useWorkoutStore = defineStore('workout', {
     },
 
     /**
-     * Прогресс по упражнению (первая запись vs последняя): вес и тоннаж подхода.
+     * Прогресс по упражнению (вторая запись vs последняя): вес и тоннаж подхода.
+     * Самая первая тренировка упражнения — входная (нащупываешь рабочий вес),
+     * не показательна как база для сравнения, поэтому отсчёт от второй.
      * Гравитрон (assist) даёт только вес — тоннаж там не показателен (вес это помощь).
      */
     exerciseProgress(): ExerciseProgress[] {
@@ -88,9 +90,9 @@ export const useWorkoutStore = defineStore('workout', {
 
       const result: ExerciseProgress[] = []
       for (const [name, entries] of byExercise) {
-        if (entries.length < 2) continue
+        if (entries.length < 3) continue
         entries.sort((a, b) => (a.date < b.date ? -1 : 1))
-        const first = entries[0]
+        const first = entries[1]
         const last = entries[entries.length - 1]
         const assist = assistNames.has(name)
         const firstVolume = volumeOf(first)
