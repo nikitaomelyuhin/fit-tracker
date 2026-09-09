@@ -6,7 +6,6 @@
           <span :class="[$style.dot, $style['dot_' + row.status]]" />
           <span :class="$style.label">{{ row.label }}</span>
           <span :class="[$style.current, $style[row.status]]">{{ row.currentText }}</span>
-          <span v-if="row.adjustedText" :class="$style.adjusted">{{ row.adjustedText }}</span>
           <span :class="$style.target">цель {{ row.targetText }}</span>
         </div>
         <div v-if="row.value != null" :class="$style.track">
@@ -16,9 +15,6 @@
     </ul>
     <p :class="$style.hint">
       Полоска — прогресс к цели (пусто → в зоне). 🟢 в цели · 🟡 близко · 🔴 далеко.
-    </p>
-    <p v-if="hasAdjust" :class="$style.hint">
-      Обхваты «на рост» пересчитаны на сухой вес (поправка на жир сверх цели). Жир — ±{{ fatTolerance }}%.
     </p>
   </div>
 </template>
@@ -38,10 +34,9 @@ import {
 } from '@/shared/config/targets'
 
 type RowStatus = TargetStatus | 'muted'
-type MetricKey = 'fat' | 'waist' | 'shoulders' | 'chest' | 'arm' | 'forearm'
+type MetricKey = 'fat' | 'waist'
 
 const store = useMeasurementStore()
-const fatTolerance = BODY_FAT_TOLERANCE
 
 const latest = computed(() => store.byDateDesc[0] ?? null)
 
@@ -50,35 +45,18 @@ const bodyFat = computed(() => {
   return waist != null ? estimateBodyFatMale(waist, HEIGHT_CM) : null
 })
 
-const excessFat = computed(() =>
-  bodyFat.value != null ? Math.max(0, bodyFat.value - BODY_FAT_TARGET.max) : 0,
-)
-
 /** Самое раннее значение каждой метрики — стартовая точка для прогресса. */
 const starts = computed<Record<MetricKey, number | null>>(() => {
   const items = store.byDateAsc
-  const firstOf = (key: 'waist' | 'shoulders' | 'chest' | 'arm' | 'forearm'): number | null => {
-    for (const m of items) {
-      const v = m[key]
-      if (v != null) return v
-    }
-    return null
-  }
+  let waist: number | null = null
   let fat: number | null = null
   for (const m of items) {
     if (m.waist != null) {
-      fat = estimateBodyFatMale(m.waist, HEIGHT_CM)
-      break
+      waist ??= m.waist
+      fat ??= estimateBodyFatMale(m.waist, HEIGHT_CM)
     }
   }
-  return {
-    fat,
-    waist: firstOf('waist'),
-    shoulders: firstOf('shoulders'),
-    chest: firstOf('chest'),
-    arm: firstOf('arm'),
-    forearm: firstOf('forearm'),
-  }
+  return { fat, waist }
 })
 
 interface Def {
@@ -88,10 +66,6 @@ interface Def {
   unit: string
   target: MetricTarget
   tolerance: number
-}
-
-function round1(value: number): number {
-  return Math.round(value * 10) / 10
 }
 
 function progressPct(
@@ -114,26 +88,14 @@ const rows = computed(() => {
   const defs: Def[] = [
     { key: 'fat', label: 'Жир', value: bodyFat.value, unit: '%', target: BODY_FAT_TARGET, tolerance: BODY_FAT_TOLERANCE },
     { key: 'waist', label: 'Талия', value: m?.waist ?? null, unit: '', target: MEASUREMENT_TARGETS.waist, tolerance: MEASUREMENT_TOLERANCE },
-    { key: 'shoulders', label: 'Плечи', value: m?.shoulders ?? null, unit: '', target: MEASUREMENT_TARGETS.shoulders, tolerance: MEASUREMENT_TOLERANCE },
-    { key: 'chest', label: 'Грудь', value: m?.chest ?? null, unit: '', target: MEASUREMENT_TARGETS.chest, tolerance: MEASUREMENT_TOLERANCE },
-    { key: 'arm', label: 'Рука', value: m?.arm ?? null, unit: '', target: MEASUREMENT_TARGETS.arm, tolerance: MEASUREMENT_TOLERANCE },
-    { key: 'forearm', label: 'Предплечье', value: m?.forearm ?? null, unit: '', target: MEASUREMENT_TARGETS.forearm, tolerance: MEASUREMENT_TOLERANCE },
   ]
 
   return defs.map((def) => {
     if (def.value == null) {
-      return { key: def.key, label: def.label, value: null, status: 'muted' as RowStatus, currentText: '—', adjustedText: '', targetText: rangeText(def), pct: 0 }
+      return { key: def.key, label: def.label, value: null, status: 'muted' as RowStatus, currentText: '—', targetText: rangeText(def), pct: 0 }
     }
 
-    let evalValue = def.value
-    let adjustedText = ''
-    if (def.target.direction === 'up' && def.target.fatCoef && excessFat.value > 0) {
-      const adjusted = round1(def.value - def.target.fatCoef * excessFat.value)
-      evalValue = adjusted
-      adjustedText = `≈ ${adjusted} сух.`
-    }
-
-    const status: RowStatus = targetStatus(evalValue, def.target, def.tolerance)
+    const status: RowStatus = targetStatus(def.value, def.target, def.tolerance)
     const pct = progressPct(def.value, starts.value[def.key], def.target, status === 'reached')
 
     return {
@@ -142,14 +104,11 @@ const rows = computed(() => {
       value: def.value,
       status,
       currentText: `${def.value}${def.unit}`,
-      adjustedText,
       targetText: rangeText(def),
       pct: Math.round(pct),
     }
   })
 })
-
-const hasAdjust = computed(() => rows.value.some((row) => row.adjustedText !== ''))
 
 function rangeText(def: Def): string {
   return `${def.target.min}–${def.target.max}${def.unit}`
@@ -223,11 +182,6 @@ function rangeText(def: Def): string {
   color: var(--danger);
 }
 .muted {
-  color: var(--text-muted);
-}
-
-.adjusted {
-  font-size: var(--font-size-s);
   color: var(--text-muted);
 }
 

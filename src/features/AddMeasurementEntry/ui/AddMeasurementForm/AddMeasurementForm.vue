@@ -1,16 +1,12 @@
 <template>
   <form :class="$style['measurement-form']" @submit.prevent="onSubmit">
-    <BaseTextField v-model="store.form.date" label="Дата" type="date" />
-    <div :class="$style.grid">
+    <div :class="$style.row">
+      <BaseTextField v-model="store.form.date" label="Дата" type="date" />
       <BaseTextField v-model="store.form.waist" label="Талия" inputmode="decimal" placeholder="82" />
-      <BaseTextField v-model="store.form.chest" label="Грудь" inputmode="decimal" placeholder="108" />
-      <BaseTextField v-model="store.form.shoulders" label="Плечи" inputmode="decimal" placeholder="127" />
-      <BaseTextField v-model="store.form.arm" label="Рука" inputmode="decimal" placeholder="40" />
-      <BaseTextField v-model="store.form.forearm" label="Предплечье" inputmode="decimal" placeholder="31" />
     </div>
     <BaseTextField v-model="store.form.note" label="Заметка" placeholder="—" />
     <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
-      {{ store.submitting ? 'Сохраняю…' : 'Сохранить замеры' }}
+      {{ store.submitting ? 'Сохраняю…' : 'Сохранить замер' }}
     </BaseButton>
   </form>
 </template>
@@ -33,15 +29,15 @@ async function onSubmit() {
   gap: var(--space-m);
 }
 
-.grid {
+.row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: var(--space-m);
 }
 
 @media (max-width: 520px) {
-  .grid {
-    grid-template-columns: 1fr 1fr;
+  .row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

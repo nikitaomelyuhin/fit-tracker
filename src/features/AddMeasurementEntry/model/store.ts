@@ -6,10 +6,6 @@ import { toNumber } from '@/shared/lib/number'
 interface Form {
   date: string
   waist: string
-  chest: string
-  shoulders: string
-  arm: string
-  forearm: string
   note: string
 }
 
@@ -19,18 +15,15 @@ interface State {
 }
 
 function initialForm(): Form {
-  return { date: todayISO(), waist: '', chest: '', shoulders: '', arm: '', forearm: '', note: '' }
+  return { date: todayISO(), waist: '', note: '' }
 }
 
 export const useAddMeasurementStore = defineStore('addMeasurement', {
   state: (): State => ({ form: initialForm(), submitting: false }),
 
   getters: {
-    hasAnyValue: (state): boolean =>
-      [state.form.waist, state.form.chest, state.form.shoulders, state.form.arm, state.form.forearm]
-        .some((value) => value.trim() !== ''),
     canSubmit(): boolean {
-      return this.form.date !== '' && this.hasAnyValue
+      return this.form.date !== '' && this.form.waist.trim() !== ''
     },
   },
 
@@ -43,10 +36,6 @@ export const useAddMeasurementStore = defineStore('addMeasurement', {
       const ok = await measurements.upsert({
         date: this.form.date,
         waist: toNumber(this.form.waist),
-        chest: toNumber(this.form.chest),
-        shoulders: toNumber(this.form.shoulders),
-        arm: toNumber(this.form.arm),
-        forearm: toNumber(this.form.forearm),
         note: this.form.note.trim() || null,
       })
       this.submitting = false

@@ -67,10 +67,6 @@ export const useMeasurementStore = defineStore('measurement', {
           {
             date: input.date,
             waist: input.waist,
-            chest: input.chest,
-            shoulders: input.shoulders,
-            arm: input.arm,
-            forearm: input.forearm,
             note: input.note,
           },
           { onConflict: 'user_id,date' },

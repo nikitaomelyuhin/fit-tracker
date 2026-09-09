@@ -10,13 +10,15 @@ export interface Measurement {
   note: string | null
 }
 
+/**
+ * Ввод нового замера. Только талия — она кормит % жира (RFM) и это
+ * единственная метрика, которую сейчас отслеживаем; остальные обхваты
+ * (грудь/плечи/рука/предплечье) остаются в Measurement и MeasurementRow
+ * только чтобы корректно читать старые записи, но больше не собираются.
+ */
 export interface MeasurementInput {
   date: string
   waist: number | null
-  chest: number | null
-  shoulders: number | null
-  arm: number | null
-  forearm: number | null
   note: string | null
 }
 
