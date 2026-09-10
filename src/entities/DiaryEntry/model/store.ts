@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
-import { MEAL_TYPES } from '@/shared/config/nutrition'
+import { MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
 import { addDays, todayISO } from '@/shared/lib/date'
 import { mapDiaryEntry } from '../helpers/mapDiaryEntry'
 import type {
@@ -126,6 +126,46 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
         if (!days.length) return null
         return Math.round(days.reduce((sum, d) => sum + d.kcal, 0) / days.length)
       }
+    },
+
+    /** Среднее по последним N ЗАПИСАННЫМ дням (не календарным) — устойчивее к пропускам. */
+    averageOfLastLoggedDays(): (count: number) => number | null {
+      return (count: number) => {
+        const days = this.dailyKcalAsc.slice(-count)
+        if (!days.length) return null
+        return Math.round(days.reduce((sum, d) => sum + d.kcal, 0) / days.length)
+      }
+    },
+
+    /**
+     * Реальное среднее ккал/день, если записей достаточно (по умолчанию 7+),
+     * иначе — переданное значение по умолчанию (обычно статичная цель из конфига).
+     */
+    effectiveDailyKcal(): (fallback: number, minDays?: number) => number {
+      return (fallback: number, minDays = 7) => {
+        if (this.dailyKcalAsc.length < minDays) return fallback
+        return this.averageOfLastLoggedDays(21) ?? fallback
+      }
+    },
+
+    /**
+     * Средние ккал по времени суток — только по дням, где этот приём реально был
+     * записан (пропуски не тянут среднее к нулю). Только типы, где есть хоть 1 день.
+     */
+    avgKcalByMealType(): { mealType: MealType; avgKcal: number; days: number }[] {
+      const sums = new Map<MealType, { total: number; days: number }>()
+      for (const day of this.groupedByDateDesc) {
+        for (const meal of day.meals) {
+          const bucket = sums.get(meal.mealType) ?? { total: 0, days: 0 }
+          bucket.total += meal.totals.kcal
+          bucket.days += 1
+          sums.set(meal.mealType, bucket)
+        }
+      }
+      return MEAL_TYPES.filter((type) => sums.has(type)).map((type) => {
+        const bucket = sums.get(type)!
+        return { mealType: type, avgKcal: Math.round(bucket.total / bucket.days), days: bucket.days }
+      })
     },
   },
 

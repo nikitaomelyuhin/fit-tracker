@@ -27,7 +27,9 @@ export const useExportReportStore = defineStore('exportReport', {
 
       // Отделяем стартовый слив воды/гликогена от жира — иначе темп в начале завышен.
       const cleanStart = weightLog.cleanStart
-      const pace = weightLog.paceVsPlan
+      // Реальное среднее из дневника питания, когда данных достаточно — иначе статичная цель.
+      const effectiveKcal = diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET)
+      const pace = weightLog.paceVsPlan(effectiveKcal)
 
       const report = {
         exportedAt: new Date().toISOString(),
@@ -69,6 +71,8 @@ export const useExportReportStore = defineStore('exportReport', {
           ratePerWeekKg: cleanStart.ratePerWeek != null ? Math.round(cleanStart.ratePerWeek * 100) / 100 : null,
         },
         paceVsPlan: pace && {
+          usedDailyKcal: effectiveKcal,
+          usedRealKcal: effectiveKcal !== DAILY_KCAL_TARGET,
           planDays: pace.planDays,
           planEtaDate: pace.planEtaDate,
           actualEtaDays: pace.actualEtaDays != null ? Math.round(pace.actualEtaDays) : null,

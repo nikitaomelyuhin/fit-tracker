@@ -55,6 +55,7 @@
 import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
+import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { addDays, formatHuman, weekStartFor } from '@/shared/lib/date'
 import { classifyDayDelta } from '@/shared/lib/dayDelta'
 
@@ -62,6 +63,7 @@ const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'и�
 const DAY_LABELS = ['Пн', '', 'Ср', '', 'Пт', '', '']
 
 const store = useWeightLogStore()
+const diaryEntries = useDiaryEntryStore()
 
 const wrap = ref<HTMLElement | null>(null)
 const tip = ref<{ text: string; left: number; top: number } | null>(null)
@@ -124,14 +126,23 @@ function waterNote(date: string, weight: number): string {
   return deviation > 0 ? ` · вероятно вода +${grams}г` : ` · похоже, слив воды −${grams}г`
 }
 
+/** Ккал этого дня по дневнику (если вёлся) — сверить, совпадает ли скачок с реальным перееданием. */
+const kcalByDate = computed(() => new Map(diaryEntries.dailyKcalAsc.map((d) => [d.date, d.kcal])))
+
+function kcalNote(date: string): string {
+  const kcal = kcalByDate.value.get(date)
+  return kcal != null ? ` · по дневнику ${kcal} ккал` : ''
+}
+
 function describe(date: string): string {
   const info = infoByDate.value.get(date)
   const human = formatHuman(date)
   if (!info) return `${human} · нет записи`
   const water = waterNote(date, info.weight)
-  if (info.delta == null) return `${human} · ${info.weight} кг · первая запись${water}`
+  const kcal = kcalNote(date)
+  if (info.delta == null) return `${human} · ${info.weight} кг · первая запись${water}${kcal}`
   const sign = info.delta >= 0 ? '+' : '−'
-  return `${human} · ${info.weight} кг · было ${info.prev} · ${sign}${Math.abs(info.delta).toFixed(1)} кг${water}`
+  return `${human} · ${info.weight} кг · было ${info.prev} · ${sign}${Math.abs(info.delta).toFixed(1)} кг${water}${kcal}`
 }
 
 const weeks = computed(() => {

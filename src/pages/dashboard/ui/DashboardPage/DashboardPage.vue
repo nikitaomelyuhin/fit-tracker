@@ -112,6 +112,9 @@
             <BaseCard title="Баланс" :class="$style.wide">
               <EnergyBalance />
             </BaseCard>
+            <BaseCard title="Где утекают калории" :class="$style.wide">
+              <MealBreakdown />
+            </BaseCard>
           </template>
         </div>
       </div>
@@ -158,6 +161,7 @@ import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { GymProgress } from '@/widgets/GymProgress'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
 import { EnergyBalance } from '@/widgets/EnergyBalance'
+import { MealBreakdown } from '@/widgets/MealBreakdown'
 import { Analysis } from '@/widgets/Analysis'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'

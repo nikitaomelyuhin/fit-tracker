@@ -24,9 +24,14 @@
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
+import { useDiaryEntryStore } from '@/entities/DiaryEntry'
+import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 
 const weightLog = useWeightLogStore()
 const measurement = useMeasurementStore()
+const diaryEntries = useDiaryEntryStore()
+
+const effectiveKcal = computed(() => diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET))
 
 const first = computed(() => weightLog.byDateAsc[0] ?? null)
 const current = computed(() => weightLog.smoothedWeight)
@@ -65,7 +70,7 @@ const band = computed(() => {
   return 'стоит'
 })
 
-const paceDiff = computed(() => weightLog.paceVsPlan?.diffDays ?? null)
+const paceDiff = computed(() => weightLog.paceVsPlan(effectiveKcal.value)?.diffDays ?? null)
 
 const paceText = computed(() => {
   const d = paceDiff.value

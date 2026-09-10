@@ -3,7 +3,7 @@
     <template v-if="hasEnough">
       <div :class="$style.rows">
         <div :class="$style.row">
-          <span :class="$style.label"><span :class="$style.dotIdeal" />Идеальный (2200 ккал)</span>
+          <span :class="$style.label"><span :class="$style.dotIdeal" />Идеальный ({{ effectiveKcal }} ккал)</span>
           <span :class="$style.value">{{ idealText }}</span>
         </div>
         <div :class="$style.row">
@@ -35,6 +35,7 @@ import {
 import { CanvasRenderer } from 'echarts/renderers'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
+import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { projectIdealPace } from '@/shared/lib/pace'
@@ -44,14 +45,18 @@ import { cssToken } from '@/shared/lib/theme'
 use([LineChart, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, CanvasRenderer])
 
 const store = useWeightLogStore()
+const diaryEntries = useDiaryEntryStore()
 const goal = WEIGHT_GOAL_KG
 
 const start = computed(() => store.byDateAsc[0]?.weight ?? null)
 const current = computed(() => store.smoothedWeight)
 
+// Реальное среднее из дневника питания, когда данных достаточно — иначе статичная цель.
+const effectiveKcal = computed(() => diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET))
+
 // «Чистая» точка отсчёта — без стартового слива воды (см. cleanStart в сторе).
 const cleanStart = computed(() => store.cleanStart)
-const pace = computed(() => store.paceVsPlan)
+const pace = computed(() => store.paceVsPlan(effectiveKcal.value))
 
 // Прогноз показываем только когда после окна адаптации накопилось достаточно данных.
 const hasEnough = computed(() => Boolean(cleanStart.value?.ready))
@@ -59,7 +64,7 @@ const hasEnough = computed(() => Boolean(cleanStart.value?.ready))
 const ideal = computed(() => {
   const baseline = cleanStart.value
   if (!baseline || !baseline.ready) return []
-  return projectIdealPace(baseline.baselineWeight, goal, DAILY_KCAL_TARGET).map((point) => ({
+  return projectIdealPace(baseline.baselineWeight, goal, effectiveKcal.value).map((point) => ({
     day: point.day,
     weight: point.weight,
     date: addDays(baseline.baselineDate, point.day),
@@ -88,12 +93,17 @@ const projection = computed(() => {
   ]
 })
 
+const usingRealKcal = computed(() => effectiveKcal.value !== DAILY_KCAL_TARGET)
+
 const hint = computed(() => {
   const baseline = cleanStart.value
+  const kcalNote = usingRealKcal.value
+    ? ` Идеальная линия считается по твоему реальному среднему из дневника (${effectiveKcal.value} ккал), не по статичной цели.`
+    : ''
   if (!baseline || baseline.waterDropKg < 0.3) {
-    return 'Прогноз уточняется по мере взвешиваний — сейчас данных мало.'
+    return `Прогноз уточняется по мере взвешиваний — сейчас данных мало.${kcalNote}`
   }
-  return `Первые ${baseline.windowDays} дн. (~${baseline.waterDropKg.toFixed(1)} кг воды/гликогена) не в счёт — план и темп считаются от ${formatHuman(baseline.baselineDate)}.`
+  return `Первые ${baseline.windowDays} дн. (~${baseline.waterDropKg.toFixed(1)} кг воды/гликогена) не в счёт — план и темп считаются от ${formatHuman(baseline.baselineDate)}.${kcalNote}`
 })
 
 function daysFromToday(dateISO: string): number {

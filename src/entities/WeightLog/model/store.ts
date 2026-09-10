@@ -114,17 +114,23 @@ export const useWeightLogStore = defineStore('weightLog', {
       return this.cleanStart?.ratePerWeek ?? null
     },
 
-    /** Факт против плана: план отсчитывается от «чистой» точки, не от первого взвешивания. */
-    paceVsPlan(): PaceVsPlan | null {
-      const start = this.cleanStart
-      if (!start) return null
-      return comparePaceWithPlan({
-        cleanStart: start,
-        currentWeight: this.smoothedWeight,
-        today: todayISO(),
-        goalWeight: WEIGHT_GOAL_KG,
-        dailyKcal: DAILY_KCAL_TARGET,
-      })
+    /**
+     * Факт против плана: план отсчитывается от «чистой» точки, не от первого взвешивания.
+     * Принимает необязательное переопределение ккал/день (реальное среднее из дневника
+     * питания, когда его достаточно) — по умолчанию статичная цель из конфига.
+     */
+    paceVsPlan(): (dailyKcalOverride?: number) => PaceVsPlan | null {
+      return (dailyKcalOverride?: number) => {
+        const start = this.cleanStart
+        if (!start) return null
+        return comparePaceWithPlan({
+          cleanStart: start,
+          currentWeight: this.smoothedWeight,
+          today: todayISO(),
+          goalWeight: WEIGHT_GOAL_KG,
+          dailyKcal: dailyKcalOverride ?? DAILY_KCAL_TARGET,
+        })
+      }
     },
 
     /** Взвешивания после окна адаптации — на них считается тренд. */
