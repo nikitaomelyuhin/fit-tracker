@@ -82,6 +82,18 @@
           <WorkoutHistory />
         </BaseCard>
       </template>
+
+      <template v-else-if="activeTab === 'nutrition'">
+        <BaseCard title="Добавить в дневник">
+          <AddDiaryEntryForm />
+        </BaseCard>
+        <BaseCard title="Дневник" :class="$style.wide">
+          <DiaryHistory />
+        </BaseCard>
+        <BaseCard title="Продукты и блюда" :class="$style.wide">
+          <ManageProductsPanel />
+        </BaseCard>
+      </template>
     </div>
   </div>
 </template>
@@ -93,10 +105,14 @@ import { useSessionStore } from '@/entities/Session'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
 import { useWorkoutStore } from '@/entities/Workout'
+import { useProductStore } from '@/entities/Product'
+import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { AddWeightForm } from '@/features/AddWeightEntry'
 import { AddMeasurementForm } from '@/features/AddMeasurementEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
 import { ExportReportButton } from '@/features/ExportReport'
+import { AddDiaryEntryForm } from '@/features/AddDiaryEntry'
+import { ManageProductsPanel } from '@/features/ManageProducts'
 import { WeightHistory } from '@/widgets/WeightHistory'
 import { WeightGoal } from '@/widgets/WeightGoal'
 import { BodyComposition } from '@/widgets/BodyComposition'
@@ -108,6 +124,7 @@ import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { GymProgress } from '@/widgets/GymProgress'
 import { WorkoutVolume } from '@/widgets/WorkoutVolume'
+import { DiaryHistory } from '@/widgets/DiaryHistory'
 import { Analysis } from '@/widgets/Analysis'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'
@@ -120,12 +137,13 @@ const PaceForecast = defineAsyncComponent(() =>
   import('@/widgets/PaceForecast').then((m) => m.PaceForecast),
 )
 
-type TabKey = 'weight' | 'measurements' | 'workouts'
+type TabKey = 'weight' | 'measurements' | 'workouts' | 'nutrition'
 
 const tabs: { key: TabKey; label: string }[] = [
   { key: 'weight', label: 'Вес' },
   { key: 'measurements', label: 'Замеры' },
   { key: 'workouts', label: 'Тренировки' },
+  { key: 'nutrition', label: 'Питание' },
 ]
 
 const route = useRoute()
@@ -140,11 +158,15 @@ const session = useSessionStore()
 const weightLog = useWeightLogStore()
 const measurements = useMeasurementStore()
 const workouts = useWorkoutStore()
+const products = useProductStore()
+const diaryEntries = useDiaryEntryStore()
 
 function loadAll() {
   weightLog.load()
   measurements.load()
   workouts.load()
+  products.load()
+  diaryEntries.load()
 }
 
 function reloadPage() {

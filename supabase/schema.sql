@@ -45,20 +45,57 @@ create table if not exists public.workouts (
   created_at timestamptz not null default now()
 );
 
+-- ── Продукты (личная база БЖУ: базовые продукты и готовые блюда) ──
+-- unit='g'  → kcal/protein/fat/carbs заданы НА 100Г
+-- unit='piece' → заданы НА 1 ШТУКУ (яйца по категории С0/С1/С2 и т.п.)
+create table if not exists public.products (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  name       text not null,
+  category   text not null default 'base', -- 'base' | 'dish'
+  unit       text not null default 'g',    -- 'g' | 'piece'
+  kcal       numeric(6, 1) not null,
+  protein    numeric(5, 1) not null,
+  fat        numeric(5, 1) not null,
+  carbs      numeric(5, 1) not null,
+  created_at timestamptz not null default now()
+);
+
+-- ── Дневник питания (много строк на дату) ─────────────────
+-- kcal/protein/fat/carbs — снапшот на момент записи (не пересчитывается
+-- задним числом, если БЖУ продукта потом отредактируют).
+create table if not exists public.diary_entries (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  date         date not null,
+  product_id   uuid references public.products (id) on delete set null,
+  product_name text not null,
+  amount       numeric(6, 1) not null, -- граммы или штуки, смотря по unit продукта
+  kcal         numeric(6, 1) not null,
+  protein      numeric(5, 1) not null,
+  fat          numeric(5, 1) not null,
+  carbs        numeric(5, 1) not null,
+  created_at   timestamptz not null default now()
+);
+
 create index if not exists weight_logs_user_date_idx on public.weight_logs (user_id, date desc);
 create index if not exists measurements_user_date_idx on public.measurements (user_id, date desc);
 create index if not exists workouts_user_date_idx on public.workouts (user_id, date desc);
+create index if not exists products_user_name_idx on public.products (user_id, name);
+create index if not exists diary_entries_user_date_idx on public.diary_entries (user_id, date desc);
 
 -- ── RLS: каждый видит и меняет только своё ────────────────
 alter table public.weight_logs enable row level security;
 alter table public.measurements enable row level security;
 alter table public.workouts enable row level security;
+alter table public.products enable row level security;
+alter table public.diary_entries enable row level security;
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['weight_logs', 'measurements', 'workouts'] loop
+  foreach t in array array['weight_logs', 'measurements', 'workouts', 'products', 'diary_entries'] loop
     execute format('drop policy if exists own_rows_select on public.%I;', t);
     execute format('drop policy if exists own_rows_insert on public.%I;', t);
     execute format('drop policy if exists own_rows_update on public.%I;', t);
