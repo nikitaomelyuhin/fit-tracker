@@ -33,6 +33,43 @@
             <BaseCard title="Записать вес">
               <AddWeightForm />
             </BaseCard>
+            <BaseCard title="История" :class="$style.wide">
+              <WeightHistory />
+            </BaseCard>
+          </template>
+
+          <template v-else-if="activeTab === 'measurements'">
+            <BaseCard title="Записать замеры">
+              <AddMeasurementForm />
+            </BaseCard>
+            <BaseCard title="История замеров" :class="$style.wide">
+              <MeasurementHistory />
+            </BaseCard>
+          </template>
+
+          <template v-else-if="activeTab === 'workouts'">
+            <BaseCard title="Записать тренировку" :class="$style.wide">
+              <WorkoutSessionForm />
+            </BaseCard>
+            <BaseCard title="История тренировок" :class="$style.wide">
+              <WorkoutHistory />
+            </BaseCard>
+          </template>
+
+          <template v-else-if="activeTab === 'nutrition'">
+            <BaseCard title="Записать приём пищи" :class="$style.wide">
+              <AddDiaryEntryForm />
+            </BaseCard>
+            <BaseCard title="Рацион" :class="$style.wide">
+              <DiaryHistory />
+            </BaseCard>
+            <BaseCard title="База продуктов" :class="$style.wide">
+              <ManageProductsPanel />
+            </BaseCard>
+          </template>
+
+          <template v-else-if="activeTab === 'analytics'">
+            <p :class="$style.sectionTitle">Вес</p>
             <BaseCard title="Цель">
               <WeightGoal />
             </BaseCard>
@@ -54,56 +91,29 @@
             <BaseCard title="Идеальный темп vs текущий" :class="$style.wide">
               <PaceForecast />
             </BaseCard>
-            <BaseCard title="История" :class="$style.wide">
-              <WeightHistory />
-            </BaseCard>
-          </template>
 
-          <template v-else-if="activeTab === 'measurements'">
-            <BaseCard title="Записать замеры">
-              <AddMeasurementForm />
-            </BaseCard>
+            <p :class="$style.sectionTitle">Замеры</p>
             <BaseCard title="Состав тела">
               <BodyComposition />
             </BaseCard>
             <BaseCard title="Цели по замерам">
               <MeasurementTargets />
             </BaseCard>
-            <BaseCard title="История замеров" :class="$style.wide">
-              <MeasurementHistory />
-            </BaseCard>
-          </template>
 
-          <template v-else-if="activeTab === 'workouts'">
-            <BaseCard title="Активность" :class="$style.wide">
+            <p :class="$style.sectionTitle">Тренировки</p>
+            <BaseCard title="Активность">
               <WorkoutVolume />
-            </BaseCard>
-            <BaseCard title="Записать тренировку" :class="$style.wide">
-              <WorkoutSessionForm />
             </BaseCard>
             <BaseCard title="Прогрессия весов" :class="$style.wide">
               <GymProgress />
             </BaseCard>
-            <BaseCard title="История тренировок" :class="$style.wide">
-              <WorkoutHistory />
-            </BaseCard>
-          </template>
 
-          <template v-else-if="activeTab === 'nutrition'">
-            <BaseCard title="Записать приём пищи" :class="$style.wide">
-              <AddDiaryEntryForm />
-            </BaseCard>
+            <p :class="$style.sectionTitle">Питание</p>
             <BaseCard title="Ккал по дням" :class="$style.wide">
               <CalorieTrend />
             </BaseCard>
             <BaseCard title="Баланс" :class="$style.wide">
               <EnergyBalance />
-            </BaseCard>
-            <BaseCard title="Рацион" :class="$style.wide">
-              <DiaryHistory />
-            </BaseCard>
-            <BaseCard title="База продуктов" :class="$style.wide">
-              <ManageProductsPanel />
             </BaseCard>
           </template>
         </div>
@@ -167,13 +177,14 @@ const CalorieTrend = defineAsyncComponent(() =>
   import('@/widgets/CalorieTrend').then((m) => m.CalorieTrend),
 )
 
-type TabKey = 'weight' | 'measurements' | 'workouts' | 'nutrition'
+type TabKey = 'weight' | 'measurements' | 'workouts' | 'nutrition' | 'analytics'
 
 const tabs: { key: TabKey; label: string; icon: string }[] = [
   { key: 'weight', label: 'Вес', icon: '⚖️' },
   { key: 'measurements', label: 'Замеры', icon: '📏' },
   { key: 'workouts', label: 'Тренировки', icon: '🏋️' },
   { key: 'nutrition', label: 'Питание', icon: '🍽️' },
+  { key: 'analytics', label: 'Аналитика', icon: '📊' },
 ]
 
 const route = useRoute()
@@ -316,6 +327,22 @@ async function onSignOut() {
 
 .wide {
   grid-column: 1 / -1;
+}
+
+.sectionTitle {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-s);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  margin-top: var(--space-m);
+  padding-bottom: var(--space-xs);
+  border-bottom: 1px solid var(--border);
+}
+
+.sectionTitle:first-child {
+  margin-top: 0;
 }
 
 .bottomNav {

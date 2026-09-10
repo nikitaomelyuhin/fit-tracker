@@ -1,15 +1,11 @@
 <template>
   <div v-if="hasData" :class="$style.stats">
     <div :class="$style.stat">
-      <span :class="$style.label">Частота</span>
-      <span :class="$style.value">{{ frequencyText }}</span>
-    </div>
-    <div :class="$style.stat">
       <span :class="$style.label">С последней тренировки</span>
       <span :class="[$style.value, staleTone && $style.warn]">{{ sinceLastText }}</span>
     </div>
   </div>
-  <p v-else :class="$style.empty">Запиши пару тренировок — здесь появится статистика по частоте.</p>
+  <p v-else :class="$style.empty">Запиши пару тренировок — здесь появится статистика.</p>
 </template>
 
 <script setup lang="ts">
@@ -19,10 +15,6 @@ import { useWorkoutStore } from '@/entities/Workout'
 const store = useWorkoutStore()
 
 const hasData = computed(() => store.sessions.length > 0)
-
-const frequencyText = computed(
-  () => `${store.sessionsLast4Weeks} трен. за 4 нед · ~${store.avgSessionsPerWeek}/нед`,
-)
 
 const sinceLastText = computed(() => {
   const days = store.daysSinceLastSession

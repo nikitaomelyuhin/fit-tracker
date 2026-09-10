@@ -114,16 +114,6 @@ export const useWorkoutStore = defineStore('workout', {
       const last = this.byDateDesc[0]
       return last ? daysBetween(last.date, todayISO()) : null
     },
-
-    /** Тренировок за последние 28 дней и среднее в неделю. */
-    sessionsLast4Weeks(): number {
-      const since = todayISO()
-      return this.sessions.filter((session) => daysBetween(session.date, since) <= 28).length
-    },
-
-    avgSessionsPerWeek(): number {
-      return Math.round((this.sessionsLast4Weeks / 4) * 10) / 10
-    },
   },
 
   actions: {
