@@ -19,36 +19,91 @@
           </button>
         </div>
 
-        <BaseTextField
-          v-if="!store.selectedFor(row.key)"
-          :model-value="row.query"
-          label="Продукт"
-          placeholder="Начни вводить название…"
-          @update:model-value="store.setQuery(row.key, $event)"
-        />
-        <span v-else :class="$style.chosen">
-          выбрано: <b>{{ store.selectedFor(row.key)!.name }}</b>
-          <button type="button" :class="$style.clear" @click="store.clearRow(row.key)">✕</button>
-        </span>
+        <template v-if="row.custom">
+          <BaseTextField
+            :model-value="row.custom.name"
+            label="Название"
+            placeholder="Кусок пиццы"
+            @update:model-value="store.setCustomField(row.key, 'name', $event)"
+          />
+          <BaseSelect
+            :model-value="row.custom.unit"
+            label="Единица БЖУ ниже"
+            :options="unitOptions"
+            @update:model-value="store.setCustomField(row.key, 'unit', $event)"
+          />
+          <div :class="$style.grid4">
+            <BaseTextField
+              :model-value="row.custom.kcal"
+              label="Ккал"
+              inputmode="decimal"
+              @update:model-value="store.setCustomField(row.key, 'kcal', $event)"
+            />
+            <BaseTextField
+              :model-value="row.custom.protein"
+              label="Белки"
+              inputmode="decimal"
+              @update:model-value="store.setCustomField(row.key, 'protein', $event)"
+            />
+            <BaseTextField
+              :model-value="row.custom.fat"
+              label="Жиры"
+              inputmode="decimal"
+              @update:model-value="store.setCustomField(row.key, 'fat', $event)"
+            />
+            <BaseTextField
+              :model-value="row.custom.carbs"
+              label="Углеводы"
+              inputmode="decimal"
+              @update:model-value="store.setCustomField(row.key, 'carbs', $event)"
+            />
+          </div>
+          <button type="button" :class="$style.clear" @click="store.clearRow(row.key)">
+            ✕ отменить свой продукт, вернуться к поиску
+          </button>
+        </template>
 
-        <ul v-if="store.matchesFor(row.key).length" :class="$style.matches">
-          <li v-for="product in store.matchesFor(row.key)" :key="product.id">
-            <button type="button" :class="$style.match" @click="store.selectProduct(row.key, product)">
-              <span>{{ product.name }}</span>
-              <span :class="$style.matchMeta">{{ product.kcal }} ккал / {{ unitLabel(product) }}</span>
-            </button>
-          </li>
-        </ul>
-        <p v-else-if="!store.selectedFor(row.key) && row.query.trim()" :class="$style.empty">
-          Ничего не нашлось
-        </p>
+        <template v-else>
+          <BaseTextField
+            v-if="!store.selectedFor(row.key)"
+            :model-value="row.query"
+            label="Продукт"
+            placeholder="Начни вводить название…"
+            @update:model-value="store.setQuery(row.key, $event)"
+          />
+          <span v-else :class="$style.chosen">
+            выбрано: <b>{{ store.selectedFor(row.key)!.name }}</b>
+            <button type="button" :class="$style.clear" @click="store.clearRow(row.key)">✕</button>
+          </span>
+
+          <ul v-if="store.matchesFor(row.key).length" :class="$style.matches">
+            <li v-for="product in store.matchesFor(row.key)" :key="product.id">
+              <button type="button" :class="$style.match" @click="store.selectProduct(row.key, product)">
+                <span>{{ product.name }}</span>
+                <span :class="$style.matchMeta">{{ product.kcal }} ккал / {{ unitLabel(product) }}</span>
+              </button>
+            </li>
+          </ul>
+          <p v-else-if="!store.selectedFor(row.key) && row.query.trim()" :class="$style.empty">
+            Ничего не нашлось
+          </p>
+
+          <button
+            v-if="!store.selectedFor(row.key)"
+            type="button"
+            :class="$style.customLink"
+            @click="store.startCustom(row.key)"
+          >
+            + Свой продукт (разово, без сохранения в базу)
+          </button>
+        </template>
 
         <BaseTextField
-          v-if="store.selectedFor(row.key)"
+          v-if="store.resolvedFor(row.key)"
           :model-value="row.amount"
           :label="store.amountLabelFor(row.key)"
           inputmode="decimal"
-          :placeholder="store.selectedFor(row.key)!.unit === 'piece' ? '1' : '150'"
+          :placeholder="store.resolvedFor(row.key)!.unit === 'piece' ? '1' : '150'"
           @update:model-value="store.setAmount(row.key, $event)"
         />
 
@@ -83,6 +138,10 @@ import { useAddDiaryEntryStore } from '../../model/store'
 const store = useAddDiaryEntryStore()
 
 const mealTypeOptions = store.mealTypes.map((type) => ({ value: type, label: MEAL_TYPE_LABELS[type] }))
+const unitOptions = [
+  { value: 'g', label: 'Граммы (БЖУ на 100г)' },
+  { value: 'piece', label: 'Штуки (БЖУ на 1 шт.)' },
+]
 
 function unitLabel(product: Product): string {
   return product.unit === 'piece' ? 'шт.' : '100г'
@@ -162,6 +221,29 @@ async function onSubmit() {
   color: var(--text-muted);
   font-size: var(--font-size-s);
   cursor: pointer;
+  text-align: left;
+}
+
+.customLink {
+  background: transparent;
+  border: none;
+  color: var(--accent);
+  font-size: var(--font-size-s);
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+}
+
+.grid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-s);
+}
+
+@media (max-width: 520px) {
+  .grid4 {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .matches {

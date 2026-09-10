@@ -1,18 +1,40 @@
 import { defineStore } from 'pinia'
-import { useProductStore, type Product } from '@/entities/Product'
+import { useProductStore, type Product, type ProductUnit } from '@/entities/Product'
 import { useDiaryEntryStore, type DiaryEntryInput } from '@/entities/DiaryEntry'
 import { MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
 import { todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
+
+/** Разовый продукт, не сохраняется в базу — только для этой записи в дневник. */
+interface CustomDraft {
+  name: string
+  unit: ProductUnit
+  kcal: string
+  protein: string
+  fat: string
+  carbs: string
+}
 
 interface DishRow {
   key: string
   query: string
   selectedId: string | null
   amount: string
+  custom: CustomDraft | null
 }
 
 interface Totals {
+  kcal: number
+  protein: number
+  fat: number
+  carbs: number
+}
+
+/** Общий вид продукта (из базы или разового), достаточный для расчёта БЖУ. */
+interface Resolved {
+  productId: string | null
+  name: string
+  unit: ProductUnit
   kcal: number
   protein: number
   fat: number
@@ -27,7 +49,11 @@ interface State {
 }
 
 function emptyRow(): DishRow {
-  return { key: crypto.randomUUID(), query: '', selectedId: null, amount: '' }
+  return { key: crypto.randomUUID(), query: '', selectedId: null, amount: '', custom: null }
+}
+
+function emptyCustomDraft(): CustomDraft {
+  return { name: '', unit: 'g', kcal: '', protein: '', fat: '', carbs: '' }
 }
 
 export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
@@ -44,7 +70,7 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
     matchesFor(): (key: string) => Product[] {
       return (key: string) => {
         const row = this.rows.find((r) => r.key === key)
-        if (!row || row.selectedId) return []
+        if (!row || row.selectedId || row.custom) return []
         const products = useProductStore()
         return products.search(row.query).slice(0, 20)
       }
@@ -59,22 +85,44 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       }
     },
 
+    /** Приводит выбор строки (из базы или разовый) к общему виду для расчётов. */
+    resolvedFor(): (key: string) => Resolved | null {
+      return (key: string) => {
+        const row = this.rows.find((r) => r.key === key)
+        if (!row) return null
+
+        if (row.custom) {
+          const kcal = toNumber(row.custom.kcal)
+          const protein = toNumber(row.custom.protein)
+          const fat = toNumber(row.custom.fat)
+          const carbs = toNumber(row.custom.carbs)
+          const name = row.custom.name.trim()
+          if (!name || kcal == null || protein == null || fat == null || carbs == null) return null
+          return { productId: null, name, unit: row.custom.unit, kcal, protein, fat, carbs }
+        }
+
+        const product = this.selectedFor(key)
+        if (!product) return null
+        return { productId: product.id, ...product }
+      }
+    },
+
     amountLabelFor(): (key: string) => string {
-      return (key: string) => (this.selectedFor(key)?.unit === 'piece' ? 'Штук' : 'Граммы')
+      return (key: string) => (this.resolvedFor(key)?.unit === 'piece' ? 'Штук' : 'Граммы')
     },
 
     previewFor(): (key: string) => Totals | null {
       return (key: string) => {
         const row = this.rows.find((r) => r.key === key)
-        const product = this.selectedFor(key)
+        const resolved = this.resolvedFor(key)
         const amount = row ? toNumber(row.amount) : null
-        if (!product || amount == null) return null
-        const factor = product.unit === 'g' ? amount / 100 : amount
+        if (!resolved || amount == null) return null
+        const factor = resolved.unit === 'g' ? amount / 100 : amount
         return {
-          kcal: Math.round(product.kcal * factor),
-          protein: Math.round(product.protein * factor * 10) / 10,
-          fat: Math.round(product.fat * factor * 10) / 10,
-          carbs: Math.round(product.carbs * factor * 10) / 10,
+          kcal: Math.round(resolved.kcal * factor),
+          protein: Math.round(resolved.protein * factor * 10) / 10,
+          fat: Math.round(resolved.fat * factor * 10) / 10,
+          carbs: Math.round(resolved.carbs * factor * 10) / 10,
         }
       }
     },
@@ -137,12 +185,27 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       row.query = product.name
     },
 
+    /** Переключить строку в режим разового продукта (без сохранения в базу). */
+    startCustom(key: string) {
+      const row = this.rows.find((r) => r.key === key)
+      if (!row) return
+      row.selectedId = null
+      row.query = ''
+      row.custom = emptyCustomDraft()
+    },
+
+    setCustomField(key: string, field: keyof CustomDraft, value: string) {
+      const row = this.rows.find((r) => r.key === key)
+      if (row?.custom) row.custom[field] = value as never
+    },
+
     clearRow(key: string) {
       const row = this.rows.find((r) => r.key === key)
       if (!row) return
       row.selectedId = null
       row.query = ''
       row.amount = ''
+      row.custom = null
     },
 
     async submit(): Promise<boolean> {
@@ -150,15 +213,15 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
 
       const inputs: DiaryEntryInput[] = []
       for (const row of this.rows) {
-        const product = this.selectedFor(row.key)
+        const resolved = this.resolvedFor(row.key)
         const preview = this.previewFor(row.key)
         const amount = toNumber(row.amount)
-        if (!product || !preview || amount == null) continue
+        if (!resolved || !preview || amount == null) continue
         inputs.push({
           date: this.date,
           mealType: this.mealType,
-          productId: product.id,
-          productName: product.name,
+          productId: resolved.productId,
+          productName: resolved.name,
           amount,
           ...preview,
         })
