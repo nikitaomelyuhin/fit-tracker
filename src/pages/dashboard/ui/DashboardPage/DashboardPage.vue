@@ -96,6 +96,9 @@
             <BaseCard title="Ккал по дням" :class="$style.wide">
               <CalorieTrend />
             </BaseCard>
+            <BaseCard title="Баланс" :class="$style.wide">
+              <EnergyBalance />
+            </BaseCard>
             <BaseCard title="Рацион" :class="$style.wide">
               <DiaryHistory />
             </BaseCard>
@@ -148,6 +151,7 @@ import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { GymProgress } from '@/widgets/GymProgress'
 import { WorkoutVolume } from '@/widgets/WorkoutVolume'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
+import { EnergyBalance } from '@/widgets/EnergyBalance'
 import { Analysis } from '@/widgets/Analysis'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'

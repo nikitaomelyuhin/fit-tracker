@@ -55,7 +55,7 @@
 import { computed, ref } from 'vue'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { addDays, formatHuman } from '@/shared/lib/date'
+import { addDays, formatHuman, weekStartFor } from '@/shared/lib/date'
 import { classifyDayDelta } from '@/shared/lib/dayDelta'
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
@@ -107,13 +107,31 @@ function cellClass(date: string): string {
   return classifyDayDelta(info.delta)
 }
 
+/** Средний вес недели этой даты — сглаженный ориентир, чтобы отличить воду от тренда. */
+const weekAvgByWeekStart = computed(() => {
+  const map = new Map<string, number>()
+  for (const week of store.weeklyAverages) map.set(week.weekStart, week.averageKg)
+  return map
+})
+
+/** Отклонение факта от сглаженного тренда недели — грубая метка «вода/слив». */
+function waterNote(date: string, weight: number): string {
+  const weekAvg = weekAvgByWeekStart.value.get(weekStartFor(date))
+  if (weekAvg == null) return ''
+  const deviation = Math.round((weight - weekAvg) * 10) / 10
+  if (Math.abs(deviation) < 0.3) return ''
+  const grams = Math.round(Math.abs(deviation) * 1000)
+  return deviation > 0 ? ` · вероятно вода +${grams}г` : ` · похоже, слив воды −${grams}г`
+}
+
 function describe(date: string): string {
   const info = infoByDate.value.get(date)
   const human = formatHuman(date)
   if (!info) return `${human} · нет записи`
-  if (info.delta == null) return `${human} · ${info.weight} кг · первая запись`
+  const water = waterNote(date, info.weight)
+  if (info.delta == null) return `${human} · ${info.weight} кг · первая запись${water}`
   const sign = info.delta >= 0 ? '+' : '−'
-  return `${human} · ${info.weight} кг · было ${info.prev} · ${sign}${Math.abs(info.delta).toFixed(1)} кг`
+  return `${human} · ${info.weight} кг · было ${info.prev} · ${sign}${Math.abs(info.delta).toFixed(1)} кг${water}`
 }
 
 const weeks = computed(() => {

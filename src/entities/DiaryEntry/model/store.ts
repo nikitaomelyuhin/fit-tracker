@@ -118,6 +118,15 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
         return Math.round(recent.reduce((sum, d) => sum + d.kcal, 0) / recent.length)
       }
     },
+
+    /** Среднее ккал по дням с записями в диапазоне [from, to] включительно. null — нет данных. */
+    averageKcalInRange(): (from: string, to: string) => number | null {
+      return (from: string, to: string) => {
+        const days = this.dailyKcalAsc.filter((d) => d.date >= from && d.date <= to)
+        if (!days.length) return null
+        return Math.round(days.reduce((sum, d) => sum + d.kcal, 0) / days.length)
+      }
+    },
   },
 
   actions: {
