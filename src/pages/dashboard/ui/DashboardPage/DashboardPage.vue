@@ -133,7 +133,7 @@ import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { AddWeightForm } from '@/features/AddWeightEntry'
 import { AddMeasurementForm } from '@/features/AddMeasurementEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
-import { ExportReportButton } from '@/features/ExportReport'
+import { ExportReportButton, useExportReportStore } from '@/features/ExportReport'
 import { AddDiaryEntryForm } from '@/features/AddDiaryEntry'
 import { ManageProductsPanel } from '@/features/ManageProducts'
 import { WeightHistory } from '@/widgets/WeightHistory'
@@ -186,13 +186,19 @@ const measurements = useMeasurementStore()
 const workouts = useWorkoutStore()
 const products = useProductStore()
 const diaryEntries = useDiaryEntryStore()
+const exportReport = useExportReportStore()
 
-function loadAll() {
-  weightLog.load()
-  measurements.load()
-  workouts.load()
-  products.load()
-  diaryEntries.load()
+async function loadAll() {
+  await Promise.all([
+    weightLog.load(),
+    measurements.load(),
+    workouts.load(),
+    products.load(),
+    diaryEntries.load(),
+  ])
+  // Тихий локальный бэкап раз в день — только когда данные точно загружены,
+  // иначе первый в жизни бэкап мог бы сохраниться пустым.
+  exportReport.autoBackupIfDue()
 }
 
 function reloadPage() {

@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
 import { useWorkoutStore } from '@/entities/Workout'
+import { useProductStore } from '@/entities/Product'
+import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { estimateBodyFatMale } from '@/shared/lib/bodyfat'
 import { downloadJson } from '@/shared/lib/download'
 import { todayISO } from '@/shared/lib/date'
@@ -12,11 +14,13 @@ import { BODY_FAT_TARGET, MEASUREMENT_TARGETS } from '@/shared/config/targets'
 
 export const useExportReportStore = defineStore('exportReport', {
   actions: {
-    /** Собрать все данные в один JSON-отчёт и скачать (для передачи на анализ). */
-    download() {
+    /** Собрать все данные (включая БД продуктов и рацион) — и для анализа, и как полный бэкап. */
+    buildReport() {
       const weightLog = useWeightLogStore()
       const measurements = useMeasurementStore()
       const workouts = useWorkoutStore()
+      const products = useProductStore()
+      const diaryEntries = useDiaryEntryStore()
 
       // Недельные средние веса (среда → вторник) с разницей к прошлой неделе — главный показатель тренда.
       const weeklyAverages = weightLog.weeklyAverages
@@ -99,9 +103,49 @@ export const useExportReportStore = defineStore('exportReport', {
             })),
           })),
         },
+        products: products.byNameAsc.map((product) => ({
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          unit: product.unit,
+          kcal: product.kcal,
+          protein: product.protein,
+          fat: product.fat,
+          carbs: product.carbs,
+        })),
+        diary: {
+          entries: diaryEntries.byDateDesc.map((entry) => ({
+            date: entry.date,
+            mealType: entry.mealType,
+            productId: entry.productId,
+            productName: entry.productName,
+            amount: entry.amount,
+            kcal: entry.kcal,
+            protein: entry.protein,
+            fat: entry.fat,
+            carbs: entry.carbs,
+          })),
+        },
       }
 
-      downloadJson(`fit-tracker-report-${todayISO()}.json`, report)
+      return report
+    },
+
+    /** Собрать отчёт и скачать (для передачи на анализ или как бэкап). */
+    download() {
+      downloadJson(`fit-tracker-report-${todayISO()}.json`, this.buildReport())
+    },
+
+    /**
+     * Раз в день тихо скачивает полный бэкап в файл — подстраховка на случай
+     * проблем на стороне Supabase. Локально, без сервера, без напоминаний.
+     */
+    autoBackupIfDue() {
+      const key = 'fit-tracker:last-auto-backup'
+      const today = todayISO()
+      if (localStorage.getItem(key) === today) return
+      this.download()
+      localStorage.setItem(key, today)
     },
   },
 })
