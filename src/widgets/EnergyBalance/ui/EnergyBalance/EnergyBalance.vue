@@ -1,6 +1,10 @@
 <template>
   <div :class="$style.wrap">
-    <template v-if="ledger">
+    <p v-if="daysUntilReady > 0" :class="$style.empty">
+      Собираем данные — статистика появится через {{ daysUntilReady }} дн. (нужна неделя дневника,
+      чтобы шум по дням усреднился).
+    </p>
+    <template v-else-if="ledger">
       <div :class="[$style.debt, $style[debtTone]]">
         {{ debtText }}
       </div>
@@ -38,12 +42,22 @@ import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { maintenanceKcal } from '@/shared/lib/pace'
 import { KCAL_PER_KG } from '@/shared/config/pace'
-import { addDays, formatHuman, todayISO } from '@/shared/lib/date'
+import { addDays, daysBetween, formatHuman, todayISO } from '@/shared/lib/date'
+
+const MIN_DAYS = 7
 
 const weightLog = useWeightLogStore()
 const diaryEntries = useDiaryEntryStore()
 
 const windowStart = computed(() => diaryEntries.dailyKcalAsc[0]?.date ?? null)
+
+/** Пока не наберётся неделя дневника — цифры слишком шумные, чтобы показывать. */
+const daysUntilReady = computed(() => {
+  const start = windowStart.value
+  if (!start) return MIN_DAYS
+  const daysSinceStart = daysBetween(start, todayISO()) + 1
+  return Math.max(0, MIN_DAYS - daysSinceStart)
+})
 
 interface Ledger {
   loggedDays: number
