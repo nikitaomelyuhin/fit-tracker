@@ -1,7 +1,15 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
+import { MEAL_TYPES } from '@/shared/config/nutrition'
 import { mapDiaryEntry } from '../helpers/mapDiaryEntry'
-import type { DailyTotals, DiaryDayGroup, DiaryEntry, DiaryEntryInput, DiaryEntryRow } from './types'
+import type {
+  DailyTotals,
+  DiaryDayGroup,
+  DiaryEntry,
+  DiaryEntryInput,
+  DiaryEntryRow,
+  MealGroup,
+} from './types'
 
 interface State {
   items: DiaryEntry[]
@@ -17,6 +25,36 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10
 }
 
+function sumTotals(entries: DiaryEntry[]): DailyTotals {
+  const totals = entries.reduce((acc, entry) => {
+    acc.kcal += entry.kcal
+    acc.protein += entry.protein
+    acc.fat += entry.fat
+    acc.carbs += entry.carbs
+    return acc
+  }, emptyTotals())
+  return {
+    kcal: Math.round(totals.kcal),
+    protein: round1(totals.protein),
+    fat: round1(totals.fat),
+    carbs: round1(totals.carbs),
+  }
+}
+
+function toRow(input: DiaryEntryInput) {
+  return {
+    date: input.date,
+    meal_type: input.mealType,
+    product_id: input.productId,
+    product_name: input.productName,
+    amount: input.amount,
+    kcal: input.kcal,
+    protein: input.protein,
+    fat: input.fat,
+    carbs: input.carbs,
+  }
+}
+
 export const useDiaryEntryStore = defineStore('diaryEntry', {
   state: (): State => ({ items: [], loading: false, error: null }),
 
@@ -24,7 +62,7 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
     byDateDesc: (state): DiaryEntry[] =>
       [...state.items].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id.localeCompare(a.id))),
 
-    /** Записи, сгруппированные по дате (свежие сверху), с итогами БЖУ за день. */
+    /** Дни (свежие сверху) → приёмы пищи по времени суток → записи, с итогами на каждом уровне. */
     groupedByDateDesc(): DiaryDayGroup[] {
       const byDate = new Map<string, DiaryEntry[]>()
       for (const entry of this.items) {
@@ -35,24 +73,20 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
 
       return [...byDate.entries()]
         .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-        .map(([date, entries]) => {
-          const totals = entries.reduce((acc, entry) => {
-            acc.kcal += entry.kcal
-            acc.protein += entry.protein
-            acc.fat += entry.fat
-            acc.carbs += entry.carbs
-            return acc
-          }, emptyTotals())
-          return {
-            date,
-            entries,
-            totals: {
-              kcal: Math.round(totals.kcal),
-              protein: round1(totals.protein),
-              fat: round1(totals.fat),
-              carbs: round1(totals.carbs),
-            },
+        .map(([date, dayEntries]) => {
+          const byMeal = new Map<string, DiaryEntry[]>()
+          for (const entry of dayEntries) {
+            const arr = byMeal.get(entry.mealType) ?? []
+            arr.push(entry)
+            byMeal.set(entry.mealType, arr)
           }
+
+          const meals: MealGroup[] = MEAL_TYPES.filter((type) => byMeal.has(type)).map((type) => {
+            const entries = byMeal.get(type)!
+            return { mealType: type, entries, totals: sumTotals(entries) }
+          })
+
+          return { date, meals, totals: sumTotals(dayEntries) }
         })
     },
 
@@ -79,27 +113,23 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
     },
 
     async add(input: DiaryEntryInput): Promise<boolean> {
+      return this.addMany([input])
+    },
+
+    /** Сохранить несколько блюд одного приёма пищи одним запросом. */
+    async addMany(inputs: DiaryEntryInput[]): Promise<boolean> {
+      if (!inputs.length) return false
       this.error = null
       const { data, error } = await supabase
         .from('diary_entries')
-        .insert({
-          date: input.date,
-          product_id: input.productId,
-          product_name: input.productName,
-          amount: input.amount,
-          kcal: input.kcal,
-          protein: input.protein,
-          fat: input.fat,
-          carbs: input.carbs,
-        })
+        .insert(inputs.map(toRow))
         .select()
-        .single()
 
       if (error) {
         this.error = error.message
         return false
       }
-      this.items.push(mapDiaryEntry(data as DiaryEntryRow))
+      this.items.push(...(data as DiaryEntryRow[]).map(mapDiaryEntry))
       return true
     },
 

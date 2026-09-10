@@ -84,13 +84,13 @@
       </template>
 
       <template v-else-if="activeTab === 'nutrition'">
-        <BaseCard title="Добавить в дневник">
+        <BaseCard title="Записать приём пищи" :class="$style.wide">
           <AddDiaryEntryForm />
         </BaseCard>
-        <BaseCard title="Дневник" :class="$style.wide">
+        <BaseCard title="Рацион" :class="$style.wide">
           <DiaryHistory />
         </BaseCard>
-        <BaseCard title="Продукты и блюда" :class="$style.wide">
+        <BaseCard title="База продуктов" :class="$style.wide">
           <ManageProductsPanel />
         </BaseCard>
       </template>

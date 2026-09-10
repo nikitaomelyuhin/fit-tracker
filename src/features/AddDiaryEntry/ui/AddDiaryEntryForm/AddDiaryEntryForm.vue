@@ -1,56 +1,88 @@
 <template>
   <form :class="$style.form" @submit.prevent="onSubmit">
-    <BaseTextField v-model="store.date" label="Дата" type="date" />
-
-    <div :class="$style.search">
-      <BaseTextField
-        v-if="!store.selected"
-        v-model="store.query"
-        label="Продукт"
-        placeholder="Начни вводить название…"
-      />
-      <span v-if="store.selected" :class="$style.chosen">
-        выбрано: <b>{{ store.selected.name }}</b>
-        <button type="button" :class="$style.clear" @click="store.clearSelection">✕</button>
-      </span>
-      <ul v-else-if="store.matches.length" :class="$style.matches">
-        <li v-for="product in store.matches" :key="product.id">
-          <button type="button" :class="$style.match" @click="store.selectProduct(product)">
-            <span>{{ product.name }}</span>
-            <span :class="$style.matchMeta">{{ product.kcal }} ккал / {{ unitLabel(product) }}</span>
-          </button>
-        </li>
-      </ul>
-      <p v-else-if="store.query.trim()" :class="$style.empty">Ничего не нашлось</p>
+    <div :class="$style.row">
+      <BaseTextField v-model="store.date" label="Дата" type="date" />
+      <BaseSelect v-model="store.mealType" label="Время суток" :options="mealTypeOptions" />
     </div>
 
-    <BaseTextField
-      v-if="store.selected"
-      v-model="store.amount"
-      :label="store.amountLabel"
-      inputmode="decimal"
-      :placeholder="store.selected.unit === 'piece' ? '1' : '150'"
-    />
+    <div :class="$style.dishes">
+      <div v-for="row in store.rows" :key="row.key" :class="$style.dish">
+        <div :class="$style.dishHead">
+          <span :class="$style.dishLabel">Блюдо</span>
+          <button
+            v-if="store.rows.length > 1"
+            type="button"
+            :class="$style.removeRow"
+            @click="store.removeRow(row.key)"
+          >
+            Убрать
+          </button>
+        </div>
 
-    <div v-if="store.preview" :class="$style.preview">
-      <span>{{ store.preview.kcal }} ккал</span>
-      <span>Б {{ store.preview.protein }}</span>
-      <span>Ж {{ store.preview.fat }}</span>
-      <span>У {{ store.preview.carbs }}</span>
+        <BaseTextField
+          v-if="!store.selectedFor(row.key)"
+          :model-value="row.query"
+          label="Продукт"
+          placeholder="Начни вводить название…"
+          @update:model-value="store.setQuery(row.key, $event)"
+        />
+        <span v-else :class="$style.chosen">
+          выбрано: <b>{{ store.selectedFor(row.key)!.name }}</b>
+          <button type="button" :class="$style.clear" @click="store.clearRow(row.key)">✕</button>
+        </span>
+
+        <ul v-if="store.matchesFor(row.key).length" :class="$style.matches">
+          <li v-for="product in store.matchesFor(row.key)" :key="product.id">
+            <button type="button" :class="$style.match" @click="store.selectProduct(row.key, product)">
+              <span>{{ product.name }}</span>
+              <span :class="$style.matchMeta">{{ product.kcal }} ккал / {{ unitLabel(product) }}</span>
+            </button>
+          </li>
+        </ul>
+        <p v-else-if="!store.selectedFor(row.key) && row.query.trim()" :class="$style.empty">
+          Ничего не нашлось
+        </p>
+
+        <BaseTextField
+          v-if="store.selectedFor(row.key)"
+          :model-value="row.amount"
+          :label="store.amountLabelFor(row.key)"
+          inputmode="decimal"
+          :placeholder="store.selectedFor(row.key)!.unit === 'piece' ? '1' : '150'"
+          @update:model-value="store.setAmount(row.key, $event)"
+        />
+
+        <div v-if="store.previewFor(row.key)" :class="$style.preview">
+          <span>{{ store.previewFor(row.key)!.kcal }} ккал</span>
+          <span>Б {{ store.previewFor(row.key)!.protein }}</span>
+          <span>Ж {{ store.previewFor(row.key)!.fat }}</span>
+          <span>У {{ store.previewFor(row.key)!.carbs }}</span>
+        </div>
+      </div>
+    </div>
+
+    <BaseButton type="button" variant="ghost" @click="store.addRow">+ Ещё блюдо</BaseButton>
+
+    <div v-if="store.validRowsCount > 0" :class="$style.total">
+      Итого: {{ store.totalPreview.kcal }} ккал · Б{{ store.totalPreview.protein }}
+      Ж{{ store.totalPreview.fat }} У{{ store.totalPreview.carbs }}
     </div>
 
     <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
-      {{ store.submitting ? 'Сохраняю…' : 'Добавить в дневник' }}
+      {{ store.submitting ? 'Сохраняю…' : 'Сохранить приём пищи' }}
     </BaseButton>
   </form>
 </template>
 
 <script setup lang="ts">
 import type { Product } from '@/entities/Product'
-import { BaseButton, BaseTextField } from '@/shared/ui'
+import { MEAL_TYPE_LABELS } from '@/shared/config/nutrition'
+import { BaseButton, BaseSelect, BaseTextField } from '@/shared/ui'
 import { useAddDiaryEntryStore } from '../../model/store'
 
 const store = useAddDiaryEntryStore()
+
+const mealTypeOptions = store.mealTypes.map((type) => ({ value: type, label: MEAL_TYPE_LABELS[type] }))
 
 function unitLabel(product: Product): string {
   return product.unit === 'piece' ? 'шт.' : '100г'
@@ -68,10 +100,52 @@ async function onSubmit() {
   gap: var(--space-m);
 }
 
-.search {
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-m);
+}
+
+@media (max-width: 520px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.dishes {
   display: flex;
   flex-direction: column;
-  gap: var(--space-xs);
+  gap: var(--space-m);
+}
+
+.dish {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  padding: var(--space-m);
+  background: var(--bg-elevated);
+  border-radius: var(--radius-m);
+}
+
+.dishHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dishLabel {
+  font-size: var(--font-size-s);
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.removeRow {
+  background: transparent;
+  border: none;
+  color: var(--danger);
+  font-size: var(--font-size-s);
+  cursor: pointer;
 }
 
 .chosen {
@@ -109,7 +183,7 @@ async function onSubmit() {
   justify-content: space-between;
   gap: var(--space-s);
   padding: var(--space-s);
-  background: var(--bg-elevated);
+  background: var(--bg-surface);
   border: none;
   border-radius: var(--radius-s);
   color: var(--text-primary);
@@ -134,10 +208,19 @@ async function onSubmit() {
   flex-wrap: wrap;
   gap: var(--space-m);
   padding: var(--space-s) var(--space-m);
+  background: var(--bg-surface);
+  border-radius: var(--radius-m);
+  font-size: var(--font-size-s);
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.total {
+  padding: var(--space-s) var(--space-m);
   background: var(--bg-elevated);
   border-radius: var(--radius-m);
   font-size: var(--font-size-m);
+  font-weight: 700;
   color: var(--text-primary);
-  font-weight: 600;
 }
 </style>

@@ -68,6 +68,7 @@ create table if not exists public.diary_entries (
   id           uuid primary key default gen_random_uuid(),
   user_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
   date         date not null,
+  meal_type    text not null default 'other', -- 'breakfast' | 'lunch' | 'dinner' | 'snack'
   product_id   uuid references public.products (id) on delete set null,
   product_name text not null,
   amount       numeric(6, 1) not null, -- граммы или штуки, смотря по unit продукта
@@ -77,6 +78,9 @@ create table if not exists public.diary_entries (
   carbs        numeric(5, 1) not null,
   created_at   timestamptz not null default now()
 );
+
+-- На случай, если diary_entries уже была создана раньше без meal_type.
+alter table if exists public.diary_entries add column if not exists meal_type text not null default 'other';
 
 create index if not exists weight_logs_user_date_idx on public.weight_logs (user_id, date desc);
 create index if not exists measurements_user_date_idx on public.measurements (user_id, date desc);

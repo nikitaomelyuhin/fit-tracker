@@ -1,6 +1,9 @@
+import type { MealType } from '@/shared/config/nutrition'
+
 export interface DiaryEntry {
   id: string
   date: string // YYYY-MM-DD
+  mealType: MealType
   productId: string | null
   /** Снапшот имени продукта на момент записи (переживает удаление/переименование продукта). */
   productName: string
@@ -15,6 +18,7 @@ export interface DiaryEntry {
 
 export interface DiaryEntryInput {
   date: string
+  mealType: MealType
   productId: string | null
   productName: string
   amount: number
@@ -28,6 +32,7 @@ export interface DiaryEntryInput {
 export interface DiaryEntryRow {
   id: string
   date: string
+  meal_type: string
   product_id: string | null
   product_name: string
   amount: number | string
@@ -37,7 +42,7 @@ export interface DiaryEntryRow {
   carbs: number | string
 }
 
-/** Итоги БЖУ за день. */
+/** Итоги БЖУ. */
 export interface DailyTotals {
   kcal: number
   protein: number
@@ -45,8 +50,16 @@ export interface DailyTotals {
   carbs: number
 }
 
+/** Один приём пищи (время суток) внутри дня, с итогами. */
+export interface MealGroup {
+  mealType: MealType
+  entries: DiaryEntry[]
+  totals: DailyTotals
+}
+
+/** День целиком: приёмы пищи по времени суток + итог за день. */
 export interface DiaryDayGroup {
   date: string
-  entries: DiaryEntry[]
+  meals: MealGroup[]
   totals: DailyTotals
 }
