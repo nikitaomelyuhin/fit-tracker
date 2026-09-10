@@ -139,17 +139,5 @@ export const useExportReportStore = defineStore('exportReport', {
     download() {
       downloadJson(`fit-tracker-report-${todayISO()}.json`, this.buildReport())
     },
-
-    /**
-     * Раз в день тихо скачивает полный бэкап в файл — подстраховка на случай
-     * проблем на стороне Supabase. Локально, без сервера, без напоминаний.
-     */
-    autoBackupIfDue() {
-      const key = 'fit-tracker:last-auto-backup'
-      const today = todayISO()
-      if (localStorage.getItem(key) === today) return
-      this.download()
-      localStorage.setItem(key, today)
-    },
   },
 })
