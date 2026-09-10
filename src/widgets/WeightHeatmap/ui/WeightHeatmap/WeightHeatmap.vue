@@ -11,7 +11,7 @@
         </select>
       </div>
 
-      <div :class="$style.scrollX">
+      <div ref="scrollEl" :class="$style.scrollX">
         <div :class="$style.monthsRow">
           <span :class="$style.dayspacer" />
           <div :class="$style.months">
@@ -52,11 +52,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
-import { addDays, formatHuman, weekStartFor } from '@/shared/lib/date'
+import { addDays, formatHuman, todayISO, weekStartFor } from '@/shared/lib/date'
 import { classifyDayDelta } from '@/shared/lib/dayDelta'
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
@@ -66,6 +66,7 @@ const store = useWeightLogStore()
 const diaryEntries = useDiaryEntryStore()
 
 const wrap = ref<HTMLElement | null>(null)
+const scrollEl = ref<HTMLElement | null>(null)
 const tip = ref<{ text: string; left: number; top: number } | null>(null)
 
 const selectedYear = ref(dayjs().year())
@@ -187,6 +188,20 @@ function showTip(event: MouseEvent, date: string) {
 function hideTip() {
   tip.value = null
 }
+
+/** На мобильном (и вообще при переполнении) сразу показываем текущую дату, а не январь. */
+function scrollToToday() {
+  const el = scrollEl.value
+  if (!el || el.scrollWidth <= el.clientWidth) return
+  const today = todayISO()
+  const todayIndex = weeks.value.findIndex((week) => week.some((cell) => cell.date === today))
+  if (todayIndex === -1) return
+  const target = (todayIndex / weeks.value.length) * el.scrollWidth - el.clientWidth / 2
+  el.scrollLeft = Math.max(0, target)
+}
+
+onMounted(() => nextTick(scrollToToday))
+watch(selectedYear, () => nextTick(scrollToToday))
 </script>
 
 <style module>

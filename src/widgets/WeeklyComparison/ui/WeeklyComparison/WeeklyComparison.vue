@@ -1,34 +1,22 @@
 <template>
   <div :class="$style.weekly">
-    <template v-if="current">
-      <div :class="$style.headline">
-        <div :class="$style.side">
-          <span :class="$style.label">Эта неделя</span>
-          <span :class="$style.big">{{ current.averageKg }} кг</span>
-          <span :class="$style.meta">{{ weekLabel(current) }} · {{ entriesText(current) }}</span>
-        </div>
-        <div :class="[$style.delta, $style[deltaTone]]">
-          <span :class="$style.deltaValue">{{ deltaText }}</span>
-          <span :class="$style.deltaHint">{{ deltaHint }}</span>
-        </div>
-        <div :class="$style.side">
-          <span :class="$style.label">Прошлая неделя</span>
-          <span :class="$style.big">{{ previous ? previous.averageKg + ' кг' : '—' }}</span>
-          <span :class="$style.meta">{{ previous ? weekLabel(previous) : 'нет данных' }}</span>
-        </div>
-      </div>
-
+    <template v-if="recent.length">
       <ul :class="$style.list">
         <li v-for="week in recent" :key="week.weekStart" :class="$style.row">
-          <span :class="$style.rowWeek">{{ weekLabel(week) }}</span>
+          <div :class="$style.rowMain">
+            <span :class="$style.rowWeek">{{ weekLabel(week) }}</span>
+            <span v-if="isCurrent(week)" :class="$style.inProgress">
+              не закончена · {{ week.entries }} взв.
+            </span>
+          </div>
           <span :class="$style.rowValue">{{ week.averageKg }} кг</span>
-          <span :class="[$style.rowDelta, $style[tone(week.deltaKg)]]">{{ rowDelta(week) }}</span>
+          <span :class="[$style.rowDelta, $style[hintFor(week).tone]]">{{ hintFor(week).text }}</span>
         </li>
       </ul>
 
       <p :class="$style.hint">
-        Неделя считается со среды по вторник. Сравниваются средние за неделю — один день на весах
-        это вода и еда, а не жир.
+        Неделя считается со среды по вторник. Текущая неделя сравнивается с прошлой, даже если ещё
+        не закончена, — но такое сравнение шумнее: несколько взвешиваний вместо полных семи.
       </p>
     </template>
     <p v-else :class="$style.empty">
@@ -41,61 +29,42 @@
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import type { WeeklyAverage } from '@/entities/WeightLog'
-import { addDays, formatHuman } from '@/shared/lib/date'
+import { addDays, currentWeekStartISO, formatHuman } from '@/shared/lib/date'
 
 const WEEKS_SHOWN = 8
 
 const store = useWeightLogStore()
 
-const current = computed(() => store.latestWeek)
-const previous = computed(() => store.previousWeek)
-const delta = computed(() => store.weekOverWeekDeltaKg)
-
 const recent = computed(() => [...store.weeklyAverages].reverse().slice(0, WEEKS_SHOWN))
 
-const deltaText = computed(() => {
-  const value = delta.value
-  if (value == null) return '—'
-  if (value === 0) return '0 кг'
-  return value < 0 ? `−${Math.abs(value).toFixed(1)} кг` : `+${value.toFixed(1)} кг`
-})
-
-const deltaTone = computed(() => tone(delta.value))
-
-const deltaHint = computed(() => {
-  const value = delta.value
-  if (value == null) return 'первая неделя'
-  const gap = current.value?.gapWeeks ?? 1
-  if (gap > 1) return `пропуск ${gap - 1} нед.`
-  if (value <= -1.2) return 'очень быстро'
-  if (value <= -0.4) return 'в коридоре'
-  if (value < -0.1) return 'медленно'
-  if (value <= 0.1) return 'стоит'
-  return 'рост'
-})
-
-function tone(value: number | null): 'good' | 'warn' | 'muted' {
-  if (value == null) return 'muted'
-  if (value <= -1.2) return 'warn'
-  if (value < -0.1) return 'good'
-  if (value <= 0.1) return 'muted'
-  return 'warn'
+function isCurrent(week: WeeklyAverage): boolean {
+  return week.weekStart === currentWeekStartISO()
 }
 
 function weekLabel(week: WeeklyAverage): string {
   return `${formatHuman(week.weekStart)} – ${formatHuman(addDays(week.weekStart, 6))}`
 }
 
-function entriesText(week: WeeklyAverage): string {
-  return `${week.entries} взв.`
+interface Hint {
+  text: string
+  tone: 'good' | 'warn' | 'muted'
 }
 
-function rowDelta(week: WeeklyAverage): string {
-  if (week.deltaKg == null) return 'старт'
-  if (week.deltaKg === 0) return '0'
-  return week.deltaKg < 0
-    ? `−${Math.abs(week.deltaKg).toFixed(1)}`
-    : `+${week.deltaKg.toFixed(1)}`
+function hintFor(week: WeeklyAverage): Hint {
+  const value = week.deltaKg
+  if (value == null) return { text: 'старт', tone: 'muted' }
+
+  const sign = value < 0 ? '−' : value > 0 ? '+' : ''
+  const amount = `${sign}${Math.abs(value).toFixed(1)}`
+
+  if (week.gapWeeks != null && week.gapWeeks > 1) {
+    return { text: `${amount} · пропуск ${week.gapWeeks - 1} нед.`, tone: 'muted' }
+  }
+  if (value <= -1.2) return { text: `${amount} · очень быстро`, tone: 'warn' }
+  if (value <= -0.4) return { text: `${amount} · в коридоре`, tone: 'good' }
+  if (value < -0.1) return { text: `${amount} · медленно`, tone: 'good' }
+  if (value <= 0.1) return { text: `${amount} · стоит`, tone: 'muted' }
+  return { text: `${amount} · рост`, tone: 'warn' }
 }
 </script>
 
@@ -104,57 +73,6 @@ function rowDelta(week: WeeklyAverage): string {
   display: flex;
   flex-direction: column;
   gap: var(--space-m);
-}
-
-.headline {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: var(--space-m);
-}
-
-.side {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.label {
-  font-size: var(--font-size-s);
-  color: var(--text-secondary);
-}
-
-.big {
-  font-size: var(--font-size-l);
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.meta {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
-}
-
-.delta {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: var(--space-s) var(--space-m);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-m);
-  background: var(--bg-elevated);
-}
-
-.deltaValue {
-  font-size: var(--font-size-l);
-  font-weight: 700;
-}
-
-.deltaHint {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
 }
 
 .list {
@@ -166,29 +84,43 @@ function rowDelta(week: WeeklyAverage): string {
 
 .row {
   display: grid;
-  grid-template-columns: 1fr auto 56px;
+  grid-template-columns: 1fr auto auto;
   align-items: baseline;
   gap: var(--space-s);
-  padding: var(--space-xs) var(--space-s);
-  border-radius: var(--radius-s);
+  padding: var(--space-s) var(--space-m);
+  border-radius: var(--radius-m);
   background: var(--bg-elevated);
 }
 
+.rowMain {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .rowWeek {
-  font-size: var(--font-size-s);
+  font-size: var(--font-size-m);
   color: var(--text-secondary);
+}
+
+.inProgress {
+  font-size: var(--font-size-s);
+  color: var(--text-muted);
 }
 
 .rowValue {
   font-size: var(--font-size-m);
-  font-weight: 600;
+  font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .rowDelta {
   font-size: var(--font-size-s);
   font-weight: 600;
   text-align: right;
+  white-space: nowrap;
 }
 
 .good {
@@ -216,15 +148,13 @@ function rowDelta(week: WeeklyAverage): string {
 }
 
 @media (max-width: 520px) {
-  .headline {
-    grid-template-columns: 1fr 1fr;
+  .row {
+    grid-template-columns: 1fr auto;
   }
 
-  .delta {
+  .rowDelta {
     grid-column: 1 / -1;
-    order: -1;
-    flex-direction: row;
-    justify-content: space-between;
+    text-align: left;
   }
 }
 </style>
