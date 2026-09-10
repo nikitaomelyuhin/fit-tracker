@@ -2,21 +2,34 @@
   <div :class="$style.weekly">
     <template v-if="recent.length">
       <ul :class="$style.list">
-        <li v-for="week in recent" :key="week.weekStart" :class="$style.row">
-          <span :class="$style.rowWeek">
-            <span :class="$style.dateText">{{ weekLabel(week) }}</span>
-            <span v-if="isCurrent(week)" :class="$style.inProgress">
-              · не закончена, {{ week.entries }} взв.
-            </span>
-          </span>
-          <span :class="$style.rowValue">{{ week.averageKg }} кг</span>
-          <span :class="[$style.rowDelta, $style[hintFor(week).tone]]">{{ hintFor(week).text }}</span>
+        <li
+          v-for="week in recent"
+          :key="week.weekStart"
+          :class="[$style.row, isCurrent(week) && $style.rowInProgress]"
+        >
+          <div :class="$style.rowTop">
+            <span :class="$style.rowWeek">{{ weekLabel(week) }}</span>
+            <span :class="$style.rowValue">{{ week.averageKg }} кг</span>
+          </div>
+          <div :class="$style.rowBottom">
+            <template v-if="isCurrent(week)">
+              <span :class="$style.rowMeta">▸ ещё собирается · {{ week.entries }} взв.</span>
+            </template>
+            <template v-else-if="week.deltaKg == null">
+              <span :class="$style.rowMeta">старт отсчёта</span>
+            </template>
+            <template v-else>
+              <span :class="$style.rowMeta" />
+              <span :class="[$style.rowDelta, $style[hintFor(week).tone]]">{{ hintFor(week).text }}</span>
+            </template>
+          </div>
         </li>
       </ul>
 
       <p :class="$style.hint">
-        Неделя считается со среды по вторник. Текущая неделя сравнивается с прошлой, даже если ещё
-        не закончена, — но такое сравнение шумнее: несколько взвешиваний вместо полных семи.
+        Неделя считается со среды по вторник. Ярлык «быстро/медленно» ставится только законченным
+        неделям — на 2-3 взвешиваниях он был бы враньём, экстраполяция такого куска шумит слишком
+        сильно.
       </p>
     </template>
     <p v-else :class="$style.empty">
@@ -83,47 +96,59 @@ function hintFor(week: WeeklyAverage): Hint {
 }
 
 .row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: baseline;
-  gap: var(--space-s);
-  padding: var(--space-s) var(--space-m);
-  border-radius: var(--radius-m);
-  background: var(--bg-elevated);
-}
-
-.rowMain {
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 0;
+  padding: var(--space-s) var(--space-m);
+  border-radius: var(--radius-m);
+  background: var(--bg-elevated);
+  border: 1px solid transparent;
+}
+
+.rowInProgress {
+  border: 1px dashed var(--border);
+  background: transparent;
+}
+
+.rowTop {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-s);
+}
+
+.rowBottom {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-s);
+  min-height: 1.2em;
 }
 
 .rowWeek {
   font-size: var(--font-size-m);
   color: var(--text-secondary);
-}
-
-.dateText {
   white-space: nowrap;
 }
 
-.inProgress {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
-}
-
 .rowValue {
-  font-size: var(--font-size-m);
+  flex-shrink: 0;
+  min-width: 84px;
+  text-align: right;
+  font-size: var(--font-size-l);
   font-weight: 700;
   color: var(--text-primary);
   white-space: nowrap;
 }
 
+.rowMeta {
+  font-size: var(--font-size-s);
+  color: var(--text-muted);
+}
+
 .rowDelta {
   font-size: var(--font-size-s);
   font-weight: 600;
-  text-align: right;
   white-space: nowrap;
 }
 
@@ -149,16 +174,5 @@ function hintFor(week: WeeklyAverage): Hint {
   font-size: var(--font-size-m);
   text-align: center;
   padding: var(--space-l);
-}
-
-@media (max-width: 520px) {
-  .row {
-    grid-template-columns: 1fr auto;
-  }
-
-  .rowDelta {
-    grid-column: 1 / -1;
-    text-align: left;
-  }
 }
 </style>
