@@ -1,100 +1,123 @@
 <template>
   <div :class="$style.dashboard">
-    <nav :class="$style.tabs">
+    <div :class="$style.shell">
+      <aside :class="$style.sidebar">
+        <div :class="$style.sidebarBrand">Fit Tracker</div>
+        <nav :class="$style.sidebarNav">
+          <button
+            v-for="tab in tabs"
+            :key="tab.key"
+            :class="[$style.navItem, activeTab === tab.key && $style.navItemActive]"
+            @click="selectTab(tab.key)"
+          >
+            <span :class="$style.navIcon">{{ tab.icon }}</span>
+            {{ tab.label }}
+          </button>
+        </nav>
+      </aside>
+
+      <div :class="$style.main">
+        <header :class="$style.header">
+          <h1 :class="$style.brand">Fit Tracker</h1>
+          <div :class="$style.actions">
+            <ExportReportButton />
+            <BaseButton variant="ghost" @click="reloadPage">⟳ Обновить</BaseButton>
+            <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
+          </div>
+        </header>
+
+        <DashboardSummary />
+
+        <div :class="$style.content">
+          <template v-if="activeTab === 'weight'">
+            <BaseCard title="Записать вес">
+              <AddWeightForm />
+            </BaseCard>
+            <BaseCard title="Цель">
+              <WeightGoal />
+            </BaseCard>
+            <BaseCard title="Прогресс">
+              <ProgressSummary />
+            </BaseCard>
+            <BaseCard title="Неделя к неделе">
+              <WeeklyComparison />
+            </BaseCard>
+            <BaseCard title="Анализ" :class="$style.wide">
+              <Analysis />
+            </BaseCard>
+            <BaseCard title="Динамика веса" :class="$style.wide">
+              <WeightTrendChart />
+            </BaseCard>
+            <BaseCard title="Календарь веса" :class="$style.wide">
+              <WeightHeatmap />
+            </BaseCard>
+            <BaseCard title="Идеальный темп vs текущий" :class="$style.wide">
+              <PaceForecast />
+            </BaseCard>
+            <BaseCard title="История" :class="$style.wide">
+              <WeightHistory />
+            </BaseCard>
+          </template>
+
+          <template v-else-if="activeTab === 'measurements'">
+            <BaseCard title="Записать замеры">
+              <AddMeasurementForm />
+            </BaseCard>
+            <BaseCard title="Состав тела">
+              <BodyComposition />
+            </BaseCard>
+            <BaseCard title="Цели по замерам">
+              <MeasurementTargets />
+            </BaseCard>
+            <BaseCard title="История замеров" :class="$style.wide">
+              <MeasurementHistory />
+            </BaseCard>
+          </template>
+
+          <template v-else-if="activeTab === 'workouts'">
+            <BaseCard title="Активность" :class="$style.wide">
+              <WorkoutVolume />
+            </BaseCard>
+            <BaseCard title="Записать тренировку" :class="$style.wide">
+              <WorkoutSessionForm />
+            </BaseCard>
+            <BaseCard title="Прогрессия весов" :class="$style.wide">
+              <GymProgress />
+            </BaseCard>
+            <BaseCard title="История тренировок" :class="$style.wide">
+              <WorkoutHistory />
+            </BaseCard>
+          </template>
+
+          <template v-else-if="activeTab === 'nutrition'">
+            <BaseCard title="Записать приём пищи" :class="$style.wide">
+              <AddDiaryEntryForm />
+            </BaseCard>
+            <BaseCard title="Ккал по дням" :class="$style.wide">
+              <CalorieTrend />
+            </BaseCard>
+            <BaseCard title="Рацион" :class="$style.wide">
+              <DiaryHistory />
+            </BaseCard>
+            <BaseCard title="База продуктов" :class="$style.wide">
+              <ManageProductsPanel />
+            </BaseCard>
+          </template>
+        </div>
+      </div>
+    </div>
+
+    <nav :class="$style.bottomNav">
       <button
         v-for="tab in tabs"
         :key="tab.key"
-        :class="[$style.tab, activeTab === tab.key && $style.active]"
+        :class="[$style.bottomNavItem, activeTab === tab.key && $style.navItemActive]"
         @click="selectTab(tab.key)"
       >
-        {{ tab.label }}
+        <span :class="$style.navIcon">{{ tab.icon }}</span>
+        <span :class="$style.bottomNavLabel">{{ tab.label }}</span>
       </button>
     </nav>
-
-    <header :class="$style.header">
-      <h1 :class="$style.brand">Fit Tracker</h1>
-      <div :class="$style.actions">
-        <ExportReportButton />
-        <BaseButton variant="ghost" @click="reloadPage">⟳ Обновить</BaseButton>
-        <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
-      </div>
-    </header>
-
-    <DashboardSummary />
-
-    <div :class="$style.content">
-      <template v-if="activeTab === 'weight'">
-        <BaseCard title="Записать вес">
-          <AddWeightForm />
-        </BaseCard>
-        <BaseCard title="Цель">
-          <WeightGoal />
-        </BaseCard>
-        <BaseCard title="Прогресс">
-          <ProgressSummary />
-        </BaseCard>
-        <BaseCard title="Неделя к неделе">
-          <WeeklyComparison />
-        </BaseCard>
-        <BaseCard title="Анализ" :class="$style.wide">
-          <Analysis />
-        </BaseCard>
-        <BaseCard title="Динамика веса" :class="$style.wide">
-          <WeightTrendChart />
-        </BaseCard>
-        <BaseCard title="Календарь веса" :class="$style.wide">
-          <WeightHeatmap />
-        </BaseCard>
-        <BaseCard title="Идеальный темп vs текущий" :class="$style.wide">
-          <PaceForecast />
-        </BaseCard>
-        <BaseCard title="История" :class="$style.wide">
-          <WeightHistory />
-        </BaseCard>
-      </template>
-
-      <template v-else-if="activeTab === 'measurements'">
-        <BaseCard title="Записать замеры">
-          <AddMeasurementForm />
-        </BaseCard>
-        <BaseCard title="Состав тела">
-          <BodyComposition />
-        </BaseCard>
-        <BaseCard title="Цели по замерам">
-          <MeasurementTargets />
-        </BaseCard>
-        <BaseCard title="История замеров" :class="$style.wide">
-          <MeasurementHistory />
-        </BaseCard>
-      </template>
-
-      <template v-else-if="activeTab === 'workouts'">
-        <BaseCard title="Активность" :class="$style.wide">
-          <WorkoutVolume />
-        </BaseCard>
-        <BaseCard title="Записать тренировку" :class="$style.wide">
-          <WorkoutSessionForm />
-        </BaseCard>
-        <BaseCard title="Прогрессия весов" :class="$style.wide">
-          <GymProgress />
-        </BaseCard>
-        <BaseCard title="История тренировок" :class="$style.wide">
-          <WorkoutHistory />
-        </BaseCard>
-      </template>
-
-      <template v-else-if="activeTab === 'nutrition'">
-        <BaseCard title="Записать приём пищи" :class="$style.wide">
-          <AddDiaryEntryForm />
-        </BaseCard>
-        <BaseCard title="Рацион" :class="$style.wide">
-          <DiaryHistory />
-        </BaseCard>
-        <BaseCard title="База продуктов" :class="$style.wide">
-          <ManageProductsPanel />
-        </BaseCard>
-      </template>
-    </div>
   </div>
 </template>
 
@@ -136,14 +159,17 @@ const WeightTrendChart = defineAsyncComponent(() =>
 const PaceForecast = defineAsyncComponent(() =>
   import('@/widgets/PaceForecast').then((m) => m.PaceForecast),
 )
+const CalorieTrend = defineAsyncComponent(() =>
+  import('@/widgets/CalorieTrend').then((m) => m.CalorieTrend),
+)
 
 type TabKey = 'weight' | 'measurements' | 'workouts' | 'nutrition'
 
-const tabs: { key: TabKey; label: string }[] = [
-  { key: 'weight', label: 'Вес' },
-  { key: 'measurements', label: 'Замеры' },
-  { key: 'workouts', label: 'Тренировки' },
-  { key: 'nutrition', label: 'Питание' },
+const tabs: { key: TabKey; label: string; icon: string }[] = [
+  { key: 'weight', label: 'Вес', icon: '⚖️' },
+  { key: 'measurements', label: 'Замеры', icon: '📏' },
+  { key: 'workouts', label: 'Тренировки', icon: '🏋️' },
+  { key: 'nutrition', label: 'Питание', icon: '🍽️' },
 ]
 
 const route = useRoute()
@@ -186,6 +212,67 @@ async function onSignOut() {
   max-width: 1600px;
   margin: 0 auto;
   padding: var(--space-l);
+}
+
+.shell {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-l);
+}
+
+.sidebar {
+  flex: 0 0 220px;
+  position: sticky;
+  top: var(--space-l);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+  padding: var(--space-m);
+}
+
+.sidebarBrand {
+  font-size: var(--font-size-l);
+  font-weight: 700;
+  color: var(--text-primary);
+  padding: 0 var(--space-s);
+}
+
+.sidebarNav {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-s);
+  padding: var(--space-s) var(--space-m);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-s);
+  color: var(--text-secondary);
+  font-size: var(--font-size-m);
+  font-weight: 600;
+  text-align: left;
+}
+
+.navIcon {
+  font-size: 1.1em;
+  line-height: 1;
+}
+
+.navItemActive {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-l);
@@ -210,31 +297,6 @@ async function onSignOut() {
   color: var(--text-primary);
 }
 
-.tabs {
-  display: flex;
-  gap: var(--space-xs);
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-m);
-  padding: var(--space-xs);
-}
-
-.tab {
-  flex: 1;
-  padding: var(--space-s) var(--space-m);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-s);
-  color: var(--text-secondary);
-  font-size: var(--font-size-m);
-  font-weight: 600;
-}
-
-.active {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
 .content {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
@@ -246,9 +308,53 @@ async function onSignOut() {
   grid-column: 1 / -1;
 }
 
+.bottomNav {
+  display: none;
+}
+
+.bottomNavLabel {
+  font-size: 10px;
+}
+
+@media (max-width: 860px) {
+  .sidebar {
+    display: none;
+  }
+
+  .dashboard {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  .bottomNav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    background: var(--bg-surface);
+    border-top: 1px solid var(--border);
+    padding: var(--space-xs) var(--space-xs) calc(var(--space-xs) + env(safe-area-inset-bottom));
+  }
+
+  .bottomNavItem {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--space-xs);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-s);
+    color: var(--text-secondary);
+  }
+}
+
 @media (max-width: 520px) {
   .dashboard {
     padding: var(--space-m);
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 
   .content {

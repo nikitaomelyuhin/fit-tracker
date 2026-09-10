@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
 import { MEAL_TYPES } from '@/shared/config/nutrition'
+import { addDays, todayISO } from '@/shared/lib/date'
 import { mapDiaryEntry } from '../helpers/mapDiaryEntry'
 import type {
   DailyTotals,
@@ -95,6 +96,26 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
       return (date: string) => {
         const group = this.groupedByDateDesc.find((g) => g.date === date)
         return group?.totals ?? emptyTotals()
+      }
+    },
+
+    /**
+     * Ккал по дням, по возрастанию даты — только дни, где реально есть запись.
+     * Пропуски (не вёл дневник) просто не создают точку, а не считаются нулём.
+     */
+    dailyKcalAsc(): { date: string; kcal: number }[] {
+      return [...this.groupedByDateDesc]
+        .map((day) => ({ date: day.date, kcal: day.totals.kcal }))
+        .sort((a, b) => (a.date < b.date ? -1 : 1))
+    },
+
+    /** Среднее ккал за последние N календарных дней, только по дням с записями. */
+    recentAverageKcal(): (days: number) => number | null {
+      return (days: number) => {
+        const since = addDays(todayISO(), -(days - 1))
+        const recent = this.dailyKcalAsc.filter((d) => d.date >= since)
+        if (!recent.length) return null
+        return Math.round(recent.reduce((sum, d) => sum + d.kcal, 0) / recent.length)
       }
     },
   },

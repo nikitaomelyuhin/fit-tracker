@@ -12,13 +12,17 @@
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
+import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
+import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { MEASUREMENT_TARGETS } from '@/shared/config/targets'
+import { todayISO } from '@/shared/lib/date'
 
 type Tone = 'good' | 'warn' | 'muted'
 
 const weightLog = useWeightLogStore()
 const measurement = useMeasurementStore()
+const diaryEntries = useDiaryEntryStore()
 
 const weight = computed(
   () => weightLog.currentWeekAverage ?? weightLog.byDateDesc[0]?.weight ?? null,
@@ -69,6 +73,12 @@ const waistSub = computed(() =>
   waistDelta.value != null ? `${signed(waistDelta.value, 0)} см · ${waistTargetText}` : waistTargetText,
 )
 
+/** Ккал сегодня — только факт + цель, без цветовой оценки: день может быть ещё не дописан. */
+const todayKcal = computed(() => {
+  const totals = diaryEntries.totalsForDate(todayISO())
+  return totals.kcal > 0 ? totals.kcal : null
+})
+
 const tiles = computed(() => [
   {
     label: 'Вес (ср/нед)',
@@ -99,13 +109,19 @@ const tiles = computed(() => [
     sub: waistSub.value,
     tone: waistTone.value,
   },
+  {
+    label: 'Ккал сегодня',
+    value: todayKcal.value != null ? `${todayKcal.value}` : '—',
+    sub: `цель ${DAILY_KCAL_TARGET}`,
+    tone: 'muted' as Tone,
+  },
 ])
 </script>
 
 <style module>
 .summary {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--space-s);
 }
 
@@ -147,9 +163,4 @@ const tiles = computed(() => [
   color: var(--text-muted);
 }
 
-@media (max-width: 520px) {
-  .summary {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
 </style>
