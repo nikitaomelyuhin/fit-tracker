@@ -101,9 +101,6 @@
             </BaseCard>
 
             <p :class="$style.sectionTitle">Тренировки</p>
-            <BaseCard title="Активность">
-              <WorkoutVolume />
-            </BaseCard>
             <BaseCard title="Прогрессия весов" :class="$style.wide">
               <GymProgress />
             </BaseCard>
@@ -159,7 +156,6 @@ import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { GymProgress } from '@/widgets/GymProgress'
-import { WorkoutVolume } from '@/widgets/WorkoutVolume'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
 import { EnergyBalance } from '@/widgets/EnergyBalance'
 import { Analysis } from '@/widgets/Analysis'

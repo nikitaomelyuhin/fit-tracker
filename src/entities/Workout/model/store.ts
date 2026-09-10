@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
 import { WORKOUT_TEMPLATES, exerciseNames, type WorkoutType } from '@/shared/config/workouts'
-import { daysBetween, todayISO } from '@/shared/lib/date'
 import { mapWorkout } from '../helpers/mapWorkout'
 import type {
   Workout,
@@ -107,12 +106,6 @@ export const useWorkoutStore = defineStore('workout', {
         })
       }
       return result
-    },
-
-    /** Сколько дней прошло с последней тренировки. */
-    daysSinceLastSession(): number | null {
-      const last = this.byDateDesc[0]
-      return last ? daysBetween(last.date, todayISO()) : null
     },
   },
 
