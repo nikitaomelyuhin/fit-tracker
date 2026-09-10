@@ -81,7 +81,7 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
 
     /** Итог по всем валидным строкам — превью «сколько получится» перед сохранением. */
     totalPreview(): Totals {
-      return this.rows.reduce(
+      const sum = this.rows.reduce(
         (acc: Totals, row) => {
           const preview = this.previewFor(row.key)
           if (!preview) return acc
@@ -93,6 +93,12 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
         },
         { kcal: 0, protein: 0, fat: 0, carbs: 0 },
       )
+      return {
+        kcal: Math.round(sum.kcal),
+        protein: Math.round(sum.protein * 10) / 10,
+        fat: Math.round(sum.fat * 10) / 10,
+        carbs: Math.round(sum.carbs * 10) / 10,
+      }
     },
 
     validRowsCount(): number {
