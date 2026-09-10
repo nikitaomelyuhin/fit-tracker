@@ -14,7 +14,7 @@ select cron.schedule(
   '0 3 * * *',
   $$
   select net.http_post(
-    url := 'https://<PROJECT_REF>.functions.supabase.co/backup-export',
+    url := 'https://<PROJECT_REF>.supabase.co/functions/v1/backup-export',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-webhook-secret', '<BACKUP_WEBHOOK_SECRET>'
