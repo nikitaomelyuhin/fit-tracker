@@ -3,12 +3,12 @@
     <template v-if="recent.length">
       <ul :class="$style.list">
         <li v-for="week in recent" :key="week.weekStart" :class="$style.row">
-          <div :class="$style.rowMain">
-            <span :class="$style.rowWeek">{{ weekLabel(week) }}</span>
+          <span :class="$style.rowWeek">
+            <span :class="$style.dateText">{{ weekLabel(week) }}</span>
             <span v-if="isCurrent(week)" :class="$style.inProgress">
-              не закончена · {{ week.entries }} взв.
+              · не закончена, {{ week.entries }} взв.
             </span>
-          </div>
+          </span>
           <span :class="$style.rowValue">{{ week.averageKg }} кг</span>
           <span :class="[$style.rowDelta, $style[hintFor(week).tone]]">{{ hintFor(week).text }}</span>
         </li>
@@ -102,6 +102,10 @@ function hintFor(week: WeeklyAverage): Hint {
 .rowWeek {
   font-size: var(--font-size-m);
   color: var(--text-secondary);
+}
+
+.dateText {
+  white-space: nowrap;
 }
 
 .inProgress {
