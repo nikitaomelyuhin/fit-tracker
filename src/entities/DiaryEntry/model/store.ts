@@ -109,29 +109,38 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
         .sort((a, b) => (a.date < b.date ? -1 : 1))
     },
 
-    /** Среднее ккал за последние N календарных дней, только по дням с записями. */
+    /**
+     * Дни с записями, БЕЗ сегодняшнего — день ещё не закончен (не все приёмы пищи
+     * записаны), поэтому его итог всегда занижен и портит любое среднее.
+     */
+    completedDailyKcalAsc(): { date: string; kcal: number }[] {
+      const today = todayISO()
+      return this.dailyKcalAsc.filter((d) => d.date < today)
+    },
+
+    /** Среднее ккал за последние N календарных дней, только по завершённым дням с записями. */
     recentAverageKcal(): (days: number) => number | null {
       return (days: number) => {
         const since = addDays(todayISO(), -(days - 1))
-        const recent = this.dailyKcalAsc.filter((d) => d.date >= since)
+        const recent = this.completedDailyKcalAsc.filter((d) => d.date >= since)
         if (!recent.length) return null
         return Math.round(recent.reduce((sum, d) => sum + d.kcal, 0) / recent.length)
       }
     },
 
-    /** Среднее ккал по дням с записями в диапазоне [from, to] включительно. null — нет данных. */
+    /** Среднее ккал по завершённым дням с записями в диапазоне [from, to]. null — нет данных. */
     averageKcalInRange(): (from: string, to: string) => number | null {
       return (from: string, to: string) => {
-        const days = this.dailyKcalAsc.filter((d) => d.date >= from && d.date <= to)
+        const days = this.completedDailyKcalAsc.filter((d) => d.date >= from && d.date <= to)
         if (!days.length) return null
         return Math.round(days.reduce((sum, d) => sum + d.kcal, 0) / days.length)
       }
     },
 
-    /** Среднее по последним N ЗАПИСАННЫМ дням (не календарным) — устойчивее к пропускам. */
+    /** Среднее по последним N ЗАПИСАННЫМ завершённым дням (не календарным) — устойчивее к пропускам. */
     averageOfLastLoggedDays(): (count: number) => number | null {
       return (count: number) => {
-        const days = this.dailyKcalAsc.slice(-count)
+        const days = this.completedDailyKcalAsc.slice(-count)
         if (!days.length) return null
         return Math.round(days.reduce((sum, d) => sum + d.kcal, 0) / days.length)
       }
@@ -143,7 +152,7 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
      */
     effectiveDailyKcal(): (fallback: number, minDays?: number) => number {
       return (fallback: number, minDays = 7) => {
-        if (this.dailyKcalAsc.length < minDays) return fallback
+        if (this.completedDailyKcalAsc.length < minDays) return fallback
         return this.averageOfLastLoggedDays(21) ?? fallback
       }
     },
