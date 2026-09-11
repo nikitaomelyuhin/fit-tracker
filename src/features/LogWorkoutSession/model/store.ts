@@ -17,13 +17,21 @@ interface ExerciseForm {
 
 interface State {
   date: string
+  /** true, как только пользователь сам тронул дату — тогда автообновление на сегодня отключается. */
+  dateTouched: boolean
   type: WorkoutType
   exercises: ExerciseForm[]
   submitting: boolean
 }
 
 export const useLogWorkoutStore = defineStore('logWorkout', {
-  state: (): State => ({ date: todayISO(), type: 'A', exercises: [], submitting: false }),
+  state: (): State => ({
+    date: todayISO(),
+    dateTouched: false,
+    type: 'A',
+    exercises: [],
+    submitting: false,
+  }),
 
   getters: {
     canSubmit: (state): boolean =>
@@ -46,6 +54,16 @@ export const useLogWorkoutStore = defineStore('logWorkout', {
     init() {
       const workouts = useWorkoutStore()
       this.setType(this.exercises.length ? this.type : workouts.suggestedType)
+    },
+
+    setDate(date: string) {
+      this.date = date
+      this.dateTouched = true
+    },
+
+    /** Подтягивает сегодняшнюю дату, пока пользователь не выбрал дату вручную. */
+    refreshDateIfUntouched() {
+      if (!this.dateTouched) this.date = todayISO()
     },
 
     setType(type: WorkoutType) {

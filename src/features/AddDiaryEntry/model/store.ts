@@ -43,6 +43,8 @@ interface Resolved {
 
 interface State {
   date: string
+  /** true, как только пользователь сам тронул дату — тогда автообновление на сегодня отключается. */
+  dateTouched: boolean
   mealType: MealType
   rows: DishRow[]
   submitting: boolean
@@ -59,6 +61,7 @@ function emptyCustomDraft(): CustomDraft {
 export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
   state: (): State => ({
     date: todayISO(),
+    dateTouched: false,
     mealType: 'breakfast',
     rows: [emptyRow()],
     submitting: false,
@@ -159,6 +162,16 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
   },
 
   actions: {
+    setDate(date: string) {
+      this.date = date
+      this.dateTouched = true
+    },
+
+    /** Подтягивает сегодняшнюю дату, пока пользователь не выбрал дату вручную. */
+    refreshDateIfUntouched() {
+      if (!this.dateTouched) this.date = todayISO()
+    },
+
     addRow() {
       this.rows.push(emptyRow())
     },

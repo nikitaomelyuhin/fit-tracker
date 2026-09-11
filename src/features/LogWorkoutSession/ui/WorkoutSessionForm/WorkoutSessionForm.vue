@@ -12,7 +12,12 @@
           Тренировка {{ type }}
         </button>
       </div>
-      <BaseTextField v-model="store.date" label="Дата" type="date" />
+      <BaseTextField
+        :model-value="store.date"
+        label="Дата"
+        type="date"
+        @update:model-value="store.setDate($event)"
+      />
     </div>
 
     <div :class="$style.exercises">
@@ -61,12 +66,14 @@ import { useLogWorkoutStore } from '../../model/store'
 import { useWorkoutStore } from '@/entities/Workout'
 import { WORKOUT_TYPES } from '@/shared/config/workouts'
 import { BaseButton, BaseTextField } from '@/shared/ui'
+import { useFreshDate } from '@/shared/lib/freshDate'
 
 const store = useLogWorkoutStore()
 const workouts = useWorkoutStore()
 const types = WORKOUT_TYPES
 
 onMounted(() => store.init())
+useFreshDate(() => store.refreshDateIfUntouched())
 
 // Данные грузятся асинхронно — когда подъедут, перезаполняем форму (если ещё не начал вводить).
 watch(

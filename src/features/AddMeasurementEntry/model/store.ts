@@ -11,6 +11,8 @@ interface Form {
 
 interface State {
   form: Form
+  /** true, как только пользователь сам тронул дату — тогда автообновление на сегодня отключается. */
+  dateTouched: boolean
   submitting: boolean
 }
 
@@ -19,7 +21,7 @@ function initialForm(): Form {
 }
 
 export const useAddMeasurementStore = defineStore('addMeasurement', {
-  state: (): State => ({ form: initialForm(), submitting: false }),
+  state: (): State => ({ form: initialForm(), dateTouched: false, submitting: false }),
 
   getters: {
     canSubmit(): boolean {
@@ -28,6 +30,16 @@ export const useAddMeasurementStore = defineStore('addMeasurement', {
   },
 
   actions: {
+    setDate(date: string) {
+      this.form.date = date
+      this.dateTouched = true
+    },
+
+    /** Подтягивает сегодняшнюю дату, пока пользователь не выбрал дату вручную. */
+    refreshDateIfUntouched() {
+      if (!this.dateTouched) this.form.date = todayISO()
+    },
+
     async submit(): Promise<boolean> {
       if (!this.canSubmit) return false
 
@@ -45,6 +57,7 @@ export const useAddMeasurementStore = defineStore('addMeasurement', {
 
     reset() {
       this.form = initialForm()
+      this.dateTouched = false
     },
   },
 })

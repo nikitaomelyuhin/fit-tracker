@@ -1,7 +1,12 @@
 <template>
   <form :class="$style['measurement-form']" @submit.prevent="onSubmit">
     <div :class="$style.row">
-      <BaseTextField v-model="store.form.date" label="Дата" type="date" />
+      <BaseTextField
+        :model-value="store.form.date"
+        label="Дата"
+        type="date"
+        @update:model-value="store.setDate($event)"
+      />
       <BaseTextField v-model="store.form.waist" label="Талия" inputmode="decimal" placeholder="82" />
     </div>
     <BaseTextField v-model="store.form.note" label="Заметка" placeholder="—" />
@@ -13,9 +18,12 @@
 
 <script setup lang="ts">
 import { BaseButton, BaseTextField } from '@/shared/ui'
+import { useFreshDate } from '@/shared/lib/freshDate'
 import { useAddMeasurementStore } from '../../model/store'
 
 const store = useAddMeasurementStore()
+
+useFreshDate(() => store.refreshDateIfUntouched())
 
 async function onSubmit() {
   await store.submit()

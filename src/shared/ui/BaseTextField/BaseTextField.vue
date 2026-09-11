@@ -38,6 +38,7 @@ function onInput(event: Event) {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
+  min-width: 0;
 }
 
 .label {

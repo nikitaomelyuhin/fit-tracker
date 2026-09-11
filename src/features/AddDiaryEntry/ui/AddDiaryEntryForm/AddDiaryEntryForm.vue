@@ -1,7 +1,12 @@
 <template>
   <form :class="$style.form" @submit.prevent="onSubmit">
     <div :class="$style.row">
-      <BaseTextField v-model="store.date" label="Дата" type="date" />
+      <BaseTextField
+        :model-value="store.date"
+        label="Дата"
+        type="date"
+        @update:model-value="store.setDate($event)"
+      />
       <BaseSelect v-model="store.mealType" label="Время суток" :options="mealTypeOptions" />
     </div>
 
@@ -133,9 +138,12 @@
 import type { Product } from '@/entities/Product'
 import { MEAL_TYPE_LABELS } from '@/shared/config/nutrition'
 import { BaseButton, BaseSelect, BaseTextField } from '@/shared/ui'
+import { useFreshDate } from '@/shared/lib/freshDate'
 import { useAddDiaryEntryStore } from '../../model/store'
 
 const store = useAddDiaryEntryStore()
+
+useFreshDate(() => store.refreshDateIfUntouched())
 
 const mealTypeOptions = store.mealTypes.map((type) => ({ value: type, label: MEAL_TYPE_LABELS[type] }))
 const unitOptions = [

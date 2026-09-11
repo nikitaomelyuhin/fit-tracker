@@ -1,7 +1,12 @@
 <template>
   <form :class="$style['weight-form']" @submit.prevent="onSubmit">
     <div :class="$style.row">
-      <BaseTextField v-model="store.form.date" label="Дата" type="date" />
+      <BaseTextField
+        :model-value="store.form.date"
+        label="Дата"
+        type="date"
+        @update:model-value="store.setDate($event)"
+      />
       <BaseTextField
         v-model="store.form.weight"
         label="Вес, кг"
@@ -17,9 +22,12 @@
 
 <script setup lang="ts">
 import { BaseButton, BaseTextField } from '@/shared/ui'
+import { useFreshDate } from '@/shared/lib/freshDate'
 import { useAddWeightStore } from '../../model/store'
 
 const store = useAddWeightStore()
+
+useFreshDate(() => store.refreshDateIfUntouched())
 
 async function onSubmit() {
   await store.submit()
