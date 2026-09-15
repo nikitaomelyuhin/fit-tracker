@@ -1,38 +1,83 @@
 <template>
-  <div v-if="workouts.sessions.length" :class="$style.list">
-    <section
-      v-for="session in workouts.sessions"
-      :key="session.date + (session.type ?? '')"
-      :class="$style.session"
+  <div v-if="workouts.sessions.length" :class="$style.wrap">
+    <div :class="$style.filters">
+      <BaseTextField v-model="filterFrom" label="С" type="date" />
+      <BaseTextField v-model="filterTo" label="По" type="date" />
+      <BaseButton v-if="isFiltered" type="button" variant="ghost" @click="clearFilter">Сбросить</BaseButton>
+    </div>
+
+    <p v-if="!visibleSessions.length" :class="$style.empty">За этот период тренировок нет.</p>
+
+    <div v-else :class="$style.list">
+      <section
+        v-for="session in visibleSessions"
+        :key="session.date + (session.type ?? '')"
+        :class="$style.session"
+      >
+        <div :class="$style.head">
+          <span :class="$style.title">
+            Тренировка {{ session.type ?? '?' }} · {{ formatHuman(session.date) }}
+          </span>
+          <BaseButton variant="danger" @click="onDelete(session.date, session.type)">
+            {{ isPending(session.date, session.type) ? 'Удалить?' : '✕' }}
+          </BaseButton>
+        </div>
+        <ul :class="$style.exercises">
+          <li v-for="entry in session.entries" :key="entry.id" :class="$style.ex">
+            <span :class="$style.exName">{{ entry.exercise }}</span>
+            <span :class="$style.exVal">{{ summary(entry) }}</span>
+            <span v-if="goal(entry)" :class="$style.exGoal">🎯 {{ goal(entry) }}</span>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <BaseButton
+      v-if="!isFiltered && workouts.sessions.length > DEFAULT_SHOWN"
+      type="button"
+      variant="ghost"
+      @click="expanded = !expanded"
     >
-      <div :class="$style.head">
-        <span :class="$style.title">
-          Тренировка {{ session.type ?? '?' }} · {{ formatHuman(session.date) }}
-        </span>
-        <BaseButton variant="danger" @click="onDelete(session.date, session.type)">
-          {{ isPending(session.date, session.type) ? 'Удалить?' : '✕' }}
-        </BaseButton>
-      </div>
-      <ul :class="$style.exercises">
-        <li v-for="entry in session.entries" :key="entry.id" :class="$style.ex">
-          <span :class="$style.exName">{{ entry.exercise }}</span>
-          <span :class="$style.exVal">{{ summary(entry) }}</span>
-          <span v-if="goal(entry)" :class="$style.exGoal">🎯 {{ goal(entry) }}</span>
-        </li>
-      </ul>
-    </section>
+      {{ expanded ? 'Свернуть' : `Показать все тренировки (${workouts.sessions.length})` }}
+    </BaseButton>
   </div>
   <p v-else :class="$style.empty">Тренировок пока нет</p>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useWorkoutStore, type Workout, type WorkoutType } from '@/entities/Workout'
-import { BaseButton } from '@/shared/ui'
+import { BaseButton, BaseTextField } from '@/shared/ui'
 import { formatHuman } from '@/shared/lib/date'
+
+const DEFAULT_SHOWN = 5
 
 const workouts = useWorkoutStore()
 const pendingKey = ref<string | null>(null)
+
+// Список за всё время нечитаем — по умолчанию последние тренировки,
+// остальное — по клику «показать все» или по своему диапазону дат.
+const expanded = ref(false)
+const filterFrom = ref('')
+const filterTo = ref('')
+
+const isFiltered = computed(() => filterFrom.value !== '' || filterTo.value !== '')
+
+const visibleSessions = computed(() => {
+  const sessions = workouts.sessions
+  if (isFiltered.value) {
+    return sessions.filter(
+      (s) => (filterFrom.value === '' || s.date >= filterFrom.value) &&
+        (filterTo.value === '' || s.date <= filterTo.value),
+    )
+  }
+  return expanded.value ? sessions : sessions.slice(0, DEFAULT_SHOWN)
+})
+
+function clearFilter() {
+  filterFrom.value = ''
+  filterTo.value = ''
+}
 
 function keyOf(date: string, type: WorkoutType | null): string {
   return `${date}|${type ?? ''}`
@@ -69,6 +114,19 @@ function goal(entry: Workout): string | null {
 </script>
 
 <style module>
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.filters {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-m);
+  flex-wrap: wrap;
+}
+
 .list {
   display: flex;
   flex-direction: column;
