@@ -1,6 +1,15 @@
 <template>
-  <div v-if="store.groupedByDateDesc.length" :class="$style.days">
-    <div v-for="day in store.groupedByDateDesc" :key="day.date" :class="$style.day">
+  <div v-if="store.groupedByDateDesc.length" :class="$style.wrap">
+    <div :class="$style.filters">
+      <BaseTextField v-model="filterFrom" label="С" type="date" />
+      <BaseTextField v-model="filterTo" label="По" type="date" />
+      <BaseButton v-if="isFiltered" type="button" variant="ghost" @click="clearFilter">Сбросить</BaseButton>
+    </div>
+
+    <p v-if="!visibleDays.length" :class="$style.empty">За этот период записей нет.</p>
+
+    <div v-else :class="$style.days">
+      <div v-for="day in visibleDays" :key="day.date" :class="$style.day">
       <div :class="$style.dayHead">
         <span :class="$style.date">{{ formatHuman(day.date) }}</span>
         <span :class="$style.dayTotals">
@@ -45,23 +54,59 @@
         </ul>
       </div>
     </div>
+    </div>
+
+    <BaseButton
+      v-if="!isFiltered && store.groupedByDateDesc.length > DEFAULT_DAYS_SHOWN"
+      type="button"
+      variant="ghost"
+      @click="expanded = !expanded"
+    >
+      {{ expanded ? 'Свернуть' : `Показать все дни (${store.groupedByDateDesc.length})` }}
+    </BaseButton>
   </div>
   <p v-else :class="$style.empty">Дневник пуст — добавь первый приём пищи выше.</p>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { MEAL_TYPE_LABELS } from '@/shared/config/nutrition'
-import { BaseButton } from '@/shared/ui'
+import { BaseButton, BaseTextField } from '@/shared/ui'
 import { formatHuman } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
+
+const DEFAULT_DAYS_SHOWN = 5
 
 const store = useDiaryEntryStore()
 
 const editingId = ref<string | null>(null)
 const editAmount = ref('')
 const pendingId = ref<string | null>(null)
+
+// Список за всё время нечитаем — по умолчанию показываем последние дни,
+// остальное — по клику «показать все» или по своему диапазону дат.
+const expanded = ref(false)
+const filterFrom = ref('')
+const filterTo = ref('')
+
+const isFiltered = computed(() => filterFrom.value !== '' || filterTo.value !== '')
+
+const visibleDays = computed(() => {
+  const days = store.groupedByDateDesc
+  if (isFiltered.value) {
+    return days.filter(
+      (day) => (filterFrom.value === '' || day.date >= filterFrom.value) &&
+        (filterTo.value === '' || day.date <= filterTo.value),
+    )
+  }
+  return expanded.value ? days : days.slice(0, DEFAULT_DAYS_SHOWN)
+})
+
+function clearFilter() {
+  filterFrom.value = ''
+  filterTo.value = ''
+}
 
 function startEdit(id: string, amount: number) {
   editingId.value = id
@@ -90,6 +135,19 @@ function onDelete(id: string) {
 </script>
 
 <style module>
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-m);
+}
+
+.filters {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-m);
+  flex-wrap: wrap;
+}
+
 .days {
   display: flex;
   flex-direction: column;
