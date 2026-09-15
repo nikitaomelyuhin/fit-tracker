@@ -14,7 +14,7 @@ import { useWeightLogStore } from '@/entities/WeightLog'
 import { useMeasurementStore } from '@/entities/Measurement'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
-import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
+import { DAILY_KCAL_RANGE } from '@/shared/config/pace'
 import { MEASUREMENT_TARGETS } from '@/shared/config/targets'
 import { todayISO } from '@/shared/lib/date'
 
@@ -112,7 +112,7 @@ const tiles = computed(() => [
   {
     label: 'Ккал сегодня',
     value: todayKcal.value != null ? `${todayKcal.value}` : '—',
-    sub: `цель ${DAILY_KCAL_TARGET}`,
+    sub: `цель ${DAILY_KCAL_RANGE.min}–${DAILY_KCAL_RANGE.max}`,
     tone: 'muted' as Tone,
   },
 ])

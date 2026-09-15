@@ -8,7 +8,7 @@
         </div>
         <div :class="$style.stat">
           <span :class="$style.label">Цель</span>
-          <span :class="$style.value">{{ target }} ккал</span>
+          <span :class="$style.value">{{ DAILY_KCAL_RANGE.min }}–{{ DAILY_KCAL_RANGE.max }} ккал</span>
         </div>
         <div :class="$style.stat">
           <span :class="$style.label">Дней с записями</span>
@@ -31,14 +31,14 @@ import { computed } from 'vue'
 import VChart from 'vue-echarts'
 import { use } from 'echarts/core'
 import { BarChart } from 'echarts/charts'
-import { GridComponent, TooltipComponent, MarkLineComponent } from 'echarts/components'
+import { GridComponent, TooltipComponent, MarkLineComponent, MarkAreaComponent } from 'echarts/components'
 import { CanvasRenderer } from 'echarts/renderers'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
-import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
+import { DAILY_KCAL_RANGE, DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { formatHuman } from '@/shared/lib/date'
 import { cssToken } from '@/shared/lib/theme'
 
-use([BarChart, GridComponent, TooltipComponent, MarkLineComponent, CanvasRenderer])
+use([BarChart, GridComponent, TooltipComponent, MarkLineComponent, MarkAreaComponent, CanvasRenderer])
 
 const store = useDiaryEntryStore()
 const target = DAILY_KCAL_TARGET
@@ -53,7 +53,6 @@ const option = computed(() => {
   const warning = cssToken('--warning', '#e0a63a')
 
   const rows = store.dailyKcalAsc
-  const tolerance = target * 0.1
 
   return {
     grid: { left: 48, right: 16, top: 16, bottom: 32 },
@@ -75,9 +74,16 @@ const option = computed(() => {
         type: 'bar',
         data: rows.map((row) => ({
           value: row.kcal,
-          itemStyle: { color: Math.abs(row.kcal - target) <= tolerance ? success : warning },
+          itemStyle: {
+            color: row.kcal >= DAILY_KCAL_RANGE.min && row.kcal <= DAILY_KCAL_RANGE.max ? success : warning,
+          },
         })),
         barMaxWidth: 28,
+        markArea: {
+          silent: true,
+          itemStyle: { color: success, opacity: 0.08 },
+          data: [[{ yAxis: DAILY_KCAL_RANGE.min }, { yAxis: DAILY_KCAL_RANGE.max }]],
+        },
         markLine: {
           silent: true,
           symbol: 'none',
@@ -85,7 +91,7 @@ const option = computed(() => {
             {
               yAxis: target,
               lineStyle: { color: muted, type: 'dashed' },
-              label: { formatter: `Цель ${target}`, color: muted },
+              label: { formatter: `Оптимум ${target}`, color: muted },
             },
           ],
         },
