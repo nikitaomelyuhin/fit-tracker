@@ -54,15 +54,15 @@ export function describeWaterDebt(debt: WaterDebt | null): { text: string; tone:
   }
 
   const grams = Math.round(debt.debtKg * 1000)
-  if (Math.abs(grams) < 150) return { text: 'Долгов нет — весы и калории сходятся.', tone: 'muted' }
+  if (Math.abs(grams) < 150) return { text: 'Весы и калории сходятся — расхождения нет.', tone: 'muted' }
   if (grams > 0) {
     return {
-      text: `Организм придерживает примерно ${grams} г воды — по калориям должно было уйти больше.`,
+      text: `По весам ушло на ${grams} г меньше, чем должно было по калориям — похоже, задержалась вода, должно списаться позже.`,
       tone: 'warn',
     }
   }
   return {
-    text: `Весы обогнали калории примерно на ${Math.abs(grams)} г — реальный расход, похоже, выше расчётного.`,
+    text: `По весам ушло на ${Math.abs(grams)} г больше, чем должно было по калориям — либо расход выше, чем считает формула, либо ушла лишняя вода.`,
     tone: 'good',
   }
 }
