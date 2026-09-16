@@ -38,15 +38,6 @@
             </BaseCard>
           </template>
 
-          <template v-else-if="activeTab === 'measurements'">
-            <BaseCard title="Записать замеры">
-              <AddMeasurementForm />
-            </BaseCard>
-            <BaseCard title="История замеров" :class="$style.wide">
-              <MeasurementHistory />
-            </BaseCard>
-          </template>
-
           <template v-else-if="activeTab === 'workouts'">
             <BaseCard title="Записать тренировку" :class="$style.wide">
               <WorkoutSessionForm />
@@ -92,14 +83,6 @@
               <PaceForecast />
             </BaseCard>
 
-            <p :class="$style.sectionTitle">Замеры</p>
-            <BaseCard title="Состав тела">
-              <BodyComposition />
-            </BaseCard>
-            <BaseCard title="Цели по замерам">
-              <MeasurementTargets />
-            </BaseCard>
-
             <p :class="$style.sectionTitle">Тренировки</p>
             <BaseCard title="Прогрессия весов" :class="$style.wide">
               <GymProgress />
@@ -139,21 +122,16 @@ import { computed, defineAsyncComponent, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSessionStore } from '@/entities/Session'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { useMeasurementStore } from '@/entities/Measurement'
 import { useWorkoutStore } from '@/entities/Workout'
 import { useProductStore } from '@/entities/Product'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { AddWeightForm } from '@/features/AddWeightEntry'
-import { AddMeasurementForm } from '@/features/AddMeasurementEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
 import { ExportReportButton } from '@/features/ExportReport'
 import { AddDiaryEntryForm } from '@/features/AddDiaryEntry'
 import { ManageProductsPanel } from '@/features/ManageProducts'
 import { WeightHistory } from '@/widgets/WeightHistory'
 import { WeightGoal } from '@/widgets/WeightGoal'
-import { BodyComposition } from '@/widgets/BodyComposition'
-import { MeasurementHistory } from '@/widgets/MeasurementHistory'
-import { MeasurementTargets } from '@/widgets/MeasurementTargets'
 import { WorkoutHistory } from '@/widgets/WorkoutHistory'
 import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { ProgressSummary } from '@/widgets/ProgressSummary'
@@ -177,11 +155,10 @@ const CalorieTrend = defineAsyncComponent(() =>
   import('@/widgets/CalorieTrend').then((m) => m.CalorieTrend),
 )
 
-type TabKey = 'weight' | 'measurements' | 'workouts' | 'nutrition' | 'analytics'
+type TabKey = 'weight' | 'workouts' | 'nutrition' | 'analytics'
 
 const tabs: { key: TabKey; label: string; icon: string }[] = [
   { key: 'weight', label: 'Вес', icon: '⚖️' },
-  { key: 'measurements', label: 'Замеры', icon: '📏' },
   { key: 'workouts', label: 'Тренировки', icon: '🏋️' },
   { key: 'nutrition', label: 'Питание', icon: '🍽️' },
   { key: 'analytics', label: 'Аналитика', icon: '📊' },
@@ -197,19 +174,12 @@ function selectTab(tab: TabKey) {
 
 const session = useSessionStore()
 const weightLog = useWeightLogStore()
-const measurements = useMeasurementStore()
 const workouts = useWorkoutStore()
 const products = useProductStore()
 const diaryEntries = useDiaryEntryStore()
 
 async function loadAll() {
-  await Promise.all([
-    weightLog.load(),
-    measurements.load(),
-    workouts.load(),
-    products.load(),
-    diaryEntries.load(),
-  ])
+  await Promise.all([weightLog.load(), workouts.load(), products.load(), diaryEntries.load()])
 }
 
 function reloadPage() {

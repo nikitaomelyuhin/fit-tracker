@@ -6,7 +6,7 @@ import { AuthPage } from '@/pages/auth'
 const routes: RouteRecordRaw[] = [
   { path: '/', redirect: '/weight' },
   {
-    path: '/:tab(weight|measurements|workouts|nutrition|analytics)',
+    path: '/:tab(weight|workouts|nutrition|analytics)',
     name: 'dashboard',
     component: DashboardPage,
     meta: { requiresAuth: true },

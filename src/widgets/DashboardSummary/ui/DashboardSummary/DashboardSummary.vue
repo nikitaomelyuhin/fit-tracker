@@ -11,17 +11,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { useMeasurementStore } from '@/entities/Measurement'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { DAILY_KCAL_RANGE } from '@/shared/config/pace'
-import { MEASUREMENT_TARGETS } from '@/shared/config/targets'
 import { todayISO } from '@/shared/lib/date'
 
 type Tone = 'good' | 'warn' | 'muted'
 
 const weightLog = useWeightLogStore()
-const measurement = useMeasurementStore()
 const diaryEntries = useDiaryEntryStore()
 
 const weight = computed(
@@ -31,12 +28,7 @@ const remaining = computed(() =>
   weight.value != null ? Math.max(0, weight.value - WEIGHT_GOAL_KG) : null,
 )
 
-const bodyFat = computed(() => measurement.latestBodyFatPct)
-const waist = computed(() => measurement.latest?.waist ?? null)
-
-const waistTargetText = `цель ${MEASUREMENT_TARGETS.waist.min}–${MEASUREMENT_TARGETS.waist.max}`
-
-/** <0 — метрика идёт вниз (что для веса/жира/талии хорошо). Порог — чтобы не красить шум. */
+/** <0 — метрика идёт вниз (что для веса хорошо). Порог — чтобы не красить шум. */
 function downIsGoodTone(delta: number | null, epsilon = 0.05): Tone {
   if (delta == null || Math.abs(delta) < epsilon) return 'muted'
   return delta < 0 ? 'good' : 'warn'
@@ -61,18 +53,6 @@ const paceSub = computed(() => {
     : `дальше на ${Math.abs(weightDelta.value).toFixed(1)} кг`
 })
 
-const bodyFatDelta = computed(() => measurement.bodyFatDeltaPct)
-const bodyFatTone = computed(() => downIsGoodTone(bodyFatDelta.value))
-const bodyFatSub = computed(() =>
-  bodyFatDelta.value != null ? `${signed(bodyFatDelta.value)}% с замера` : '',
-)
-
-const waistDelta = computed(() => measurement.waistDeltaCm)
-const waistTone = computed(() => downIsGoodTone(waistDelta.value))
-const waistSub = computed(() =>
-  waistDelta.value != null ? `${signed(waistDelta.value, 0)} см · ${waistTargetText}` : waistTargetText,
-)
-
 /** Ккал сегодня — только факт + цель, без цветовой оценки: день может быть ещё не дописан. */
 const todayKcal = computed(() => {
   const totals = diaryEntries.totalsForDate(todayISO())
@@ -96,18 +76,6 @@ const tiles = computed(() => [
         : '—',
     sub: paceSub.value,
     tone: weightTone.value,
-  },
-  {
-    label: 'Жир',
-    value: bodyFat.value != null ? `${bodyFat.value}%` : '—',
-    sub: bodyFatSub.value,
-    tone: bodyFatTone.value,
-  },
-  {
-    label: 'Талия',
-    value: waist.value != null ? `${waist.value} см` : '—',
-    sub: waistSub.value,
-    tone: waistTone.value,
   },
   {
     label: 'Ккал сегодня',

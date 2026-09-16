@@ -1,23 +1,19 @@
 import { defineStore } from 'pinia'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { useMeasurementStore } from '@/entities/Measurement'
 import { useWorkoutStore } from '@/entities/Workout'
 import { useProductStore } from '@/entities/Product'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
-import { estimateBodyFatMale } from '@/shared/lib/bodyfat'
 import { downloadJson } from '@/shared/lib/download'
 import { todayISO } from '@/shared/lib/date'
 import { AGE, HEIGHT_CM } from '@/shared/config/profile'
 import { ACTIVITY_FACTOR, DAILY_KCAL_TARGET, KCAL_PER_KG, WATER_ADAPTATION_DAYS } from '@/shared/config/pace'
 import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG } from '@/shared/config/goals'
-import { BODY_FAT_TARGET, MEASUREMENT_TARGETS } from '@/shared/config/targets'
 
 export const useExportReportStore = defineStore('exportReport', {
   actions: {
     /** Собрать все данные (включая БД продуктов и рацион) — и для анализа, и как полный бэкап. */
     buildReport() {
       const weightLog = useWeightLogStore()
-      const measurements = useMeasurementStore()
       const workouts = useWorkoutStore()
       const products = useProductStore()
       const diaryEntries = useDiaryEntryStore()
@@ -34,7 +30,7 @@ export const useExportReportStore = defineStore('exportReport', {
       const report = {
         exportedAt: new Date().toISOString(),
         app: 'fit-tracker',
-        note: 'Отчёт для анализа прогресса. Процент жира оценивается по талии и росту (RFM).',
+        note: 'Отчёт для анализа прогресса.',
         profile: {
           heightCm: HEIGHT_CM,
           age: AGE,
@@ -43,13 +39,7 @@ export const useExportReportStore = defineStore('exportReport', {
           dailyKcalTarget: DAILY_KCAL_TARGET,
           activityFactor: ACTIVITY_FACTOR,
           kcalPerKgFat: KCAL_PER_KG,
-          bodyFatFormula:
-            'Оценка по талии и росту (RFM), привязана к точке отсчёта: талия 108 см = 28.5%. Шея и вес в расчёте не участвуют.',
           waterAdaptationDays: WATER_ADAPTATION_DAYS,
-        },
-        targets: {
-          bodyFatPct: BODY_FAT_TARGET,
-          measurements: MEASUREMENT_TARGETS,
         },
         weight: {
           entries: weightLog.byDateAsc.map((entry) => ({
@@ -78,19 +68,6 @@ export const useExportReportStore = defineStore('exportReport', {
           actualEtaDays: pace.actualEtaDays != null ? Math.round(pace.actualEtaDays) : null,
           actualEtaDate: pace.actualEtaDate,
           diffDays: pace.diffDays != null ? Math.round(pace.diffDays) : null,
-        },
-        measurements: {
-          entries: measurements.byDateAsc.map((entry) => ({
-            date: entry.date,
-            waist: entry.waist,
-            chest: entry.chest,
-            shoulders: entry.shoulders,
-            arm: entry.arm,
-            forearm: entry.forearm,
-            estimatedBodyFatPct:
-              entry.waist != null ? estimateBodyFatMale(entry.waist, HEIGHT_CM) : null,
-            note: entry.note,
-          })),
         },
         workouts: {
           sessions: workouts.sessions.map((session) => ({

@@ -5,10 +5,6 @@
       <span :class="$style.value">{{ lostText }}</span>
     </div>
     <div :class="$style.row">
-      <span :class="$style.label">Талия</span>
-      <span :class="$style.value">{{ waistText }}</span>
-    </div>
-    <div :class="$style.row">
       <span :class="$style.label">Темп</span>
       <span :class="$style.value">{{ rateText }} <span :class="$style.band">· {{ band }}</span></span>
     </div>
@@ -23,12 +19,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { useMeasurementStore } from '@/entities/Measurement'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 
 const weightLog = useWeightLogStore()
-const measurement = useMeasurementStore()
 const diaryEntries = useDiaryEntryStore()
 
 const effectiveKcal = computed(() => diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET))
@@ -44,14 +38,6 @@ const lostText = computed(() => {
   if (lostKg.value == null || weightLog.items.length < 2) return '—'
   const v = lostKg.value
   return v >= 0 ? `−${v.toFixed(1)} кг` : `+${Math.abs(v).toFixed(1)} кг`
-})
-
-const waistText = computed(() => {
-  const start = measurement.byDateAsc[0]?.waist
-  const now = measurement.byDateDesc[0]?.waist
-  if (start == null || now == null || measurement.items.length < 2) return '—'
-  const d = start - now
-  return d >= 0 ? `−${d.toFixed(1)} см` : `+${Math.abs(d).toFixed(1)} см`
 })
 
 // Темп считаем по жиру — от «чистой» точки отсчёта, без стартового слива воды.
