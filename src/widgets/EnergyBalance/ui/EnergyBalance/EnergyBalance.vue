@@ -40,7 +40,7 @@
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
-import { maintenanceKcal } from '@/shared/lib/pace'
+import { computeWaterDebt, describeWaterDebt } from '@/shared/lib/waterDebt'
 import { KCAL_PER_KG } from '@/shared/config/pace'
 import { addDays, daysBetween, formatHuman, todayISO } from '@/shared/lib/date'
 
@@ -59,72 +59,26 @@ const daysUntilReady = computed(() => {
   return Math.max(0, MIN_DAYS - daysSinceStart)
 })
 
-interface Ledger {
-  loggedDays: number
-  expectedFatLossKg: number
-  actualLossKg: number | null
-  debtKg: number | null
-}
-
-const ledger = computed<Ledger | null>(() => {
+const ledger = computed(() => {
   const start = windowStart.value
   if (!start) return null
 
   const weightByDate = new Map(weightLog.byDateAsc.map((w) => [w.date, w.weight]))
   const kcalByDate = new Map(diaryEntries.dailyKcalAsc.map((d) => [d.date, d.kcal]))
-
-  let cumulativeDeficitKcal = 0
-  let loggedDays = 0
-  let cursor = start
-  const today = todayISO()
-  let guard = 0
-  while (cursor <= today && guard < 400) {
-    const kcal = kcalByDate.get(cursor)
-    if (kcal != null) {
-      const weight = weightByDate.get(cursor) ?? weightLog.smoothedWeight
-      if (weight != null) {
-        cumulativeDeficitKcal += maintenanceKcal(weight) - kcal
-        loggedDays++
-      }
-    }
-    cursor = addDays(cursor, 1)
-    guard++
-  }
-
-  if (loggedDays === 0) return null
-
-  const expectedFatLossKg = cumulativeDeficitKcal / KCAL_PER_KG
   const startWeight =
     weightByDate.get(start) ?? weightLog.byDateAsc.find((w) => w.date >= start)?.weight ?? null
-  const currentWeight = weightLog.smoothedWeight
-  const actualLossKg =
-    startWeight != null && currentWeight != null ? startWeight - currentWeight : null
-  const debtKg = actualLossKg != null ? expectedFatLossKg - actualLossKg : null
 
-  return { loggedDays, expectedFatLossKg, actualLossKg, debtKg }
+  return computeWaterDebt({
+    fromDate: start,
+    startWeight,
+    currentWeight: weightLog.smoothedWeight,
+    weightAt: (date) => weightByDate.get(date) ?? null,
+    kcalAt: (date) => kcalByDate.get(date) ?? null,
+  })
 })
 
-const debtTone = computed<'good' | 'warn' | 'muted'>(() => {
-  const debtKg = ledger.value?.debtKg
-  if (debtKg == null) return 'muted'
-  const grams = Math.abs(debtKg * 1000)
-  if (grams < 150) return 'muted'
-  return debtKg > 0 ? 'warn' : 'good'
-})
-
-const debtText = computed(() => {
-  const l = ledger.value
-  if (!l) return ''
-  if (l.debtKg == null) {
-    return `По калориям должно было уйти ~${Math.round(l.expectedFatLossKg * 1000)} г жира — вес пока сравнить не с чем.`
-  }
-  const grams = Math.round(l.debtKg * 1000)
-  if (Math.abs(grams) < 150) return 'Долгов нет — весы и калории сходятся.'
-  if (grams > 0) {
-    return `Организм придерживает примерно ${grams} г воды — по калориям должно было уйти больше. Рано или поздно спишется одним сливом.`
-  }
-  return `Весы обогнали калории примерно на ${Math.abs(grams)} г — реальный расход, похоже, выше, чем считает формула.`
-})
+const debtTone = computed(() => describeWaterDebt(ledger.value).tone)
+const debtText = computed(() => describeWaterDebt(ledger.value).text)
 
 function weekLabel(weekStart: string): string {
   return `${formatHuman(weekStart)} – ${formatHuman(addDays(weekStart, 6))}`

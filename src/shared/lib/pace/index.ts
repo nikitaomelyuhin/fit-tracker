@@ -51,6 +51,47 @@ export function maintenanceKcal(weight: number): number {
   return bmr * ACTIVITY_FACTOR
 }
 
+export interface DeficitSumResult {
+  totalDeficitKcal: number
+  countedDays: number
+}
+
+/**
+ * Дефицит калорий по дням (maintenance(вес) − факт) от fromDate до toDate включительно.
+ * День без факта в дневнике пропускается (не считается нулём), если не передан
+ * fallbackKcal — тогда вместо факта используется он (нужно для оценок, которые должны
+ * покрывать весь период, а не только дни с дневником).
+ */
+export function sumDeficitKcal(params: {
+  fromDate: string
+  toDate: string
+  weightAt: (date: string) => number | null
+  kcalAt: (date: string) => number | null
+  fallbackKcal?: number | null
+  maxDays?: number
+}): DeficitSumResult {
+  const { fromDate, toDate, weightAt, kcalAt, fallbackKcal = null, maxDays = 400 } = params
+
+  let totalDeficitKcal = 0
+  let countedDays = 0
+  let cursor = fromDate
+  let guard = 0
+  while (cursor <= toDate && guard < maxDays) {
+    const kcal = kcalAt(cursor) ?? fallbackKcal
+    if (kcal != null) {
+      const weight = weightAt(cursor)
+      if (weight != null) {
+        totalDeficitKcal += maintenanceKcal(weight) - kcal
+        countedDays++
+      }
+    }
+    cursor = addDays(cursor, 1)
+    guard++
+  }
+
+  return { totalDeficitKcal, countedDays }
+}
+
 /**
  * Симуляция идеального снижения при фиксированном потреблении.
  * По дням: расход падает с весом, дефицит сужается — кривая замедляется.

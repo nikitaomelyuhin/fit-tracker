@@ -60,6 +60,8 @@
           </template>
 
           <template v-else-if="activeTab === 'analytics'">
+            <WaterBalance :class="$style.wide" />
+
             <p :class="$style.sectionTitle">Вес</p>
             <BaseCard title="Цель">
               <WeightGoal />
@@ -142,6 +144,7 @@ import { EnergyBalance } from '@/widgets/EnergyBalance'
 import { MealBreakdown } from '@/widgets/MealBreakdown'
 import { Analysis } from '@/widgets/Analysis'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
+import { WaterBalance } from '@/widgets/WaterBalance'
 import { BaseButton, BaseCard } from '@/shared/ui'
 
 // Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.

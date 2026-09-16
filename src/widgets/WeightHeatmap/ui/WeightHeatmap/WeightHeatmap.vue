@@ -46,7 +46,11 @@
     </div>
 
     <div v-if="tip" :class="$style.tooltip" :style="{ left: tip.left + 'px', top: tip.top + 'px' }">
-      {{ tip.text }}
+      <div :class="$style.tipDate">{{ tip.date }}</div>
+      <div v-if="tip.weight != null" :class="$style.tipRow">{{ tip.weight }} кг</div>
+      <div v-if="tip.prevWeight != null" :class="$style.tipRowMuted">было {{ tip.prevWeight }} кг</div>
+      <div v-else-if="tip.weight != null" :class="$style.tipRowMuted">первая запись</div>
+      <div v-else :class="$style.tipRowMuted">нет записи</div>
     </div>
   </div>
 </template>
@@ -55,19 +59,24 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { useDiaryEntryStore } from '@/entities/DiaryEntry'
-import { addDays, formatHuman, todayISO, weekStartFor } from '@/shared/lib/date'
+import { addDays, formatHuman, todayISO } from '@/shared/lib/date'
 import { classifyDayDelta } from '@/shared/lib/dayDelta'
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
 const DAY_LABELS = ['Пн', '', 'Ср', '', 'Пт', '', '']
 
 const store = useWeightLogStore()
-const diaryEntries = useDiaryEntryStore()
 
 const wrap = ref<HTMLElement | null>(null)
 const scrollEl = ref<HTMLElement | null>(null)
-const tip = ref<{ text: string; left: number; top: number } | null>(null)
+interface Tip {
+  date: string
+  weight: number | null
+  prevWeight: number | null
+  left: number
+  top: number
+}
+const tip = ref<Tip | null>(null)
 
 const selectedYear = ref(dayjs().year())
 
@@ -110,42 +119,6 @@ function cellClass(date: string): string {
   return classifyDayDelta(info.delta)
 }
 
-/** Средний вес недели этой даты — сглаженный ориентир, чтобы отличить воду от тренда. */
-const weekAvgByWeekStart = computed(() => {
-  const map = new Map<string, number>()
-  for (const week of store.weeklyAverages) map.set(week.weekStart, week.averageKg)
-  return map
-})
-
-/** Отклонение факта от сглаженного тренда недели — грубая метка «вода/слив». */
-function waterNote(date: string, weight: number): string {
-  const weekAvg = weekAvgByWeekStart.value.get(weekStartFor(date))
-  if (weekAvg == null) return ''
-  const deviation = Math.round((weight - weekAvg) * 10) / 10
-  if (Math.abs(deviation) < 0.3) return ''
-  const grams = Math.round(Math.abs(deviation) * 1000)
-  return deviation > 0 ? ` · вероятно вода +${grams}г` : ` · похоже, слив воды −${grams}г`
-}
-
-/** Ккал этого дня по дневнику (если вёлся) — сверить, совпадает ли скачок с реальным перееданием. */
-const kcalByDate = computed(() => new Map(diaryEntries.dailyKcalAsc.map((d) => [d.date, d.kcal])))
-
-function kcalNote(date: string): string {
-  const kcal = kcalByDate.value.get(date)
-  return kcal != null ? ` · по дневнику ${kcal} ккал` : ''
-}
-
-function describe(date: string): string {
-  const info = infoByDate.value.get(date)
-  const human = formatHuman(date)
-  if (!info) return `${human} · нет записи`
-  const water = waterNote(date, info.weight)
-  const kcal = kcalNote(date)
-  if (info.delta == null) return `${human} · ${info.weight} кг · первая запись${water}${kcal}`
-  const sign = info.delta >= 0 ? '+' : '−'
-  return `${human} · ${info.weight} кг · было ${info.prev} · ${sign}${Math.abs(info.delta).toFixed(1)} кг${water}${kcal}`
-}
-
 const weeks = computed(() => {
   const start = mondayOf(`${selectedYear.value}-01-01`)
   const end = `${selectedYear.value}-12-31`
@@ -178,8 +151,11 @@ function showTip(event: MouseEvent, date: string) {
   const box = wrap.value?.getBoundingClientRect()
   if (!box) return
   const rect = cell.getBoundingClientRect()
+  const info = infoByDate.value.get(date)
   tip.value = {
-    text: describe(date),
+    date: formatHuman(date),
+    weight: info?.weight ?? null,
+    prevWeight: info?.prev ?? null,
     left: rect.left - box.left + rect.width / 2,
     top: rect.top - box.top,
   }
@@ -389,16 +365,33 @@ watch(selectedYear, () => nextTick(scrollToToday))
 .tooltip {
   position: absolute;
   transform: translate(-50%, calc(-100% - 6px));
-  padding: var(--space-xs) var(--space-s);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-s);
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
-  font-size: var(--font-size-s);
-  color: var(--text-primary);
   white-space: nowrap;
   pointer-events: none;
   z-index: 10;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.tipDate {
+  font-size: var(--font-size-s);
+  color: var(--text-muted);
+}
+
+.tipRow {
+  font-size: var(--font-size-m);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.tipRowMuted {
+  font-size: var(--font-size-s);
+  color: var(--text-muted);
 }
 
 .legend {

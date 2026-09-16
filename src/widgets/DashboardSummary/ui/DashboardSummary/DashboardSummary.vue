@@ -13,7 +13,9 @@ import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
-import { DAILY_KCAL_RANGE } from '@/shared/config/pace'
+import { DAILY_KCAL_RANGE, DAILY_KCAL_TARGET, KCAL_PER_KG } from '@/shared/config/pace'
+import { BODY_FAT_START_PCT } from '@/shared/config/profile'
+import { sumDeficitKcal } from '@/shared/lib/pace'
 import { todayISO } from '@/shared/lib/date'
 
 type Tone = 'good' | 'warn' | 'muted'
@@ -59,6 +61,35 @@ const todayKcal = computed(() => {
   return totals.kcal > 0 ? totals.kcal : null
 })
 
+/**
+ * % жира не по замерам (их больше нет), а по пропорции: сколько жира должно было
+ * уйти по дефициту калорий (дневник, а где его нет — эффективное среднее),
+ * вычитается из стартовой жировой массы. Так вес отдельно, жир отдельно —
+ * а не «весь сброшенный вес = жир», что неверно из-за воды/мышц.
+ */
+const bodyFatPct = computed(() => {
+  const start = weightLog.byDateAsc[0]
+  const currentWeight = weightLog.smoothedWeight ?? weightLog.byDateDesc[0]?.weight ?? null
+  if (!start || currentWeight == null) return null
+
+  const weightByDate = new Map(weightLog.byDateAsc.map((w) => [w.date, w.weight]))
+  const kcalByDate = new Map(diaryEntries.dailyKcalAsc.map((d) => [d.date, d.kcal]))
+  const fallbackKcal = diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET)
+
+  const { totalDeficitKcal } = sumDeficitKcal({
+    fromDate: start.date,
+    toDate: todayISO(),
+    weightAt: (date) => weightByDate.get(date) ?? weightLog.smoothedWeight,
+    kcalAt: (date) => kcalByDate.get(date) ?? null,
+    fallbackKcal,
+  })
+
+  const fatLostKg = totalDeficitKcal / KCAL_PER_KG
+  const startFatMassKg = start.weight * (BODY_FAT_START_PCT / 100)
+  const currentFatMassKg = Math.max(0, startFatMassKg - fatLostKg)
+  return Math.round((currentFatMassKg / currentWeight) * 1000) / 10
+})
+
 const tiles = computed(() => [
   {
     label: 'Вес (ср/нед)',
@@ -81,6 +112,12 @@ const tiles = computed(() => [
     label: 'Ккал сегодня',
     value: todayKcal.value != null ? `${todayKcal.value}` : '—',
     sub: `цель ${DAILY_KCAL_RANGE.min}–${DAILY_KCAL_RANGE.max}`,
+    tone: 'muted' as Tone,
+  },
+  {
+    label: 'Жир (оценка)',
+    value: bodyFatPct.value != null ? `${bodyFatPct.value}%` : '—',
+    sub: 'по дефициту, не по замеру',
     tone: 'muted' as Tone,
   },
 ])
