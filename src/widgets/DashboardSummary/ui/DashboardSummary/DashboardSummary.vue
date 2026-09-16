@@ -117,7 +117,7 @@ const tiles = computed(() => [
   {
     label: 'Жир (оценка)',
     value: bodyFatPct.value != null ? `${bodyFatPct.value}%` : '—',
-    sub: 'по дефициту, не по замеру',
+    sub: '',
     tone: 'muted' as Tone,
   },
 ])
