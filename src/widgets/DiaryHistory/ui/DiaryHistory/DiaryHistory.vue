@@ -14,6 +14,7 @@
         <span :class="$style.date">{{ formatHuman(day.date) }}</span>
         <span :class="$style.dayTotals">
           {{ day.totals.kcal }} ккал · Б{{ day.totals.protein }} Ж{{ day.totals.fat }} У{{ day.totals.carbs }}
+          Кл{{ day.totals.fiber }}
         </span>
       </div>
 

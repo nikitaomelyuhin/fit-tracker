@@ -19,7 +19,7 @@ interface State {
 }
 
 function emptyTotals(): DailyTotals {
-  return { kcal: 0, protein: 0, fat: 0, carbs: 0 }
+  return { kcal: 0, protein: 0, fat: 0, carbs: 0, fiber: 0 }
 }
 
 function round1(value: number): number {
@@ -32,6 +32,7 @@ function sumTotals(entries: DiaryEntry[]): DailyTotals {
     acc.protein += entry.protein
     acc.fat += entry.fat
     acc.carbs += entry.carbs
+    acc.fiber += entry.fiber
     return acc
   }, emptyTotals())
   return {
@@ -39,6 +40,7 @@ function sumTotals(entries: DiaryEntry[]): DailyTotals {
     protein: round1(totals.protein),
     fat: round1(totals.fat),
     carbs: round1(totals.carbs),
+    fiber: round1(totals.fiber),
   }
 }
 
@@ -53,6 +55,7 @@ function toRow(input: DiaryEntryInput) {
     protein: input.protein,
     fat: input.fat,
     carbs: input.carbs,
+    fiber: input.fiber,
   }
 }
 
@@ -227,6 +230,7 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
           protein: round1(entry.protein * factor),
           fat: round1(entry.fat * factor),
           carbs: round1(entry.carbs * factor),
+          fiber: round1(entry.fiber * factor),
         })
         .eq('id', id)
         .select()

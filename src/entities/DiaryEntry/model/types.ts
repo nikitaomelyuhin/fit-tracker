@@ -14,6 +14,7 @@ export interface DiaryEntry {
   protein: number
   fat: number
   carbs: number
+  fiber: number
 }
 
 export interface DiaryEntryInput {
@@ -26,6 +27,7 @@ export interface DiaryEntryInput {
   protein: number
   fat: number
   carbs: number
+  fiber: number
 }
 
 /** Строка из таблицы Supabase diary_entries. */
@@ -40,6 +42,7 @@ export interface DiaryEntryRow {
   protein: number | string
   fat: number | string
   carbs: number | string
+  fiber: number | string
 }
 
 /** Итоги БЖУ. */
@@ -48,6 +51,7 @@ export interface DailyTotals {
   protein: number
   fat: number
   carbs: number
+  fiber: number
 }
 
 /** Один приём пищи (время суток) внутри дня, с итогами. */

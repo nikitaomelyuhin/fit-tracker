@@ -15,5 +15,6 @@ export function mapProduct(row: ProductRow): Product {
     protein: num(row.protein),
     fat: num(row.fat),
     carbs: num(row.carbs),
+    fiber: num(row.fiber),
   }
 }

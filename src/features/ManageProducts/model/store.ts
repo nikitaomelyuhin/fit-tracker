@@ -10,6 +10,8 @@ interface Form {
   protein: string
   fat: string
   carbs: string
+  /** Необязательное — не у каждого продукта её вообще знаешь, пусто = 0. */
+  fiber: string
 }
 
 interface State {
@@ -19,7 +21,7 @@ interface State {
 }
 
 function emptyForm(): Form {
-  return { name: '', category: 'base', unit: 'g', kcal: '', protein: '', fat: '', carbs: '' }
+  return { name: '', category: 'base', unit: 'g', kcal: '', protein: '', fat: '', carbs: '', fiber: '' }
 }
 
 export const useManageProductsStore = defineStore('manageProducts', {
@@ -49,6 +51,7 @@ export const useManageProductsStore = defineStore('manageProducts', {
         protein: String(product.protein),
         fat: String(product.fat),
         carbs: String(product.carbs),
+        fiber: product.fiber ? String(product.fiber) : '',
       }
     },
 
@@ -69,6 +72,7 @@ export const useManageProductsStore = defineStore('manageProducts', {
         protein: toNumber(this.form.protein)!,
         fat: toNumber(this.form.fat)!,
         carbs: toNumber(this.form.carbs)!,
+        fiber: toNumber(this.form.fiber) ?? 0,
       }
       const ok = this.editingId
         ? await products.update(this.editingId, input)

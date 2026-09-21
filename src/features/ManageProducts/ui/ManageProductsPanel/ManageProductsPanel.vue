@@ -14,6 +14,7 @@
         <BaseTextField v-model="store.form.protein" label="Белки" inputmode="decimal" />
         <BaseTextField v-model="store.form.fat" label="Жиры" inputmode="decimal" />
         <BaseTextField v-model="store.form.carbs" label="Углеводы" inputmode="decimal" />
+        <BaseTextField v-model="store.form.fiber" label="Клетчатка" inputmode="decimal" placeholder="0" />
       </div>
       <div :class="$style.actions">
         <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
@@ -31,7 +32,7 @@
           <span :class="$style.name">{{ product.name }}</span>
           <span :class="$style.meta">
             {{ product.kcal }} ккал · Б{{ product.protein }} Ж{{ product.fat }} У{{ product.carbs }}
-            / {{ product.unit === 'piece' ? 'шт.' : '100г' }}
+            Кл{{ product.fiber }} / {{ product.unit === 'piece' ? 'шт.' : '100г' }}
           </span>
         </div>
         <div :class="$style.itemActions">

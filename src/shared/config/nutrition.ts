@@ -7,3 +7,6 @@ export const MEAL_TYPE_LABELS: Record<MealType, string> = {
   dinner: 'Ужин',
   snack: 'Перекус',
 }
+
+/** Целевой диапазон клетчатки, г/день. */
+export const DAILY_FIBER_RANGE = { min: 25, max: 30 }

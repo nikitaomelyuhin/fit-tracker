@@ -58,6 +58,7 @@ create table if not exists public.products (
   protein    numeric(5, 1) not null,
   fat        numeric(5, 1) not null,
   carbs      numeric(5, 1) not null,
+  fiber      numeric(5, 1) not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -76,11 +77,14 @@ create table if not exists public.diary_entries (
   protein      numeric(5, 1) not null,
   fat          numeric(5, 1) not null,
   carbs        numeric(5, 1) not null,
+  fiber        numeric(5, 1) not null default 0,
   created_at   timestamptz not null default now()
 );
 
--- На случай, если diary_entries уже была создана раньше без meal_type.
+-- На случай, если products/diary_entries уже были созданы раньше без этих колонок.
 alter table if exists public.diary_entries add column if not exists meal_type text not null default 'other';
+alter table if exists public.products add column if not exists fiber numeric(5, 1) not null default 0;
+alter table if exists public.diary_entries add column if not exists fiber numeric(5, 1) not null default 0;
 
 create index if not exists weight_logs_user_date_idx on public.weight_logs (user_id, date desc);
 create index if not exists measurements_user_date_idx on public.measurements (user_id, date desc);

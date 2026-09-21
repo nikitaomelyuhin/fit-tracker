@@ -14,6 +14,7 @@ export interface Product {
   protein: number
   fat: number
   carbs: number
+  fiber: number
 }
 
 export interface ProductInput {
@@ -24,6 +25,7 @@ export interface ProductInput {
   protein: number
   fat: number
   carbs: number
+  fiber: number
 }
 
 /** Строка из таблицы Supabase products. */
@@ -36,4 +38,5 @@ export interface ProductRow {
   protein: number | string
   fat: number | string
   carbs: number | string
+  fiber: number | string
 }

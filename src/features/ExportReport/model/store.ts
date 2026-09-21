@@ -93,6 +93,7 @@ export const useExportReportStore = defineStore('exportReport', {
           protein: product.protein,
           fat: product.fat,
           carbs: product.carbs,
+          fiber: product.fiber,
         })),
         diary: {
           entries: diaryEntries.byDateDesc.map((entry) => ({
@@ -105,6 +106,7 @@ export const useExportReportStore = defineStore('exportReport', {
             protein: entry.protein,
             fat: entry.fat,
             carbs: entry.carbs,
+            fiber: entry.fiber,
           })),
         },
       }

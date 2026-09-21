@@ -14,6 +14,7 @@ import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { DAILY_KCAL_RANGE, DAILY_KCAL_TARGET, KCAL_PER_KG } from '@/shared/config/pace'
+import { DAILY_FIBER_RANGE } from '@/shared/config/nutrition'
 import { BODY_FAT_START_PCT } from '@/shared/config/profile'
 import { sumDeficitKcal } from '@/shared/lib/pace'
 import { todayISO } from '@/shared/lib/date'
@@ -59,6 +60,12 @@ const paceSub = computed(() => {
 const todayKcal = computed(() => {
   const totals = diaryEntries.totalsForDate(todayISO())
   return totals.kcal > 0 ? totals.kcal : null
+})
+
+/** Клетчатка сегодня — как ккал, только факт: день ещё может быть не дописан. */
+const todayFiber = computed(() => {
+  const totals = diaryEntries.totalsForDate(todayISO())
+  return totals.kcal > 0 ? totals.fiber : null
 })
 
 /**
@@ -118,6 +125,12 @@ const tiles = computed(() => [
     label: 'Жир (оценка)',
     value: bodyFatPct.value != null ? `${bodyFatPct.value}%` : '—',
     sub: '',
+    tone: 'muted' as Tone,
+  },
+  {
+    label: 'Клетчатка сегодня',
+    value: todayFiber.value != null ? `${todayFiber.value} г` : '—',
+    sub: `цель ${DAILY_FIBER_RANGE.min}–${DAILY_FIBER_RANGE.max}`,
     tone: 'muted' as Tone,
   },
 ])

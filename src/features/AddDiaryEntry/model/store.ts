@@ -13,6 +13,8 @@ interface CustomDraft {
   protein: string
   fat: string
   carbs: string
+  /** Необязательное — пусто = 0. */
+  fiber: string
 }
 
 interface DishRow {
@@ -28,6 +30,7 @@ interface Totals {
   protein: number
   fat: number
   carbs: number
+  fiber: number
 }
 
 /** Общий вид продукта (из базы или разового), достаточный для расчёта БЖУ. */
@@ -39,6 +42,7 @@ interface Resolved {
   protein: number
   fat: number
   carbs: number
+  fiber: number
 }
 
 interface State {
@@ -55,7 +59,7 @@ function emptyRow(): DishRow {
 }
 
 function emptyCustomDraft(): CustomDraft {
-  return { name: '', unit: 'g', kcal: '', protein: '', fat: '', carbs: '' }
+  return { name: '', unit: 'g', kcal: '', protein: '', fat: '', carbs: '', fiber: '' }
 }
 
 export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
@@ -99,9 +103,10 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
           const protein = toNumber(row.custom.protein)
           const fat = toNumber(row.custom.fat)
           const carbs = toNumber(row.custom.carbs)
+          const fiber = toNumber(row.custom.fiber) ?? 0
           const name = row.custom.name.trim()
           if (!name || kcal == null || protein == null || fat == null || carbs == null) return null
-          return { productId: null, name, unit: row.custom.unit, kcal, protein, fat, carbs }
+          return { productId: null, name, unit: row.custom.unit, kcal, protein, fat, carbs, fiber }
         }
 
         const product = this.selectedFor(key)
@@ -126,6 +131,7 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
           protein: Math.round(resolved.protein * factor * 10) / 10,
           fat: Math.round(resolved.fat * factor * 10) / 10,
           carbs: Math.round(resolved.carbs * factor * 10) / 10,
+          fiber: Math.round(resolved.fiber * factor * 10) / 10,
         }
       }
     },
@@ -140,15 +146,17 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
           acc.protein += preview.protein
           acc.fat += preview.fat
           acc.carbs += preview.carbs
+          acc.fiber += preview.fiber
           return acc
         },
-        { kcal: 0, protein: 0, fat: 0, carbs: 0 },
+        { kcal: 0, protein: 0, fat: 0, carbs: 0, fiber: 0 },
       )
       return {
         kcal: Math.round(sum.kcal),
         protein: Math.round(sum.protein * 10) / 10,
         fat: Math.round(sum.fat * 10) / 10,
         carbs: Math.round(sum.carbs * 10) / 10,
+        fiber: Math.round(sum.fiber * 10) / 10,
       }
     },
 

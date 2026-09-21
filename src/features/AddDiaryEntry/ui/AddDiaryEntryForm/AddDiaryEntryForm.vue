@@ -62,6 +62,13 @@
               inputmode="decimal"
               @update:model-value="store.setCustomField(row.key, 'carbs', $event)"
             />
+            <BaseTextField
+              :model-value="row.custom.fiber"
+              label="Клетчатка"
+              inputmode="decimal"
+              placeholder="0"
+              @update:model-value="store.setCustomField(row.key, 'fiber', $event)"
+            />
           </div>
           <button type="button" :class="$style.clear" @click="store.clearRow(row.key)">
             ✕ отменить свой продукт, вернуться к поиску
@@ -117,6 +124,7 @@
           <span>Б {{ store.previewFor(row.key)!.protein }}</span>
           <span>Ж {{ store.previewFor(row.key)!.fat }}</span>
           <span>У {{ store.previewFor(row.key)!.carbs }}</span>
+          <span>Кл {{ store.previewFor(row.key)!.fiber }}</span>
         </div>
       </div>
     </div>
@@ -125,7 +133,7 @@
 
     <div v-if="store.validRowsCount > 0" :class="$style.total">
       Итого: {{ store.totalPreview.kcal }} ккал · Б{{ store.totalPreview.protein }}
-      Ж{{ store.totalPreview.fat }} У{{ store.totalPreview.carbs }}
+      Ж{{ store.totalPreview.fat }} У{{ store.totalPreview.carbs }} Кл{{ store.totalPreview.fiber }}
     </div>
 
     <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
