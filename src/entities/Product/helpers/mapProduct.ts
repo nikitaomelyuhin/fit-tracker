@@ -1,7 +1,9 @@
 import type { Product, ProductRow } from '../model/types'
 
-function num(value: number | string): number {
-  return Number(value)
+function num(value: number | string | null | undefined): number {
+  if (value == null) return 0
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
 }
 
 /** Преобразует строку Supabase в доменную модель продукта. */

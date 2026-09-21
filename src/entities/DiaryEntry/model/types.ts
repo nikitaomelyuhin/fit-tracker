@@ -42,7 +42,8 @@ export interface DiaryEntryRow {
   protein: number | string
   fat: number | string
   carbs: number | string
-  fiber: number | string
+  /** Может отсутствовать в ответе, если миграция схемы ещё не применена в базе. */
+  fiber: number | string | null | undefined
 }
 
 /** Итоги БЖУ. */

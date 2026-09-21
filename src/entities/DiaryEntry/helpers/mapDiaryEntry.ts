@@ -1,8 +1,10 @@
 import { MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
 import type { DiaryEntry, DiaryEntryRow } from '../model/types'
 
-function num(value: number | string): number {
-  return Number(value)
+function num(value: number | string | null | undefined): number {
+  if (value == null) return 0
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
 }
 
 function mealType(value: string): MealType {
