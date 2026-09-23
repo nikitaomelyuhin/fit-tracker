@@ -15,6 +15,7 @@ export const WORKOUT_TEMPLATES: Record<WorkoutType, ExerciseDef[]> = {
     { name: 'Тяга верхнего блока' },
     { name: 'Тяга нижнего блока' },
     { name: 'Плечи — махи (кроссовер)' },
+    { name: 'Молотки' },
   ],
   B: [
     { name: 'Многоповторный жим' },
