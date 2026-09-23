@@ -39,7 +39,7 @@ import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
 import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { projectIdealPace } from '@/shared/lib/pace'
-import { addDays, todayISO, formatHuman } from '@/shared/lib/date'
+import { addDays, todayISO, formatHuman, weekStartFor } from '@/shared/lib/date'
 import { cssToken } from '@/shared/lib/theme'
 
 use([LineChart, GridComponent, TooltipComponent, LegendComponent, MarkLineComponent, CanvasRenderer])
@@ -69,6 +69,28 @@ const ideal = computed(() => {
     weight: point.weight,
     date: addDays(baseline.baselineDate, point.day),
   }))
+})
+
+/**
+ * Идеальная линия — тоже средним за неделю, а не по дням, иначе сравнение с
+ * «твой факт» (который сам ступенчатый по неделям) выглядит некорректно: одна
+ * линия гладкая, другая — нет, хотя разрешение должно быть одинаковым.
+ */
+const idealWeekly = computed(() => {
+  const points = ideal.value
+  if (!points.length) return []
+  const sums = new Map<string, { total: number; count: number }>()
+  for (const point of points) {
+    const week = weekStartFor(point.date)
+    const bucket = sums.get(week) ?? { total: 0, count: 0 }
+    bucket.total += point.weight
+    bucket.count += 1
+    sums.set(week, bucket)
+  }
+  return points.map((point) => {
+    const bucket = sums.get(weekStartFor(point.date))!
+    return { date: point.date, weight: bucket.total / bucket.count }
+  })
 })
 const idealText = computed(() => {
   const p = pace.value
@@ -125,7 +147,7 @@ const option = computed(() => {
   const accent = cssToken('--accent', '#4f8cff')
   const warning = cssToken('--warning', '#e0a63a')
 
-  const idealData = ideal.value.map((point) => [dayjs(point.date).valueOf(), round1(point.weight)])
+  const idealData = idealWeekly.value.map((point) => [dayjs(point.date).valueOf(), round1(point.weight)])
   const weekly = store.weeklyAverageByDateAsc
   const actualData = store.byDateAsc.map((row, index) => [dayjs(row.date).valueOf(), weekly[index]])
 
@@ -138,7 +160,6 @@ const option = computed(() => {
       name: 'Идеальный',
       type: 'line',
       showSymbol: false,
-      smooth: true,
       data: idealData,
       lineStyle: { color: success, width: 2.5 },
       itemStyle: { color: success },

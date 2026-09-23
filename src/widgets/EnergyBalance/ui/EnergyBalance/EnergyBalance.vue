@@ -5,33 +5,20 @@
       чтобы шум по дням усреднился).
     </p>
     <template v-else-if="ledger">
-      <div :class="[$style.debt, $style[debtTone]]">
-        {{ debtText }}
+      <div :class="$style.headline">
+        <span :class="$style.label">Вода сверх ожидаемого по калориям</span>
+        <span :class="[$style.value, $style[debtTone]]">{{ waterValueText }}</span>
       </div>
 
-      <div v-if="weeklyRows.length" :class="$style.weekly">
-        <p :class="$style.subtitle">Реальный расход по неделям (без часов)</p>
-        <ul :class="$style.list">
-          <li v-for="row in weeklyRows" :key="row.weekStart" :class="$style.row">
-            <span :class="$style.rowWeek">{{ weekLabel(row.weekStart) }}</span>
-            <span :class="$style.rowValue">~{{ row.expenditure }} ккал/день расход</span>
-            <span :class="$style.rowMeta">ел {{ row.avgIntake }}</span>
-          </li>
-        </ul>
-      </div>
-      <p v-else :class="$style.hint">
-        Недель с пересечением веса и рациона пока нет — появятся, когда наберётся хотя бы одна
-        полная неделя с записями в дневнике.
-      </p>
-
+      <p :class="$style.hint">{{ debtText }}</p>
       <p :class="$style.hint">
-        «Долг» — разница между тем, сколько жира должно было уйти по калориям (дневник) и сколько
-        реально ушло по весам, с {{ formatHuman(windowStart!) }}. Дни без записи в рационе просто
-        пропускаются, а не считаются нулём.
+        Считается с {{ formatHuman(windowStart!) }}: сколько жира должно было уйти по калориям
+        (дневник) минус сколько реально ушло по весам. Дни без записи в рационе пропускаются, а
+        не считаются нулём — это оценка, не точное измерение.
       </p>
     </template>
     <p v-else :class="$style.empty">
-      Веди дневник питания несколько дней — здесь появится реальный расход и «долг по воде».
+      Веди дневник питания несколько дней — здесь появится оценка задержанной воды.
     </p>
   </div>
 </template>
@@ -41,8 +28,7 @@ import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { computeWaterDebt, describeWaterDebt } from '@/shared/lib/waterDebt'
-import { KCAL_PER_KG } from '@/shared/config/pace'
-import { addDays, daysBetween, formatHuman, todayISO } from '@/shared/lib/date'
+import { daysBetween, formatHuman, todayISO } from '@/shared/lib/date'
 
 const MIN_DAYS = 7
 
@@ -80,22 +66,13 @@ const ledger = computed(() => {
 const debtTone = computed(() => describeWaterDebt(ledger.value).tone)
 const debtText = computed(() => describeWaterDebt(ledger.value).text)
 
-function weekLabel(weekStart: string): string {
-  return `${formatHuman(weekStart)} – ${formatHuman(addDays(weekStart, 6))}`
-}
-
-const weeklyRows = computed(() => {
-  return weightLog.weeklyAverages
-    .filter((week) => week.deltaKg != null)
-    .map((week) => {
-      const to = addDays(week.weekStart, 6)
-      const avgIntake = diaryEntries.averageKcalInRange(week.weekStart, to)
-      if (avgIntake == null) return null
-      const expenditure = Math.round(avgIntake - (week.deltaKg! / 7) * KCAL_PER_KG)
-      return { weekStart: week.weekStart, avgIntake, expenditure }
-    })
-    .filter((row): row is { weekStart: string; avgIntake: number; expenditure: number } => row != null)
-    .reverse()
+/** Один явный знак+число наверху — «сколько воды», без домешивания текста-объяснения. */
+const waterValueText = computed(() => {
+  const debtKg = ledger.value?.debtKg
+  if (debtKg == null) return '—'
+  const grams = Math.round(debtKg * 1000)
+  if (Math.abs(grams) < 150) return '0 г'
+  return grams > 0 ? `+${grams} г` : `${grams} г`
 })
 </script>
 
@@ -106,65 +83,39 @@ const weeklyRows = computed(() => {
   gap: var(--space-m);
 }
 
-.debt {
+.headline {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   padding: var(--space-m);
   background: var(--bg-elevated);
   border-radius: var(--radius-m);
-  font-size: var(--font-size-m);
-  font-weight: 600;
-  color: var(--text-primary);
   border-left: 3px solid var(--border);
+}
+
+.label {
+  font-size: var(--font-size-s);
+  color: var(--text-secondary);
+}
+
+.value {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .warn {
   border-left-color: var(--warning);
+  color: var(--warning);
 }
 
 .good {
   border-left-color: var(--success);
+  color: var(--success);
 }
 
 .muted {
   border-left-color: var(--border);
-}
-
-.subtitle {
-  font-size: var(--font-size-s);
-  color: var(--text-secondary);
-  margin-bottom: var(--space-xs);
-}
-
-.list {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: baseline;
-  gap: var(--space-s);
-  padding: var(--space-xs) var(--space-s);
-  border-radius: var(--radius-s);
-  background: var(--bg-elevated);
-}
-
-.rowWeek {
-  font-size: var(--font-size-s);
-  color: var(--text-secondary);
-}
-
-.rowValue {
-  font-size: var(--font-size-m);
-  font-weight: 600;
-  color: var(--text-primary);
-}
-
-.rowMeta {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
 }
 
 .hint {
