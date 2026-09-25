@@ -86,11 +86,32 @@ alter table if exists public.diary_entries add column if not exists meal_type te
 alter table if exists public.products add column if not exists fiber numeric(5, 1) not null default 0;
 alter table if exists public.diary_entries add column if not exists fiber numeric(5, 1) not null default 0;
 
+-- ── Фото прогресса (метаданные; сами файлы — в Storage-бакете progress-photos) ──
+-- angle: 'front' | 'side' | 'back'. Один снимок на ракурс в день (как весы —
+-- перезалил тот же день/ракурс, старый файл просто заменяется).
+create table if not exists public.progress_photos (
+  id           uuid primary key default gen_random_uuid(),
+  user_id      uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  date         date not null,
+  angle        text not null default 'front',
+  storage_path text not null,
+  note         text,
+  created_at   timestamptz not null default now(),
+  unique (user_id, date, angle)
+);
+
 create index if not exists weight_logs_user_date_idx on public.weight_logs (user_id, date desc);
 create index if not exists measurements_user_date_idx on public.measurements (user_id, date desc);
 create index if not exists workouts_user_date_idx on public.workouts (user_id, date desc);
 create index if not exists products_user_name_idx on public.products (user_id, name);
 create index if not exists diary_entries_user_date_idx on public.diary_entries (user_id, date desc);
+create index if not exists progress_photos_user_date_idx on public.progress_photos (user_id, date desc);
+
+-- Приватный бакет под сами файлы — доступ только через RLS storage.objects ниже,
+-- никаких публичных ссылок, фото отдаются подписанными URL с коротким сроком.
+insert into storage.buckets (id, name, public)
+values ('progress-photos', 'progress-photos', false)
+on conflict (id) do nothing;
 
 -- ── RLS: каждый видит и меняет только своё ────────────────
 alter table public.weight_logs enable row level security;
@@ -98,12 +119,13 @@ alter table public.measurements enable row level security;
 alter table public.workouts enable row level security;
 alter table public.products enable row level security;
 alter table public.diary_entries enable row level security;
+alter table public.progress_photos enable row level security;
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['weight_logs', 'measurements', 'workouts', 'products', 'diary_entries'] loop
+  foreach t in array array['weight_logs', 'measurements', 'workouts', 'products', 'diary_entries', 'progress_photos'] loop
     execute format('drop policy if exists own_rows_select on public.%I;', t);
     execute format('drop policy if exists own_rows_insert on public.%I;', t);
     execute format('drop policy if exists own_rows_update on public.%I;', t);
@@ -115,3 +137,18 @@ begin
     execute format('create policy own_rows_delete on public.%I for delete using (user_id = auth.uid());', t);
   end loop;
 end $$;
+
+-- ── RLS для файлов в Storage: путь вида "<user_id>/<...>", доступ только владельцу ──
+drop policy if exists progress_photos_owner_select on storage.objects;
+drop policy if exists progress_photos_owner_insert on storage.objects;
+drop policy if exists progress_photos_owner_update on storage.objects;
+drop policy if exists progress_photos_owner_delete on storage.objects;
+
+create policy progress_photos_owner_select on storage.objects for select
+  using (bucket_id = 'progress-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy progress_photos_owner_insert on storage.objects for insert
+  with check (bucket_id = 'progress-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy progress_photos_owner_update on storage.objects for update
+  using (bucket_id = 'progress-photos' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy progress_photos_owner_delete on storage.objects for delete
+  using (bucket_id = 'progress-photos' and (storage.foldername(name))[1] = auth.uid()::text);

@@ -59,6 +59,15 @@
             </BaseCard>
           </template>
 
+          <template v-else-if="activeTab === 'photos'">
+            <BaseCard title="Добавить фото">
+              <AddProgressPhotoForm />
+            </BaseCard>
+            <BaseCard title="История фото" :class="$style.wide">
+              <PhotoHistory />
+            </BaseCard>
+          </template>
+
           <template v-else-if="activeTab === 'analytics'">
             <WaterBalance :class="$style.wide" />
 
@@ -127,11 +136,14 @@ import { useWeightLogStore } from '@/entities/WeightLog'
 import { useWorkoutStore } from '@/entities/Workout'
 import { useProductStore } from '@/entities/Product'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
+import { useProgressPhotoStore } from '@/entities/ProgressPhoto'
 import { AddWeightForm } from '@/features/AddWeightEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
 import { ExportReportButton } from '@/features/ExportReport'
 import { AddDiaryEntryForm } from '@/features/AddDiaryEntry'
 import { ManageProductsPanel } from '@/features/ManageProducts'
+import { AddProgressPhotoForm } from '@/features/AddProgressPhoto'
+import { PhotoHistory } from '@/widgets/PhotoHistory'
 import { WeightHistory } from '@/widgets/WeightHistory'
 import { WeightGoal } from '@/widgets/WeightGoal'
 import { WorkoutHistory } from '@/widgets/WorkoutHistory'
@@ -158,12 +170,13 @@ const CalorieTrend = defineAsyncComponent(() =>
   import('@/widgets/CalorieTrend').then((m) => m.CalorieTrend),
 )
 
-type TabKey = 'weight' | 'workouts' | 'nutrition' | 'analytics'
+type TabKey = 'weight' | 'workouts' | 'nutrition' | 'photos' | 'analytics'
 
 const tabs: { key: TabKey; label: string; icon: string }[] = [
   { key: 'weight', label: 'Вес', icon: '⚖️' },
   { key: 'workouts', label: 'Тренировки', icon: '🏋️' },
   { key: 'nutrition', label: 'Питание', icon: '🍽️' },
+  { key: 'photos', label: 'Фото', icon: '📸' },
   { key: 'analytics', label: 'Аналитика', icon: '📊' },
 ]
 
@@ -180,9 +193,16 @@ const weightLog = useWeightLogStore()
 const workouts = useWorkoutStore()
 const products = useProductStore()
 const diaryEntries = useDiaryEntryStore()
+const progressPhotos = useProgressPhotoStore()
 
 async function loadAll() {
-  await Promise.all([weightLog.load(), workouts.load(), products.load(), diaryEntries.load()])
+  await Promise.all([
+    weightLog.load(),
+    workouts.load(),
+    products.load(),
+    diaryEntries.load(),
+    progressPhotos.load(),
+  ])
 }
 
 function reloadPage() {
