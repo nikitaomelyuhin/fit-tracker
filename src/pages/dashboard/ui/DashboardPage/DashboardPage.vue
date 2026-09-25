@@ -60,6 +60,9 @@
           </template>
 
           <template v-else-if="activeTab === 'photos'">
+            <BaseCard title="Ориентир" :class="$style.wide">
+              <img src="/progress-reference.webp" alt="Ориентир по прогрессу" :class="$style.referenceImg" />
+            </BaseCard>
             <BaseCard title="Добавить фото">
               <AddProgressPhotoForm />
             </BaseCard>
@@ -316,6 +319,13 @@ async function onSignOut() {
 
 .wide {
   grid-column: 1 / -1;
+}
+
+.referenceImg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  border-radius: var(--radius-m);
 }
 
 .sectionTitle {
