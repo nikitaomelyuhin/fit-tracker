@@ -10,8 +10,16 @@
       <BaseSelect v-model="store.form.angle" label="Ракурс" :options="angleOptions" />
     </div>
 
-    <label :class="$style.fileLabel">
-      <span :class="$style.fileLabelText">Фото</span>
+    <label
+      :class="[$style.dropzone, isDragging && $style.dropzoneActive]"
+      @dragenter.prevent="onDragEnter"
+      @dragover.prevent
+      @dragleave.prevent="onDragLeave"
+      @drop.prevent="onDrop"
+    >
+      <span :class="$style.dropzoneText">
+        {{ store.form.file ? `Выбрано: ${store.form.file.name}` : 'Перетащи фото сюда или нажми, чтобы выбрать' }}
+      </span>
       <input
         :class="$style.fileInput"
         type="file"
@@ -19,7 +27,6 @@
         @change="onFileChange"
       />
     </label>
-    <p v-if="store.form.file" :class="$style.fileName">Выбрано: {{ store.form.file.name }}</p>
 
     <BaseTextField v-model="store.form.note" label="Заметка" placeholder="—" />
 
@@ -31,6 +38,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useProgressPhotoStore } from '@/entities/ProgressPhoto'
 import { PHOTO_ANGLES, PHOTO_ANGLE_LABELS } from '@/shared/config/photos'
 import { BaseButton, BaseSelect, BaseTextField } from '@/shared/ui'
@@ -44,9 +52,25 @@ useFreshDate(() => store.refreshDateIfUntouched())
 
 const angleOptions = PHOTO_ANGLES.map((angle) => ({ value: angle, label: PHOTO_ANGLE_LABELS[angle] }))
 
+const isDragging = ref(false)
+
 function onFileChange(event: Event) {
   const file = (event.target as HTMLInputElement).files?.[0] ?? null
   store.setFile(file)
+}
+
+function onDragEnter() {
+  isDragging.value = true
+}
+
+function onDragLeave() {
+  isDragging.value = false
+}
+
+function onDrop(event: DragEvent) {
+  isDragging.value = false
+  const file = event.dataTransfer?.files?.[0] ?? null
+  if (file && file.type.startsWith('image/')) store.setFile(file)
 }
 
 async function onSubmit() {
@@ -73,25 +97,37 @@ async function onSubmit() {
   }
 }
 
-.fileLabel {
+.dropzone {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 96px;
+  padding: var(--space-m);
+  background: var(--bg-elevated);
+  border: 2px dashed var(--border);
+  border-radius: var(--radius-m);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.fileLabelText {
+.dropzoneActive {
+  border-color: var(--accent);
+  background: var(--bg-surface);
+}
+
+.dropzoneText {
   font-size: var(--font-size-s);
   color: var(--text-secondary);
 }
 
 .fileInput {
-  color: var(--text-primary);
-  font-size: var(--font-size-m);
-}
-
-.fileName {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
 }
 
 .error {
