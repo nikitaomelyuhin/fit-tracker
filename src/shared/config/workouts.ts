@@ -12,6 +12,7 @@ export interface ExerciseDef {
 export const WORKOUT_TEMPLATES: Record<WorkoutType, ExerciseDef[]> = {
   A: [
     { name: 'Жим лёжа' },
+    { name: 'Наклонный жим штанги' },
     { name: 'Тяга верхнего блока' },
     { name: 'Тяга нижнего блока' },
     { name: 'Плечи — махи (кроссовер)' },
