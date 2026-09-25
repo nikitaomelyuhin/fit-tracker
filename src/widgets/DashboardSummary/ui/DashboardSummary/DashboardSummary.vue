@@ -13,10 +13,9 @@ import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG } from '@/shared/config/goals'
-import { DAILY_KCAL_RANGE, DAILY_KCAL_TARGET, KCAL_PER_KG } from '@/shared/config/pace'
+import { DAILY_KCAL_RANGE, DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { DAILY_FIBER_RANGE } from '@/shared/config/nutrition'
-import { BODY_FAT_START_PCT } from '@/shared/config/profile'
-import { sumDeficitKcal } from '@/shared/lib/pace'
+import { estimateBodyFatPct } from '@/shared/lib/bodyFat'
 import { todayISO } from '@/shared/lib/date'
 
 type Tone = 'good' | 'warn' | 'muted'
@@ -83,18 +82,15 @@ const bodyFatPct = computed(() => {
   const kcalByDate = new Map(diaryEntries.dailyKcalAsc.map((d) => [d.date, d.kcal]))
   const fallbackKcal = diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET)
 
-  const { totalDeficitKcal } = sumDeficitKcal({
-    fromDate: start.date,
+  return estimateBodyFatPct({
+    startDate: start.date,
+    startWeight: start.weight,
     toDate: todayISO(),
+    weightAtTarget: currentWeight,
     weightAt: (date) => weightByDate.get(date) ?? weightLog.smoothedWeight,
     kcalAt: (date) => kcalByDate.get(date) ?? null,
     fallbackKcal,
   })
-
-  const fatLostKg = totalDeficitKcal / KCAL_PER_KG
-  const startFatMassKg = start.weight * (BODY_FAT_START_PCT / 100)
-  const currentFatMassKg = Math.max(0, startFatMassKg - fatLostKg)
-  return Math.round((currentFatMassKg / currentWeight) * 1000) / 10
 })
 
 const tiles = computed(() => [
