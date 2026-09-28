@@ -72,8 +72,6 @@
           </template>
 
           <template v-else-if="activeTab === 'analytics'">
-            <WaterBalance :class="$style.wide" />
-
             <p :class="$style.sectionTitle">Вес</p>
             <BaseCard title="Цель">
               <WeightGoal />
@@ -105,9 +103,6 @@
             <p :class="$style.sectionTitle">Питание</p>
             <BaseCard title="Ккал по дням" :class="$style.wide">
               <CalorieTrend />
-            </BaseCard>
-            <BaseCard title="Баланс" :class="$style.wide">
-              <EnergyBalance />
             </BaseCard>
             <BaseCard title="Где утекают калории" :class="$style.wide">
               <MealBreakdown />
@@ -155,11 +150,9 @@ import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { GymProgress } from '@/widgets/GymProgress'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
-import { EnergyBalance } from '@/widgets/EnergyBalance'
 import { MealBreakdown } from '@/widgets/MealBreakdown'
 import { Analysis } from '@/widgets/Analysis'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
-import { WaterBalance } from '@/widgets/WaterBalance'
 import { BaseButton, BaseCard } from '@/shared/ui'
 
 // Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.
