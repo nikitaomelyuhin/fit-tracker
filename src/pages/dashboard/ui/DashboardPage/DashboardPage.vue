@@ -82,9 +82,6 @@
             <BaseCard title="Неделя к неделе">
               <WeeklyComparison />
             </BaseCard>
-            <BaseCard title="Анализ" :class="$style.wide">
-              <Analysis />
-            </BaseCard>
             <BaseCard title="Динамика веса" :class="$style.wide">
               <WeightTrendChart />
             </BaseCard>
@@ -95,17 +92,9 @@
               <PaceForecast />
             </BaseCard>
 
-            <p :class="$style.sectionTitle">Тренировки</p>
-            <BaseCard title="Прогрессия весов" :class="$style.wide">
-              <GymProgress />
-            </BaseCard>
-
             <p :class="$style.sectionTitle">Питание</p>
             <BaseCard title="Ккал по дням" :class="$style.wide">
               <CalorieTrend />
-            </BaseCard>
-            <BaseCard title="Где утекают калории" :class="$style.wide">
-              <MealBreakdown />
             </BaseCard>
           </template>
         </div>
@@ -148,10 +137,7 @@ import { WorkoutHistory } from '@/widgets/WorkoutHistory'
 import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { WeeklyComparison } from '@/widgets/WeeklyComparison'
-import { GymProgress } from '@/widgets/GymProgress'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
-import { MealBreakdown } from '@/widgets/MealBreakdown'
-import { Analysis } from '@/widgets/Analysis'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'
 

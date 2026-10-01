@@ -178,9 +178,9 @@ const option = computed(() => {
     {
       name: 'Твой факт',
       type: 'line',
-      symbolSize: 10,
+      showSymbol: false,
       data: actualData,
-      lineStyle: { color: accent, width: 3 },
+      lineStyle: { color: accent, width: 3.5 },
       itemStyle: { color: accent },
     },
   ]
@@ -198,16 +198,20 @@ const option = computed(() => {
   }
 
   return {
-    grid: { left: 40, right: 20, top: 36, bottom: 28 },
+    grid: { left: 48, right: 24, top: 44, bottom: 32 },
     tooltip: { trigger: 'axis' },
-    legend: { data: legendData, textStyle: { color: muted }, top: 0 },
-    xAxis: { type: 'time', axisLine: { lineStyle: { color: border } }, axisLabel: { color: muted } },
+    legend: { data: legendData, textStyle: { color: muted, fontSize: 14 }, top: 0, itemWidth: 20, itemHeight: 3 },
+    xAxis: {
+      type: 'time',
+      axisLine: { lineStyle: { color: border } },
+      axisLabel: { color: muted, fontSize: 13 },
+    },
     yAxis: {
       type: 'value',
       min: yMin,
       max: yMax,
       splitLine: { lineStyle: { color: border } },
-      axisLabel: { color: muted },
+      axisLabel: { color: muted, fontSize: 13 },
     },
     series,
   }
@@ -259,7 +263,7 @@ const option = computed(() => {
 
 .value {
   font-weight: 700;
-  font-size: var(--font-size-l);
+  font-size: var(--font-size-xl);
   color: var(--text-primary);
 }
 
@@ -269,7 +273,7 @@ const option = computed(() => {
 
 .chart {
   width: 100%;
-  height: 360px;
+  height: 480px;
 }
 
 .hint {
