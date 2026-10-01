@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
-import { currentWeekStartISO, weekStartFor, todayISO } from '@/shared/lib/date'
+import { currentWeekStartISO, daysBetween, weekStartFor, todayISO } from '@/shared/lib/date'
 import { computeCleanStart, comparePaceWithPlan } from '@/shared/lib/pace'
 import type { CleanStart, PaceVsPlan } from '@/shared/lib/pace'
 import { classifyDayDelta } from '@/shared/lib/dayDelta'
@@ -143,12 +143,17 @@ export const useWeightLogStore = defineStore('weightLog', {
     /**
      * Классификация каждой записи по дневной дельте (та же логика, что красит
      * ячейки календаря) — основа для ПП-стрика: «чёрная зона» (delta ≥ 0.7) его рвёт.
+     * Если пропустил день(-и), дельта делится на число прошедших дней — иначе
+     * накопленное за пропуск изменение сравнивалось бы с порогами для одного дня
+     * и могло несправедливо порвать стрик на ровном месте.
      */
     dailyDeltaClasses(): ReturnType<typeof classifyDayDelta>[] {
       const items = this.byDateAsc
       return items.map((item, index) => {
-        const prev = index > 0 ? items[index - 1].weight : null
-        const delta = prev != null ? Math.round((item.weight - prev) * 10) / 10 : null
+        const prev = index > 0 ? items[index - 1] : null
+        if (!prev) return classifyDayDelta(null)
+        const days = Math.max(1, daysBetween(prev.date, item.date))
+        const delta = Math.round(((item.weight - prev.weight) / days) * 10) / 10
         return classifyDayDelta(delta)
       })
     },
