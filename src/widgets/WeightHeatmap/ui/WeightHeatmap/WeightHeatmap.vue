@@ -59,7 +59,7 @@
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import dayjs from 'dayjs'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { addDays, formatHuman, todayISO } from '@/shared/lib/date'
+import { addDays, daysBetween, formatHuman, todayISO } from '@/shared/lib/date'
 import { classifyDayDelta } from '@/shared/lib/dayDelta'
 
 const MONTHS = ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
@@ -97,12 +97,12 @@ const infoByDate = computed(() => {
   const map = new Map<string, DayInfo>()
   const items = store.byDateAsc
   for (let i = 0; i < items.length; i++) {
-    const prev = i > 0 ? items[i - 1].weight : null
-    map.set(items[i].date, {
-      weight: items[i].weight,
-      prev,
-      delta: prev != null ? Math.round((items[i].weight - prev) * 10) / 10 : null,
-    })
+    const prevItem = i > 0 ? items[i - 1] : null
+    // Если между записями пропуск — дельта на день, а не накопленная за весь пропуск
+    // (иначе цвет клетки судил бы по порогам для одного дня о сумме за несколько).
+    const days = prevItem ? Math.max(1, daysBetween(prevItem.date, items[i].date)) : 1
+    const delta = prevItem ? Math.round(((items[i].weight - prevItem.weight) / days) * 10) / 10 : null
+    map.set(items[i].date, { weight: items[i].weight, prev: prevItem?.weight ?? null, delta })
   }
   return map
 })
