@@ -79,7 +79,7 @@ const bodyFatPct = computed(() => {
   if (!start || currentWeight == null) return null
 
   const weightByDate = new Map(weightLog.byDateAsc.map((w) => [w.date, w.weight]))
-  const kcalByDate = new Map(diaryEntries.dailyKcalAsc.map((d) => [d.date, d.kcal]))
+  const kcalByDate = new Map(diaryEntries.dailyKcalWithCheatAsc.map((d) => [d.date, d.kcal]))
   const fallbackKcal = diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET)
 
   return estimateBodyFatPct({

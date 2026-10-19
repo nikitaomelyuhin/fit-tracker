@@ -45,7 +45,7 @@ const diaryEntries = useDiaryEntryStore()
 const pendingId = ref<string | null>(null)
 
 const weightByDate = computed(() => new Map(weightLog.byDateAsc.map((w) => [w.date, w.weight])))
-const kcalByDate = computed(() => new Map(diaryEntries.dailyKcalAsc.map((d) => [d.date, d.kcal])))
+const kcalByDate = computed(() => new Map(diaryEntries.dailyKcalWithCheatAsc.map((d) => [d.date, d.kcal])))
 const fallbackKcal = computed(() => diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET))
 
 /** Вес и оценка % жира на дату фото — только если в этот день реально есть взвешивание. */

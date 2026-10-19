@@ -43,7 +43,7 @@ use([BarChart, GridComponent, TooltipComponent, MarkLineComponent, MarkAreaCompo
 const store = useDiaryEntryStore()
 const target = DAILY_KCAL_TARGET
 
-const hasData = computed(() => store.dailyKcalAsc.length > 0)
+const hasData = computed(() => store.dailyKcalWithCheatAsc.length > 0)
 const average7 = computed(() => store.recentAverageKcal(7))
 
 const option = computed(() => {
@@ -51,12 +51,19 @@ const option = computed(() => {
   const muted = cssToken('--text-muted', '#6b7280')
   const success = cssToken('--success', '#35c07a')
   const warning = cssToken('--warning', '#e0a63a')
+  const danger = cssToken('--danger', '#e5484d')
 
-  const rows = store.dailyKcalAsc
+  const rows = store.dailyKcalWithCheatAsc
 
   return {
     grid: { left: 48, right: 16, top: 16, bottom: 32 },
-    tooltip: { trigger: 'axis' },
+    tooltip: {
+      trigger: 'axis',
+      formatter: (params: { dataIndex: number; name: string; value: number }[]) => {
+        const row = rows[params[0].dataIndex]
+        return row.cheat ? `${params[0].name}<br/>Читмил` : `${params[0].name}<br/>${row.kcal} ккал`
+      },
+    },
     xAxis: {
       type: 'category',
       data: rows.map((row) => formatHuman(row.date)),
@@ -75,8 +82,15 @@ const option = computed(() => {
         data: rows.map((row) => ({
           value: row.kcal,
           itemStyle: {
-            color: row.kcal >= DAILY_KCAL_RANGE.min && row.kcal <= DAILY_KCAL_RANGE.max ? success : warning,
+            color: row.cheat
+              ? danger
+              : row.kcal >= DAILY_KCAL_RANGE.min && row.kcal <= DAILY_KCAL_RANGE.max
+                ? success
+                : warning,
           },
+          label: row.cheat
+            ? { show: true, position: 'top', formatter: 'читмил', color: danger }
+            : { show: false },
         })),
         barMaxWidth: 28,
         markArea: {

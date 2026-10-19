@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
-import { MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
+import { useCheatDayStore } from '@/entities/CheatDay'
+import { CHEAT_DAY_KCAL, MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
 import { addDays, todayISO } from '@/shared/lib/date'
 import { mapDiaryEntry } from '../helpers/mapDiaryEntry'
 import type {
@@ -118,10 +119,24 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
      */
     completedDailyKcalAsc(): { date: string; kcal: number }[] {
       const today = todayISO()
-      return this.dailyKcalAsc.filter((d) => d.date < today)
+      const cheat = useCheatDayStore()
+      return this.dailyKcalAsc.filter((d) => d.date < today && !cheat.isCheat(d.date))
     },
 
-    /** Среднее ккал за последние N календарных дней, только по завершённым дням с записями. */
+    /**
+     * Ккал по дням для графика и оценки жира: читмилы (в т.ч. без единой записи)
+     * идут с условными CHEAT_DAY_KCAL и флагом cheat, а записи таких дней игнорируются —
+     * их вносили «от балды». В средние это не попадает (см. completedDailyKcalAsc).
+     */
+    dailyKcalWithCheatAsc(): { date: string; kcal: number; cheat: boolean }[] {
+      const cheat = useCheatDayStore()
+      const rows = new Map<string, { date: string; kcal: number; cheat: boolean }>()
+      for (const day of this.dailyKcalAsc) rows.set(day.date, { date: day.date, kcal: day.kcal, cheat: false })
+      for (const item of cheat.items) rows.set(item.date, { date: item.date, kcal: CHEAT_DAY_KCAL, cheat: true })
+      return [...rows.values()].sort((a, b) => (a.date < b.date ? -1 : 1))
+    },
+
+    /** Среднее ккал за последние N календарных дней, только по завершённым дням с записями (без читмилов). */
     recentAverageKcal(): (days: number) => number | null {
       return (days: number) => {
         const since = addDays(todayISO(), -(days - 1))

@@ -11,7 +11,10 @@
     <div v-else :class="$style.days">
       <div v-for="day in visibleDays" :key="day.date" :class="$style.day">
       <div :class="$style.dayHead">
-        <span :class="$style.date">{{ formatHuman(day.date) }}</span>
+        <span :class="$style.date">
+          {{ formatHuman(day.date) }}
+          <span v-if="cheatDays.isCheat(day.date)" :class="$style.cheatBadge">читмил</span>
+        </span>
         <span :class="$style.dayTotals">
           {{ day.totals.kcal }} ккал · Б{{ day.totals.protein }} Ж{{ day.totals.fat }} У{{ day.totals.carbs }}
           Кл{{ day.totals.fiber }}
@@ -72,6 +75,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
+import { useCheatDayStore } from '@/entities/CheatDay'
 import { MEAL_TYPE_LABELS } from '@/shared/config/nutrition'
 import { BaseButton, BaseTextField } from '@/shared/ui'
 import { formatHuman } from '@/shared/lib/date'
@@ -80,6 +84,7 @@ import { toNumber } from '@/shared/lib/number'
 const DEFAULT_DAYS_SHOWN = 5
 
 const store = useDiaryEntryStore()
+const cheatDays = useCheatDayStore()
 
 const editingId = ref<string | null>(null)
 const editAmount = ref('')
@@ -174,6 +179,17 @@ function onDelete(id: string) {
   font-weight: 700;
   font-size: var(--font-size-l);
   color: var(--text-primary);
+}
+
+.cheatBadge {
+  margin-left: var(--space-s);
+  padding: 2px var(--space-s);
+  border-radius: var(--radius-s);
+  background: var(--danger);
+  color: var(--accent-contrast);
+  font-size: var(--font-size-s);
+  font-weight: 600;
+  vertical-align: middle;
 }
 
 .dayTotals {

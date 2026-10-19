@@ -100,6 +100,15 @@ create table if not exists public.progress_photos (
   unique (user_id, date, angle)
 );
 
+-- ── Читмилы (день без подсчёта: на графике «много ккал», в средние и план не идёт) ──
+create table if not exists public.cheat_days (
+  id         uuid primary key default gen_random_uuid(),
+  user_id    uuid not null default auth.uid() references auth.users (id) on delete cascade,
+  date       date not null,
+  created_at timestamptz not null default now(),
+  unique (user_id, date)
+);
+
 create index if not exists weight_logs_user_date_idx on public.weight_logs (user_id, date desc);
 create index if not exists measurements_user_date_idx on public.measurements (user_id, date desc);
 create index if not exists workouts_user_date_idx on public.workouts (user_id, date desc);
@@ -120,12 +129,13 @@ alter table public.workouts enable row level security;
 alter table public.products enable row level security;
 alter table public.diary_entries enable row level security;
 alter table public.progress_photos enable row level security;
+alter table public.cheat_days enable row level security;
 
 do $$
 declare
   t text;
 begin
-  foreach t in array array['weight_logs', 'measurements', 'workouts', 'products', 'diary_entries', 'progress_photos'] loop
+  foreach t in array array['weight_logs', 'measurements', 'workouts', 'products', 'diary_entries', 'progress_photos', 'cheat_days'] loop
     execute format('drop policy if exists own_rows_select on public.%I;', t);
     execute format('drop policy if exists own_rows_insert on public.%I;', t);
     execute format('drop policy if exists own_rows_update on public.%I;', t);

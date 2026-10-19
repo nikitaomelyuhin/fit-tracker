@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
   )
 
-  const tables = ['weight_logs', 'measurements', 'workouts', 'products', 'diary_entries'] as const
+  const tables = ['weight_logs', 'measurements', 'workouts', 'products', 'diary_entries', 'cheat_days'] as const
   const snapshot: Record<string, unknown> = {
     exportedAt: new Date().toISOString(),
     app: 'fit-tracker',

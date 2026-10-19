@@ -51,6 +51,9 @@
             <BaseCard title="Записать приём пищи" :class="$style.wide">
               <AddDiaryEntryForm />
             </BaseCard>
+            <BaseCard title="Читмил">
+              <MarkCheatDayForm />
+            </BaseCard>
             <BaseCard title="Рацион" :class="$style.wide">
               <DiaryHistory />
             </BaseCard>
@@ -124,12 +127,14 @@ import { useWorkoutStore } from '@/entities/Workout'
 import { useProductStore } from '@/entities/Product'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { useProgressPhotoStore } from '@/entities/ProgressPhoto'
+import { useCheatDayStore } from '@/entities/CheatDay'
 import { AddWeightForm } from '@/features/AddWeightEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
 import { ExportReportButton } from '@/features/ExportReport'
 import { AddDiaryEntryForm } from '@/features/AddDiaryEntry'
 import { ManageProductsPanel } from '@/features/ManageProducts'
 import { AddProgressPhotoForm } from '@/features/AddProgressPhoto'
+import { MarkCheatDayForm } from '@/features/MarkCheatDay'
 import { PhotoHistory } from '@/widgets/PhotoHistory'
 import { WeightHistory } from '@/widgets/WeightHistory'
 import { WeightGoal } from '@/widgets/WeightGoal'
@@ -176,6 +181,7 @@ const workouts = useWorkoutStore()
 const products = useProductStore()
 const diaryEntries = useDiaryEntryStore()
 const progressPhotos = useProgressPhotoStore()
+const cheatDays = useCheatDayStore()
 
 async function loadAll() {
   await Promise.all([
@@ -184,6 +190,7 @@ async function loadAll() {
     products.load(),
     diaryEntries.load(),
     progressPhotos.load(),
+    cheatDays.load(),
   ])
 }
 

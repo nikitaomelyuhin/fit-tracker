@@ -3,9 +3,11 @@ import { useWeightLogStore } from '@/entities/WeightLog'
 import { useWorkoutStore } from '@/entities/Workout'
 import { useProductStore } from '@/entities/Product'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
+import { useCheatDayStore } from '@/entities/CheatDay'
 import { downloadJson } from '@/shared/lib/download'
 import { todayISO } from '@/shared/lib/date'
 import { AGE, HEIGHT_CM } from '@/shared/config/profile'
+import { CHEAT_DAY_KCAL } from '@/shared/config/nutrition'
 import { ACTIVITY_FACTOR, DAILY_KCAL_TARGET, KCAL_PER_KG, WATER_ADAPTATION_DAYS } from '@/shared/config/pace'
 import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG } from '@/shared/config/goals'
 
@@ -17,6 +19,7 @@ export const useExportReportStore = defineStore('exportReport', {
       const workouts = useWorkoutStore()
       const products = useProductStore()
       const diaryEntries = useDiaryEntryStore()
+      const cheatDays = useCheatDayStore()
 
       // Недельные средние веса (среда → вторник) с разницей к прошлой неделе — главный показатель тренда.
       const weeklyAverages = weightLog.weeklyAverages
@@ -95,6 +98,11 @@ export const useExportReportStore = defineStore('exportReport', {
           carbs: product.carbs,
           fiber: product.fiber,
         })),
+        // Читмилы: дни без подсчёта, ккал в дневнике за них недостоверны или отсутствуют.
+        cheatDays: {
+          assumedKcal: CHEAT_DAY_KCAL,
+          dates: cheatDays.byDateDesc.map((item) => item.date),
+        },
         diary: {
           entries: diaryEntries.byDateDesc.map((entry) => ({
             date: entry.date,
