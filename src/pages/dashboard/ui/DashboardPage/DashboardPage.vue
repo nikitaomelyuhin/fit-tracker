@@ -21,86 +21,102 @@
           <h1 :class="$style.brand">Fit Tracker</h1>
           <div :class="$style.actions">
             <ExportReportButton />
-            <BaseButton variant="ghost" @click="reloadPage">⟳ Обновить</BaseButton>
+            <BaseButton variant="ghost" :disabled="sync.loading" @click="sync.loadAll()">
+              {{ sync.loading ? 'Обновляю…' : '⟳ Обновить' }}
+            </BaseButton>
             <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
           </div>
         </header>
 
-        <DashboardSummary />
+        <div v-if="sync.loading && sync.loadedOnce" :class="$style.refreshBar" />
 
-        <div :class="$style.content">
-          <template v-if="activeTab === 'weight'">
-            <BaseCard title="Записать вес">
-              <AddWeightForm />
-            </BaseCard>
-            <BaseCard title="История" :class="$style.wide">
-              <WeightHistory />
-            </BaseCard>
-          </template>
-
-          <template v-else-if="activeTab === 'workouts'">
-            <BaseCard title="Записать тренировку" :class="$style.wide">
-              <WorkoutSessionForm />
-            </BaseCard>
-            <BaseCard title="История тренировок" :class="$style.wide">
-              <WorkoutHistory />
-            </BaseCard>
-          </template>
-
-          <template v-else-if="activeTab === 'nutrition'">
-            <BaseCard title="Записать приём пищи" :class="$style.wide">
-              <AddDiaryEntryForm />
-            </BaseCard>
-            <BaseCard title="Читмил">
-              <MarkCheatDayForm />
-            </BaseCard>
-            <BaseCard title="Рацион" :class="$style.wide">
-              <DiaryHistory />
-            </BaseCard>
-            <BaseCard title="База продуктов" :class="$style.wide">
-              <ManageProductsPanel />
-            </BaseCard>
-          </template>
-
-          <template v-else-if="activeTab === 'photos'">
-            <BaseCard title="Ориентир" :class="$style.wide">
-              <img src="/progress-reference.webp" alt="Ориентир по прогрессу" :class="$style.referenceImg" />
-            </BaseCard>
-            <BaseCard title="Добавить фото">
-              <AddProgressPhotoForm />
-            </BaseCard>
-            <BaseCard title="История фото" :class="$style.wide">
-              <PhotoHistory />
-            </BaseCard>
-          </template>
-
-          <template v-else-if="activeTab === 'analytics'">
-            <p :class="$style.sectionTitle">Вес</p>
-            <BaseCard title="Цель">
-              <WeightGoal />
-            </BaseCard>
-            <BaseCard title="Прогресс">
-              <ProgressSummary />
-            </BaseCard>
-            <BaseCard title="Неделя к неделе">
-              <WeeklyComparison />
-            </BaseCard>
-            <BaseCard title="Динамика веса" :class="$style.wide">
-              <WeightTrendChart />
-            </BaseCard>
-            <BaseCard title="Календарь веса" :class="$style.wide">
-              <WeightHeatmap />
-            </BaseCard>
-            <BaseCard title="Идеальный темп vs текущий" :class="$style.wide">
-              <PaceForecast />
-            </BaseCard>
-
-            <p :class="$style.sectionTitle">Питание</p>
-            <BaseCard title="Ккал по дням" :class="$style.wide">
-              <CalorieTrend />
-            </BaseCard>
-          </template>
+        <div v-if="sync.error" :class="$style.errorBanner">
+          <span>{{ sync.error }}</span>
+          <BaseButton variant="ghost" :disabled="sync.loading" @click="sync.loadAll()">Повторить</BaseButton>
         </div>
+
+        <div v-if="!sync.loadedOnce" :class="$style.loader">
+          <span :class="$style.spinner" />
+          Загружаю данные…
+        </div>
+
+        <template v-else>
+          <DashboardSummary />
+
+          <div :class="$style.content">
+            <template v-if="activeTab === 'weight'">
+              <BaseCard title="Записать вес">
+                <AddWeightForm />
+              </BaseCard>
+              <BaseCard title="История" :class="$style.wide">
+                <WeightHistory />
+              </BaseCard>
+            </template>
+
+            <template v-else-if="activeTab === 'workouts'">
+              <BaseCard title="Записать тренировку" :class="$style.wide">
+                <WorkoutSessionForm />
+              </BaseCard>
+              <BaseCard title="История тренировок" :class="$style.wide">
+                <WorkoutHistory />
+              </BaseCard>
+            </template>
+
+            <template v-else-if="activeTab === 'nutrition'">
+              <BaseCard title="Записать приём пищи" :class="$style.wide">
+                <AddDiaryEntryForm />
+              </BaseCard>
+              <BaseCard title="Читмил">
+                <MarkCheatDayForm />
+              </BaseCard>
+              <BaseCard title="Рацион" :class="$style.wide">
+                <DiaryHistory />
+              </BaseCard>
+              <BaseCard title="База продуктов" :class="$style.wide">
+                <ManageProductsPanel />
+              </BaseCard>
+            </template>
+
+            <template v-else-if="activeTab === 'photos'">
+              <BaseCard title="Ориентир" :class="$style.wide">
+                <img :src="referenceImgSrc" alt="Ориентир по прогрессу" :class="$style.referenceImg" />
+              </BaseCard>
+              <BaseCard title="Добавить фото">
+                <AddProgressPhotoForm />
+              </BaseCard>
+              <BaseCard title="История фото" :class="$style.wide">
+                <PhotoHistory />
+              </BaseCard>
+            </template>
+
+            <template v-else-if="activeTab === 'analytics'">
+              <p :class="$style.sectionTitle">Вес</p>
+              <BaseCard title="Цель">
+                <WeightGoal />
+              </BaseCard>
+              <BaseCard title="Прогресс">
+                <ProgressSummary />
+              </BaseCard>
+              <BaseCard title="Неделя к неделе">
+                <WeeklyComparison />
+              </BaseCard>
+              <BaseCard title="Динамика веса" :class="$style.wide">
+                <WeightTrendChart />
+              </BaseCard>
+              <BaseCard title="Календарь веса" :class="$style.wide">
+                <WeightHeatmap />
+              </BaseCard>
+              <BaseCard title="Идеальный темп vs текущий" :class="$style.wide">
+                <PaceForecast />
+              </BaseCard>
+
+              <p :class="$style.sectionTitle">Питание</p>
+              <BaseCard title="Ккал по дням" :class="$style.wide">
+                <CalorieTrend />
+              </BaseCard>
+            </template>
+          </div>
+        </template>
       </div>
     </div>
 
@@ -119,15 +135,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSessionStore } from '@/entities/Session'
-import { useWeightLogStore } from '@/entities/WeightLog'
-import { useWorkoutStore } from '@/entities/Workout'
-import { useProductStore } from '@/entities/Product'
-import { useDiaryEntryStore } from '@/entities/DiaryEntry'
-import { useProgressPhotoStore } from '@/entities/ProgressPhoto'
-import { useCheatDayStore } from '@/entities/CheatDay'
 import { AddWeightForm } from '@/features/AddWeightEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
 import { ExportReportButton } from '@/features/ExportReport'
@@ -145,6 +155,7 @@ import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'
+import { useDashboardSyncStore } from '../../model/store'
 
 // Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.
 const WeightTrendChart = defineAsyncComponent(() =>
@@ -175,30 +186,31 @@ function selectTab(tab: TabKey) {
   router.push({ name: 'dashboard', params: { tab } })
 }
 
+// Абсолютный путь «/…» на GitHub Pages ломается: сайт живёт в подпапке /fit-tracker/.
+const referenceImgSrc = `${import.meta.env.BASE_URL}progress-reference.webp`
+
 const session = useSessionStore()
-const weightLog = useWeightLogStore()
-const workouts = useWorkoutStore()
-const products = useProductStore()
-const diaryEntries = useDiaryEntryStore()
-const progressPhotos = useProgressPhotoStore()
-const cheatDays = useCheatDayStore()
+const sync = useDashboardSyncStore()
 
-async function loadAll() {
-  await Promise.all([
-    weightLog.load(),
-    workouts.load(),
-    products.load(),
-    diaryEntries.load(),
-    progressPhotos.load(),
-    cheatDays.load(),
-  ])
+// Вернулся во вкладку/приложение или появилась сеть — подтягиваем свежие данные
+// (например, внесённые с телефона), без ручного обновления страницы.
+function onVisible() {
+  if (document.visibilityState === 'visible') void sync.refreshIfStale()
+}
+function onOnline() {
+  void sync.refreshIfStale()
 }
 
-function reloadPage() {
-  window.location.reload()
-}
+onMounted(() => {
+  void sync.loadAll()
+  document.addEventListener('visibilitychange', onVisible)
+  window.addEventListener('online', onOnline)
+})
 
-onMounted(loadAll)
+onUnmounted(() => {
+  document.removeEventListener('visibilitychange', onVisible)
+  window.removeEventListener('online', onOnline)
+})
 
 async function onSignOut() {
   await session.signOut()
@@ -294,6 +306,68 @@ async function onSignOut() {
 .brand {
   font-size: var(--font-size-xl);
   color: var(--text-primary);
+}
+
+.loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-m);
+  min-height: 50vh;
+  color: var(--text-secondary);
+  font-size: var(--font-size-m);
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.refreshBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 30;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 50% 100%;
+  background-repeat: no-repeat;
+  animation: refresh-slide 1s linear infinite;
+}
+
+@keyframes refresh-slide {
+  from {
+    background-position: -50% 0;
+  }
+  to {
+    background-position: 150% 0;
+  }
+}
+
+.errorBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-m);
+  flex-wrap: wrap;
+  padding: var(--space-s) var(--space-m);
+  background: var(--bg-elevated);
+  border-left: 3px solid var(--danger);
+  border-radius: var(--radius-m);
+  color: var(--text-primary);
+  font-size: var(--font-size-m);
 }
 
 .content {

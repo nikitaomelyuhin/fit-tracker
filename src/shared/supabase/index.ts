@@ -15,8 +15,30 @@ if (!url || !anonKey) {
 const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
 const PLACEHOLDER_KEY = 'placeholder-anon-key'
 
+const REQUEST_TIMEOUT_MS = 20_000
+
+/**
+ * При плохой/заблокированной сети запрос к Supabase может висеть минутами —
+ * UI при этом пустой и без ошибки. С таймаутом он падает в ошибку, и экран
+ * показывает «Повторить». Загрузку файлов (фото) не ограничиваем — она законно
+ * бывает долгой на мобильной сети.
+ */
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const requestUrl = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+  const method = (init?.method ?? 'GET').toUpperCase()
+  const isUpload = requestUrl.includes('/storage/v1/object/') && (method === 'POST' || method === 'PUT')
+  if (isUpload) return fetch(input, init)
+
+  const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  const signal =
+    init?.signal && typeof AbortSignal.any === 'function' ? AbortSignal.any([init.signal, timeout]) : init?.signal ?? timeout
+  return fetch(input, { ...init, signal })
+}
+
 /**
  * Инфраструктурный клиент Supabase (только инстанс).
  * Все запросы (select/insert/update/delete) живут в сторах, не здесь.
  */
-export const supabase = createClient(url || PLACEHOLDER_URL, anonKey || PLACEHOLDER_KEY)
+export const supabase = createClient(url || PLACEHOLDER_URL, anonKey || PLACEHOLDER_KEY, {
+  global: { fetch: fetchWithTimeout },
+})
