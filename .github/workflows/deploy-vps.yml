@@ -1,0 +1,49 @@
+name: Деплой на свой сервер (работает в РФ без VPN)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vps
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Пока сервер не настроен (нет переменной VPS_HOST) — джоб просто пропускается.
+    if: vars.VPS_HOST != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      # Приложение живёт в корне своего домена, а Supabase — через свой прокси
+      # api.<домен> (см. deploy/setup-server.sh), поэтому браузер ходит только на свой домен.
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ vars.APP_API_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Upload to server
+        env:
+          SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+          VPS_HOST: ${{ vars.VPS_HOST }}
+        run: |
+          install -m 700 -d ~/.ssh
+          echo "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$VPS_HOST" >> ~/.ssh/known_hosts
+          # Без --delete: старые чанки с хэшами остаются, чтобы вкладки со старой
+          # версией не ловили 404 на ленивой подгрузке до своего обновления.
+          # Сначала ассеты, потом index.html и sw.js — чтобы новая страница не сослалась
+          # на ещё не залитые файлы.
+          rsync -az -e "ssh -i ~/.ssh/deploy_key" --exclude index.html --exclude sw.js dist/ "deploy@$VPS_HOST:/var/www/fit-tracker/"
+          rsync -az -e "ssh -i ~/.ssh/deploy_key" dist/ "deploy@$VPS_HOST:/var/www/fit-tracker/"
