@@ -1,10 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#4f8cff"/>
-  <g fill="#ffffff">
-    <rect x="150" y="236" width="212" height="40" rx="20"/>
-    <rect x="106" y="192" width="46" height="128" rx="16"/>
-    <rect x="360" y="192" width="46" height="128" rx="16"/>
-    <rect x="82" y="214" width="26" height="84" rx="12"/>
-    <rect x="404" y="214" width="26" height="84" rx="12"/>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22252e"/>
+      <stop offset="1" stop-color="#0c0d11"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffc94d"/>
+      <stop offset="1" stop-color="#ff4b3a"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(256 256) scale(1) translate(-256 -256)">
+    <path d="M116 394 H404" stroke="#ffffff" stroke-opacity="0.14" stroke-width="10" stroke-linecap="round" stroke-dasharray="2 26"/>
+    <polyline points="120,148 192,216 242,186 306,280 348,254 394,328" fill="none" stroke="url(#line)" stroke-width="46" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="394" cy="328" r="40" fill="#ff4b3a"/>
+    <circle cx="394" cy="328" r="16" fill="#0c0d11"/>
   </g>
 </svg>
