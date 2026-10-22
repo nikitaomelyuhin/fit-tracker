@@ -14,6 +14,8 @@ html {
   overflow-x: hidden;
   /* Отключаем браузерный pull-to-refresh (перезагрузку страницы) — у нас свой, только данные. */
   overscroll-behavior-y: contain;
+  /* Без зума двойным тапом (и без задержки клика, которую он вызывает). */
+  touch-action: manipulation;
 }
 
 body {

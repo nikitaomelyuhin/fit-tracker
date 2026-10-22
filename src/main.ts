@@ -3,9 +3,12 @@ import { createPinia } from 'pinia'
 import App from '@/app/App.vue'
 import { router } from '@/app/providers/router'
 import { setupPwaUpdates } from '@/app/providers/pwa'
+import { disablePageZoom } from '@/app/providers/viewport'
 import { useSessionStore } from '@/entities/Session'
 import '@/app/styles/tokens.css'
 import '@/app/styles/global.css'
+
+disablePageZoom()
 
 async function bootstrap() {
   const app = createApp(App)
