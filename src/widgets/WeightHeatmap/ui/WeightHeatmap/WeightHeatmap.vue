@@ -227,7 +227,7 @@ watch(selectedYear, () => nextTick(scrollToToday))
   border: 1px solid var(--border);
   border-radius: var(--radius-s);
   color: var(--text-primary);
-  font-size: var(--font-size-s);
+  font-size: var(--font-size-input);
 }
 
 .scrollX {

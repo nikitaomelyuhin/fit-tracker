@@ -104,7 +104,7 @@
 
             <template v-else-if="activeTab === 'photos'">
               <BaseCard title="Ориентир" :class="$style.wide">
-                <img :src="referenceImgSrc" alt="Ориентир по прогрессу" :class="$style.referenceImg" />
+                <ProgressReferenceView />
               </BaseCard>
               <BaseCard title="Добавить фото">
                 <AddProgressPhotoForm />
@@ -170,6 +170,7 @@ import { AddDiaryEntryForm } from '@/features/AddDiaryEntry'
 import { ManageProductsPanel } from '@/features/ManageProducts'
 import { AddProgressPhotoForm } from '@/features/AddProgressPhoto'
 import { MarkCheatDayForm } from '@/features/MarkCheatDay'
+import { ProgressReferenceView } from '@/features/ProgressReference'
 import { PhotoHistory } from '@/widgets/PhotoHistory'
 import { WeightHistory } from '@/widgets/WeightHistory'
 import { WeightGoal } from '@/widgets/WeightGoal'
@@ -211,9 +212,6 @@ const activeTab = computed<TabKey>(() => (route.params.tab as TabKey) || 'weight
 function selectTab(tab: TabKey) {
   router.push({ name: 'dashboard', params: { tab } })
 }
-
-// Абсолютный путь «/…» на GitHub Pages ломается: сайт живёт в подпапке /fit-tracker/.
-const referenceImgSrc = `${import.meta.env.BASE_URL}progress-reference.webp`
 
 const session = useSessionStore()
 const sync = useDashboardSyncStore()
@@ -460,12 +458,6 @@ async function onSignOut() {
   grid-column: 1 / -1;
 }
 
-.referenceImg {
-  display: block;
-  width: 100%;
-  max-width: 100%;
-  border-radius: var(--radius-m);
-}
 
 .sectionTitle {
   grid-column: 1 / -1;

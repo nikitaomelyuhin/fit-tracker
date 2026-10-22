@@ -52,7 +52,7 @@ function onInput(event: Event) {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
-  font-size: var(--font-size-m);
+  font-size: var(--font-size-input);
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.15s ease;
@@ -77,7 +77,7 @@ function onInput(event: Event) {
   min-width: 0;
   max-width: 100%;
   display: block;
-  min-height: calc(var(--font-size-m) * 1.2 + var(--space-s) * 2 + 2px);
+  min-height: calc(var(--font-size-input) * 1.2 + var(--space-s) * 2 + 2px);
 }
 
 .input[type='date']::-webkit-date-and-time-value {

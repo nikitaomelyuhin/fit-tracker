@@ -7,9 +7,15 @@ import type { ProgressPhoto, ProgressPhotoDayGroup, ProgressPhotoInput, Progress
 
 interface State {
   items: ProgressPhoto[]
+  /** Подписанная ссылка на картинку-ориентир (лежит в том же закрытом бакете). */
+  referenceUrl: string | null
+  uploadingReference: boolean
   loading: boolean
   error: string | null
 }
+
+/** Путь к картинке-ориентиру внутри папки пользователя в бакете. */
+const REFERENCE_FILE = 'reference'
 
 function extensionOf(file: File): string {
   const dot = file.name.lastIndexOf('.')
@@ -17,7 +23,7 @@ function extensionOf(file: File): string {
 }
 
 export const useProgressPhotoStore = defineStore('progressPhoto', {
-  state: (): State => ({ items: [], loading: false, error: null }),
+  state: (): State => ({ items: [], referenceUrl: null, uploadingReference: false, loading: false, error: null }),
 
   getters: {
     byDateDesc: (state): ProgressPhoto[] =>
@@ -66,7 +72,40 @@ export const useProgressPhotoStore = defineStore('progressPhoto', {
         ...mapProgressPhoto(row),
         url: urlByPath.get(row.storage_path) ?? null,
       }))
+      await this.loadReference()
       this.loading = false
+    },
+
+    /** Картинка-ориентир: файла может не быть — тогда просто null, без ошибки. */
+    async loadReference() {
+      const userId = useSessionStore().user?.id
+      if (!userId) return
+      const { data } = await supabase.storage
+        .from(PROGRESS_PHOTOS_BUCKET)
+        .createSignedUrl(`${userId}/${REFERENCE_FILE}`, PHOTO_SIGNED_URL_TTL)
+      this.referenceUrl = data?.signedUrl ?? null
+    },
+
+    /** Загрузить/заменить картинку-ориентир. Хранится приватно, как и фото прогресса. */
+    async uploadReference(file: File): Promise<boolean> {
+      this.error = null
+      const userId = useSessionStore().user?.id
+      if (!userId) {
+        this.error = 'Нет сессии'
+        return false
+      }
+      this.uploadingReference = true
+      const { error } = await supabase.storage
+        .from(PROGRESS_PHOTOS_BUCKET)
+        .upload(`${userId}/${REFERENCE_FILE}`, file, { upsert: true, contentType: file.type })
+      if (error) {
+        this.error = error.message
+        this.uploadingReference = false
+        return false
+      }
+      await this.loadReference()
+      this.uploadingReference = false
+      return true
     },
 
     /** Загружает файл в Storage и сохраняет/обновляет запись (одна на дату+ракурс). */

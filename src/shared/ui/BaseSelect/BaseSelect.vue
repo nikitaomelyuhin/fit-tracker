@@ -42,7 +42,7 @@ function onChange(event: Event) {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
-  font-size: var(--font-size-m);
+  font-size: var(--font-size-input);
   color: var(--text-primary);
   outline: none;
   transition: border-color 0.15s ease;

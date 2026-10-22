@@ -18,6 +18,8 @@
   --font-size-m: 15px;
   --font-size-l: 18px;
   --font-size-xl: 28px;
+  /* Поля ввода: меньше 16px — и iOS Safari зумит страницу при фокусе на поле. */
+  --font-size-input: 16px;
 
   --space-xs: 4px;
   --space-s: 8px;

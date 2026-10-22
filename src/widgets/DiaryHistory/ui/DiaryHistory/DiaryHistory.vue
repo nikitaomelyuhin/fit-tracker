@@ -294,7 +294,7 @@ function onDelete(id: string) {
   border: 1px solid var(--accent);
   border-radius: var(--radius-s);
   color: var(--text-primary);
-  font-size: var(--font-size-s);
+  font-size: var(--font-size-input);
   outline: none;
 }
 
