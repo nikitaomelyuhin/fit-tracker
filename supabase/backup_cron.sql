@@ -18,7 +18,8 @@ select cron.schedule(
   '0 3 * * *',
   $$
   select net.http_post(
-    url := 'https://acvhknhgiaatemoqwtsd.supabase.co/functions/v1/backup-export',
+    -- В панели функция называется backup-export, но её адрес (slug) — rapid-api.
+    url := 'https://acvhknhgiaatemoqwtsd.supabase.co/functions/v1/rapid-api',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'x-webhook-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'backup_webhook_secret')
