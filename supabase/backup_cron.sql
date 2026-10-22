@@ -23,7 +23,9 @@ select cron.schedule(
       'Content-Type', 'application/json',
       'x-webhook-secret', (select decrypted_secret from vault.decrypted_secrets where name = 'backup_webhook_secret')
     ),
-    body := '{}'::jsonb
+    body := '{}'::jsonb,
+    -- По умолчанию pg_net ждёт 5 с; функция читает 6 таблиц и дважды ходит в GitHub.
+    timeout_milliseconds := 30000
   );
   $$
 );
