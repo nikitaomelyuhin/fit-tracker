@@ -9,6 +9,10 @@
       <span :class="$style.value">{{ lostText }}</span>
     </div>
     <div :class="$style.row">
+      <span :class="$style.label">Осталось сбросить</span>
+      <span :class="$style.value">{{ remainingText }}</span>
+    </div>
+    <div :class="$style.row">
       <span :class="$style.label">Темп</span>
       <span :class="$style.value">{{ rateText }} <span :class="$style.band">· {{ band }}</span></span>
     </div>
@@ -61,6 +65,10 @@ const lostText = computed(() => {
   const v = lostKg.value
   return v >= 0 ? `−${v.toFixed(1)} кг` : `+${Math.abs(v).toFixed(1)} кг`
 })
+
+const remainingText = computed(() =>
+  current.value != null ? `${Math.max(0, current.value - WEIGHT_GOAL_KG).toFixed(1)} кг` : '—',
+)
 
 // Темп считаем по жиру — от «чистой» точки отсчёта, без стартового слива воды.
 const rateWeek = computed(() => weightLog.cleanRatePerWeek)

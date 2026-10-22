@@ -43,7 +43,8 @@ const store = useWeightLogStore()
 const goal = WEIGHT_GOAL_KG
 const checkpoints = [...WEIGHT_MILESTONES_KG, WEIGHT_GOAL_KG]
 
-const current = computed(() => store.currentWeekAverage ?? store.byDateDesc[0]?.weight ?? null)
+// Тот же «текущий вес», что в сводке прогресса, — иначе «Осталось» и «Сброшено» расходятся.
+const current = computed(() => store.smoothedWeight)
 // Прогресс от стартового веса без воды — стартовая отёчность не считается пройденным путём.
 const start = computed(() => store.dryStartWeight ?? store.byDateAsc[0]?.weight ?? null)
 
