@@ -31,7 +31,6 @@
       </li>
     </ul>
 
-    <p :class="$style.hint">«Сейчас» — {{ currentIsAverage ? 'средний за текущую неделю (ср→вт)' : 'последняя запись' }}.</p>
   </div>
 </template>
 
@@ -44,9 +43,9 @@ const store = useWeightLogStore()
 const goal = WEIGHT_GOAL_KG
 const checkpoints = [...WEIGHT_MILESTONES_KG, WEIGHT_GOAL_KG]
 
-const currentIsAverage = computed(() => store.currentWeekAverage != null)
 const current = computed(() => store.currentWeekAverage ?? store.byDateDesc[0]?.weight ?? null)
-const start = computed(() => store.byDateAsc[0]?.weight ?? null)
+// Прогресс от стартового веса без воды — стартовая отёчность не считается пройденным путём.
+const start = computed(() => store.dryStartWeight ?? store.byDateAsc[0]?.weight ?? null)
 
 const reached = computed(() => current.value != null && current.value <= goal)
 
@@ -153,8 +152,4 @@ function isReached(point: number): boolean {
   font-weight: 700;
 }
 
-.hint {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
-}
 </style>

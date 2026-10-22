@@ -1,6 +1,10 @@
 <template>
   <div :class="$style.progress">
     <div :class="$style.row">
+      <span :class="$style.label">Старт без воды</span>
+      <span :class="$style.value">{{ dryStartText }}</span>
+    </div>
+    <div :class="$style.row">
       <span :class="$style.label">Сброшено</span>
       <span :class="$style.value">{{ lostText }}</span>
     </div>
@@ -12,7 +16,6 @@
       <span :class="$style.label">vs идеальный темп</span>
       <span :class="[$style.value, $style[paceTone]]">{{ paceText }}</span>
     </div>
-    <p v-if="waterHint" :class="$style.hint">{{ waterHint }}</p>
 
     <div v-if="checkpoints.length" :class="$style.checkpoints">
       <div :class="$style.checkpointsHead">
@@ -43,11 +46,14 @@ const diaryEntries = useDiaryEntryStore()
 
 const effectiveKcal = computed(() => diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET))
 
-const first = computed(() => weightLog.byDateAsc[0] ?? null)
+const dryStart = computed(() => weightLog.dryStartWeight)
 const current = computed(() => weightLog.smoothedWeight)
 
+const dryStartText = computed(() => (dryStart.value != null ? `${dryStart.value.toFixed(1)} кг` : '—'))
+
+// «Сброшено» от стартового веса без воды, а не от отёчного первого замера.
 const lostKg = computed(() =>
-  first.value && current.value != null ? first.value.weight - current.value : null,
+  dryStart.value != null && current.value != null ? dryStart.value - current.value : null,
 )
 
 const lostText = computed(() => {
@@ -86,12 +92,6 @@ const paceTone = computed(() => {
   const d = paceDiff.value
   if (d == null) return 'muted'
   return d > 3 ? 'warn' : 'good'
-})
-
-const waterHint = computed(() => {
-  const start = weightLog.cleanStart
-  if (!start || start.waterDropKg < 0.3) return null
-  return `Из «сброшено» ~${start.waterDropKg.toFixed(1)} кг — вода первых ${start.windowDays} дней, не жир. Темп и план считаются уже без неё.`
 })
 
 interface Checkpoint {
@@ -168,10 +168,6 @@ const checkpoints = computed<Checkpoint[]>(() => {
   color: var(--text-muted);
 }
 
-.hint {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
-}
 
 .checkpoints {
   display: flex;

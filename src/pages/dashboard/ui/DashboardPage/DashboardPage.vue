@@ -1,5 +1,15 @@
 <template>
   <div :class="$style.dashboard">
+    <div
+      v-if="pull.distance.value > 0 || pull.refreshing.value"
+      :class="$style.pullIndicator"
+      :style="{ height: pull.distance.value + 'px' }"
+    >
+      <span
+        :class="[$style.spinner, $style.pullSpinner, pull.refreshing.value && $style.spinning]"
+        :style="{ transform: `rotate(${pull.distance.value * 4}deg)`, opacity: Math.min(1, pull.distance.value / pull.threshold) }"
+      />
+    </div>
     <div :class="$style.shell">
       <aside :class="$style.sidebar">
         <div :class="$style.sidebarBrand">Fit Tracker</div>
@@ -63,16 +73,31 @@
             </template>
 
             <template v-else-if="activeTab === 'nutrition'">
-              <BaseCard title="Записать приём пищи" :class="$style.wide">
-                <AddDiaryEntryForm />
-              </BaseCard>
-              <BaseCard title="Читмил">
-                <MarkCheatDayForm />
-              </BaseCard>
-              <BaseCard title="Рацион" :class="$style.wide">
-                <DiaryHistory />
-              </BaseCard>
-              <BaseCard title="База продуктов" :class="$style.wide">
+              <div :class="[$style.subTabs, $style.wide]">
+                <button
+                  v-for="view in nutritionViews"
+                  :key="view.key"
+                  type="button"
+                  :class="[$style.subTab, nutritionView === view.key && $style.subTabActive]"
+                  @click="nutritionView = view.key"
+                >
+                  {{ view.label }}
+                </button>
+              </div>
+
+              <template v-if="nutritionView === 'diary'">
+                <BaseCard title="Записать приём пищи" :class="$style.wide">
+                  <AddDiaryEntryForm />
+                </BaseCard>
+                <BaseCard title="Рацион" :class="$style.wide">
+                  <DiaryHistory />
+                </BaseCard>
+                <BaseCard title="Читмил" :class="$style.wide">
+                  <MarkCheatDayForm />
+                </BaseCard>
+              </template>
+
+              <BaseCard v-else title="База продуктов" :class="$style.wide">
                 <ManageProductsPanel />
               </BaseCard>
             </template>
@@ -135,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, onMounted, onUnmounted } from 'vue'
+import { computed, defineAsyncComponent, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useSessionStore } from '@/entities/Session'
 import { AddWeightForm } from '@/features/AddWeightEntry'
@@ -155,6 +180,7 @@ import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
 import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'
+import { usePullToRefresh } from '@/shared/lib/pullToRefresh'
 import { useDashboardSyncStore } from '../../model/store'
 
 // Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.
@@ -191,6 +217,16 @@ const referenceImgSrc = `${import.meta.env.BASE_URL}progress-reference.webp`
 
 const session = useSessionStore()
 const sync = useDashboardSyncStore()
+
+// На телефоне кнопки «Обновить» нет — обновление свайпом вниз от верха страницы.
+const pull = usePullToRefresh(() => sync.loadAll())
+
+type NutritionView = 'diary' | 'products'
+const nutritionViews: { key: NutritionView; label: string }[] = [
+  { key: 'diary', label: 'Рацион' },
+  { key: 'products', label: 'Продукты' },
+]
+const nutritionView = ref<NutritionView>('diary')
 
 // Вернулся во вкладку/приложение или появилась сеть — подтягиваем свежие данные
 // (например, внесённые с телефона), без ручного обновления страницы.
@@ -334,6 +370,49 @@ async function onSignOut() {
   }
 }
 
+.pullIndicator {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+  padding-bottom: var(--space-s);
+}
+
+.pullSpinner {
+  width: 24px;
+  height: 24px;
+  animation: none;
+}
+
+.spinning {
+  animation: spin 0.8s linear infinite;
+}
+
+.subTabs {
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-m);
+}
+
+.subTab {
+  flex: 1;
+  padding: var(--space-s) var(--space-m);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-s);
+  color: var(--text-secondary);
+  font-size: var(--font-size-m);
+  font-weight: 600;
+}
+
+.subTabActive {
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
 .refreshBar {
   position: fixed;
   top: 0;
@@ -414,6 +493,11 @@ async function onSignOut() {
 
 @media (max-width: 860px) {
   .sidebar {
+    display: none;
+  }
+
+  /* На телефоне отчёт, выход и «Обновить» не нужны — обновление свайпом вниз. */
+  .actions {
     display: none;
   }
 

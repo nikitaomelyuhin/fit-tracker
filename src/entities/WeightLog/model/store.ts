@@ -109,6 +109,17 @@ export const useWeightLogStore = defineStore('weightLog', {
       )
     },
 
+    /**
+     * Стартовый вес без воды: первое взвешивание минус вода/гликоген, ушедшие в окне
+     * адаптации. От него честнее считать «сброшено», чем от отёчного первого замера.
+     * Пока окно адаптации не закрыто (вода не оценена) — равен первому взвешиванию.
+     */
+    dryStartWeight(): number | null {
+      const start = this.cleanStart
+      if (!start) return null
+      return Math.round((start.startWeight - start.waterDropKg) * 10) / 10
+    },
+
     /** Темп по жиру (кг/нед, положительный = снижение), без стартовой воды. */
     cleanRatePerWeek(): number | null {
       return this.cleanStart?.ratePerWeek ?? null

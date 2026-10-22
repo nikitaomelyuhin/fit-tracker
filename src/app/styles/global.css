@@ -12,6 +12,8 @@ body,
 
 html {
   overflow-x: hidden;
+  /* Отключаем браузерный pull-to-refresh (перезагрузку страницы) — у нас свой, только данные. */
+  overscroll-behavior-y: contain;
 }
 
 body {

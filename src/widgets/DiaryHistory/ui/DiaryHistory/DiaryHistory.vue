@@ -1,12 +1,14 @@
 <template>
   <div v-if="store.groupedByDateDesc.length" :class="$style.wrap">
-    <div :class="$style.filters">
+    <div v-if="expanded" :class="$style.filters">
       <BaseTextField v-model="filterFrom" label="С" type="date" />
       <BaseTextField v-model="filterTo" label="По" type="date" />
       <BaseButton v-if="isFiltered" type="button" variant="ghost" @click="clearFilter">Сбросить</BaseButton>
     </div>
 
-    <p v-if="!visibleDays.length" :class="$style.empty">За этот период записей нет.</p>
+    <p v-if="!visibleDays.length" :class="$style.empty">
+      {{ expanded ? 'За этот период записей нет.' : 'За последние три дня записей нет.' }}
+    </p>
 
     <div v-else :class="$style.days">
       <div v-for="day in visibleDays" :key="day.date" :class="$style.day">
@@ -64,12 +66,12 @@
     </div>
 
     <BaseButton
-      v-if="!isFiltered && store.groupedByDateDesc.length > DEFAULT_DAYS_SHOWN"
+      v-if="expanded || store.groupedByDateDesc.length > recentDays.length"
       type="button"
       variant="ghost"
-      @click="expanded = !expanded"
+      @click="toggleExpanded"
     >
-      {{ expanded ? 'Свернуть' : `Показать все дни (${store.groupedByDateDesc.length})` }}
+      {{ expanded ? 'Свернуть' : 'Показать подробнее' }}
     </BaseButton>
   </div>
   <p v-else :class="$style.empty">Дневник пуст — добавь первый приём пищи выше.</p>
@@ -81,10 +83,11 @@ import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { useCheatDayStore } from '@/entities/CheatDay'
 import { MEAL_TYPE_LABELS } from '@/shared/config/nutrition'
 import { BaseButton, BaseTextField } from '@/shared/ui'
-import { formatHuman } from '@/shared/lib/date'
+import { addDays, formatHuman, todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
 
-const DEFAULT_DAYS_SHOWN = 5
+/** По умолчанию — сегодня, вчера и позавчера; остальное по кнопке. */
+const RECENT_DAYS = 3
 
 const store = useDiaryEntryStore()
 const cheatDays = useCheatDayStore()
@@ -101,6 +104,11 @@ const filterTo = ref('')
 
 const isFiltered = computed(() => filterFrom.value !== '' || filterTo.value !== '')
 
+const recentDays = computed(() => {
+  const since = addDays(todayISO(), -(RECENT_DAYS - 1))
+  return store.groupedByDateDesc.filter((day) => day.date >= since)
+})
+
 const visibleDays = computed(() => {
   const days = store.groupedByDateDesc
   if (isFiltered.value) {
@@ -109,8 +117,13 @@ const visibleDays = computed(() => {
         (filterTo.value === '' || day.date <= filterTo.value),
     )
   }
-  return expanded.value ? days : days.slice(0, DEFAULT_DAYS_SHOWN)
+  return expanded.value ? days : recentDays.value
 })
+
+function toggleExpanded() {
+  expanded.value = !expanded.value
+  if (!expanded.value) clearFilter()
+}
 
 function clearFilter() {
   filterFrom.value = ''
