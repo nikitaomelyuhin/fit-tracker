@@ -250,7 +250,7 @@ export const useWorkoutStore = defineStore('workout', {
       }
 
       // Сети точно нет — не ждём таймаута, сразу кладём в очередь.
-      if (typeof navigator !== 'undefined' && !navigator.onLine) return queueLocally()
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return queueLocally()
 
       const { data, error } = await supabase
         .from('workouts')

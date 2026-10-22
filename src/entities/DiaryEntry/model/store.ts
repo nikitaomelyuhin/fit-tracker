@@ -283,7 +283,7 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
         this.items.push(...entries.map(toLocalEntry))
         return true
       }
-      if (typeof navigator !== 'undefined' && !navigator.onLine) return queueLocally()
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return queueLocally()
 
       const { data, error } = await supabase
         .from('diary_entries')
