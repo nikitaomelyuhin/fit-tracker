@@ -26,6 +26,7 @@
           <span :class="$style.mealLabel">{{ MEAL_TYPE_LABELS[meal.mealType] }}</span>
           <span :class="$style.mealTotals">
             {{ meal.totals.kcal }} ккал · Б{{ meal.totals.protein }} Ж{{ meal.totals.fat }} У{{ meal.totals.carbs }}
+            Кл{{ meal.totals.fiber }}
           </span>
         </div>
 
@@ -33,7 +34,9 @@
           <li v-for="entry in meal.entries" :key="entry.id" :class="$style.row">
             <div :class="$style.rowMain">
               <span :class="$style.name">{{ entry.productName }}</span>
-              <span :class="$style.meta">{{ entry.kcal }} ккал · Б{{ entry.protein }} Ж{{ entry.fat }} У{{ entry.carbs }}</span>
+              <span :class="$style.meta">
+                {{ entry.kcal }} ккал · Б{{ entry.protein }} Ж{{ entry.fat }} У{{ entry.carbs }} Кл{{ entry.fiber }}
+              </span>
             </div>
 
             <template v-if="editingId === entry.id">
