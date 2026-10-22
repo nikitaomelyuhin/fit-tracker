@@ -5,6 +5,9 @@ import { useCheatDayStore } from '@/entities/CheatDay'
 import { CHEAT_DAY_KCAL } from '@/shared/config/nutrition'
 import type { DiaryEntry } from './types'
 
+// Тестируем расчёты, а не сеть: клиент Supabase не нужен (и на Node 20 падает при создании).
+vi.mock('@/shared/supabase', () => ({ supabase: {} }))
+
 function food(date: string, kcal: number): DiaryEntry {
   return {
     id: `${date}-${kcal}`,

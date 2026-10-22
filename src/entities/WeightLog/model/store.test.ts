@@ -1,7 +1,10 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import { useWeightLogStore } from './store'
 import type { WeightLog } from './types'
+
+// Тестируем расчёты, а не сеть: клиент Supabase не нужен (и на Node 20 падает при создании).
+vi.mock('@/shared/supabase', () => ({ supabase: {} }))
 
 function entry(date: string, weight: number): WeightLog {
   return { id: date, date, weight, bodyFat: null, note: null }
