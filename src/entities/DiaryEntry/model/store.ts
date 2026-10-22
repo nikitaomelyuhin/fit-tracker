@@ -1,6 +1,8 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
 import { deleteWithUndo } from '@/shared/lib/toast'
+import { readCache, writeCache } from '@/shared/lib/offlineCache'
+import { isOfflineError } from '@/shared/lib/network'
 import { useCheatDayStore } from '@/entities/CheatDay'
 import { CHEAT_DAY_KCAL, MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
 import { addDays, todayISO } from '@/shared/lib/date'
@@ -14,10 +16,22 @@ import type {
   MealGroup,
 } from './types'
 
+const QUEUE_KEY = 'diary-queue'
+
+/** Запись, сохранённая без сети. id выдан на клиенте — повторная отправка не создаст дубль. */
+type QueuedEntry = DiaryEntryInput & { id: string }
+
 interface State {
   items: DiaryEntry[]
+  /** Записи, сохранённые без сети и ещё не отправленные — живут и в localStorage. */
+  queue: QueuedEntry[]
   loading: boolean
   error: string | null
+}
+
+function toLocalEntry(entry: QueuedEntry): DiaryEntry {
+  const { id, date, mealType, productId, productName, amount, kcal, protein, fat, carbs, fiber } = entry
+  return { id, date, mealType, productId, productName, amount, kcal, protein, fat, carbs, fiber }
 }
 
 function emptyTotals(): DailyTotals {
@@ -62,9 +76,19 @@ function toRow(input: DiaryEntryInput) {
 }
 
 export const useDiaryEntryStore = defineStore('diaryEntry', {
-  state: (): State => ({ items: [], loading: false, error: null }),
+  state: (): State => ({
+    items: [],
+    queue: readCache<QueuedEntry[]>(QUEUE_KEY) ?? [],
+    loading: false,
+    error: null,
+  }),
 
   getters: {
+    /** Запись сохранена без сети и ещё не отправлена. */
+    isPendingEntry(): (id: string) => boolean {
+      return (id) => this.queue.some((entry) => entry.id === id)
+    },
+
     byDateDesc: (state): DiaryEntry[] =>
       [...state.items].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.id.localeCompare(a.id))),
 
@@ -206,8 +230,36 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
         .select('*')
         .order('date', { ascending: false })
       if (error) this.error = error.message
-      else this.items = (data as DiaryEntryRow[]).map(mapDiaryEntry)
+      else {
+        this.items = (data as DiaryEntryRow[]).map(mapDiaryEntry)
+        // Неотправленное поверх серверного — иначе после загрузки пропало бы из рациона.
+        for (const entry of this.queue) {
+          if (!this.items.some((item) => item.id === entry.id)) this.items.push(toLocalEntry(entry))
+        }
+      }
       this.loading = false
+    },
+
+    persistQueue() {
+      writeCache(QUEUE_KEY, this.queue)
+    },
+
+    /** Отправить записи, сохранённые без сети (одним запросом). На сетевой ошибке ждёт следующей попытки. */
+    async flushQueue(): Promise<void> {
+      if (!this.queue.length) return
+      const rows = this.queue.map((entry) => ({ id: entry.id, ...toRow(entry) }))
+      const { data, error } = await supabase.from('diary_entries').upsert(rows, { onConflict: 'id' }).select()
+      if (error) {
+        if (!isOfflineError(error.message)) this.error = error.message
+        return
+      }
+      this.queue = []
+      this.persistQueue()
+      for (const saved of (data as DiaryEntryRow[]).map(mapDiaryEntry)) {
+        const index = this.items.findIndex((item) => item.id === saved.id)
+        if (index >= 0) this.items[index] = saved
+        else this.items.push(saved)
+      }
     },
 
     async add(input: DiaryEntryInput): Promise<boolean> {
@@ -215,15 +267,34 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
     },
 
     /** Сохранить несколько блюд одного приёма пищи одним запросом. */
+    /**
+     * Сохранить несколько блюд одного приёма пищи одним запросом. Без сети — в очередь
+     * на телефоне. id задаём на клиенте и пишем upsert'ом по нему: если запрос дошёл,
+     * а ответ потерялся, повторная отправка не создаст дубль.
+     */
     async addMany(inputs: DiaryEntryInput[]): Promise<boolean> {
       if (!inputs.length) return false
       this.error = null
+      const entries: QueuedEntry[] = inputs.map((input) => ({ ...input, id: crypto.randomUUID() }))
+
+      const queueLocally = () => {
+        this.queue.push(...entries)
+        this.persistQueue()
+        this.items.push(...entries.map(toLocalEntry))
+        return true
+      }
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return queueLocally()
+
       const { data, error } = await supabase
         .from('diary_entries')
-        .insert(inputs.map(toRow))
+        .upsert(
+          entries.map((entry) => ({ id: entry.id, ...toRow(entry) })),
+          { onConflict: 'id' },
+        )
         .select()
 
       if (error) {
+        if (isOfflineError(error.message)) return queueLocally()
         this.error = error.message
         return false
       }
@@ -238,16 +309,27 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
       if (!entry || entry.amount <= 0) return false
 
       const factor = amount / entry.amount
+      const patch = {
+        amount,
+        kcal: Math.round(entry.kcal * factor),
+        protein: round1(entry.protein * factor),
+        fat: round1(entry.fat * factor),
+        carbs: round1(entry.carbs * factor),
+        fiber: round1(entry.fiber * factor),
+      }
+
+      // Ещё не отправленная запись — правим её прямо в очереди, на сервере её пока нет.
+      const queuedIndex = this.queue.findIndex((item) => item.id === id)
+      if (queuedIndex >= 0) {
+        this.queue[queuedIndex] = { ...this.queue[queuedIndex], ...patch }
+        this.persistQueue()
+        Object.assign(entry, patch)
+        return true
+      }
+
       const { data, error } = await supabase
         .from('diary_entries')
-        .update({
-          amount,
-          kcal: Math.round(entry.kcal * factor),
-          protein: round1(entry.protein * factor),
-          fat: round1(entry.fat * factor),
-          carbs: round1(entry.carbs * factor),
-          fiber: round1(entry.fiber * factor),
-        })
+        .update(patch)
         .eq('id', id)
         .select()
         .single()
@@ -266,15 +348,22 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
     remove(id: string) {
       const item = this.items.find((entry) => entry.id === id)
       if (!item) return
+      const queued = this.queue.find((entry) => entry.id === id)
       deleteWithUndo({
         text: 'Удалено из рациона',
         apply: () => {
           this.items = this.items.filter((entry) => entry.id !== id)
+          this.queue = this.queue.filter((entry) => entry.id !== id)
+          this.persistQueue()
         },
         revert: () => {
           if (!this.items.some((entry) => entry.id === id)) this.items.push(item)
+          if (queued && !this.queue.some((entry) => entry.id === id)) this.queue.push(queued)
+          this.persistQueue()
         },
         commit: async () => {
+          // Не отправленная запись есть только на телефоне — на сервере удалять нечего.
+          if (queued) return true
           const { error } = await supabase.from('diary_entries').delete().eq('id', id)
           if (error) this.error = error.message
           return !error

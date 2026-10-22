@@ -11,7 +11,10 @@
     <ul v-else :class="$style.list">
       <li v-for="entry in visibleEntries" :key="entry.id" :class="$style.row">
         <span :class="$style.date">{{ formatHuman(entry.date) }}</span>
-        <span :class="$style.weight">{{ entry.weight }} кг</span>
+        <span :class="$style.weight">
+          {{ entry.weight }} кг
+          <span v-if="store.isPendingDate(entry.date)" :class="$style.pending">⏳</span>
+        </span>
         <BaseButton variant="danger" aria-label="Удалить" @click="onDelete(entry.id)">
           ✕
         </BaseButton>
@@ -103,6 +106,12 @@ function onDelete(id: string) {
 .date {
   color: var(--text-secondary);
   font-size: var(--font-size-s);
+}
+
+.pending {
+  margin-left: var(--space-xs);
+  font-size: var(--font-size-s);
+  color: var(--warning);
 }
 
 .weight {

@@ -61,7 +61,7 @@ export const useDashboardSyncStore = defineStore('dashboardSync', {
 
   actions: {
     /**
-     * Отправляет накопленное офлайн и грузит все данные дашборда.
+     * Отправляет накопленное офлайн (вес, тренировки, еда) и грузит все данные дашборда.
      * Параллельные вызовы склеиваются в один запрос.
      */
     loadAll(): Promise<void> {
@@ -72,19 +72,14 @@ export const useDashboardSyncStore = defineStore('dashboardSync', {
         if (bindLocalCache()) this.loadedOnce = true
       }
 
+      const weightLog = useWeightLogStore()
       const workouts = useWorkoutStore()
-      const stores = [
-        useWeightLogStore(),
-        workouts,
-        useProductStore(),
-        useDiaryEntryStore(),
-        useProgressPhotoStore(),
-        useCheatDayStore(),
-      ]
+      const diary = useDiaryEntryStore()
+      const stores = [weightLog, workouts, useProductStore(), diary, useProgressPhotoStore(), useCheatDayStore()]
 
       this.loading = true
-      inFlight = workouts
-        .flushQueue()
+      // Сначала отправляем сохранённое без сети, потом грузим — чтобы загрузка уже включала его.
+      inFlight = Promise.all([weightLog.flushQueue(), workouts.flushQueue(), diary.flushQueue()])
         .then(() => Promise.all(stores.map((store) => store.load())))
         .then(() => {
           const errors = stores.map((store) => store.error).filter((error): error is string => Boolean(error))

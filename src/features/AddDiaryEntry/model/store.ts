@@ -252,10 +252,13 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
 
       this.submitting = true
       const diary = useDiaryEntryStore()
+      const queuedBefore = diary.queue.length
       const ok = await diary.addMany(inputs)
       this.submitting = false
-      if (ok) showToast('Приём пищи сохранён')
-      else showSaveError(diary.error)
+      if (!ok) showSaveError(diary.error)
+      else if (diary.queue.length > queuedBefore) {
+        showToast('Нет сети — сохранено на телефоне, отправится позже', { tone: 'info', durationMs: 5000 })
+      } else showToast('Приём пищи сохранён')
       if (ok) this.rows = [emptyRow()]
       return ok
     },

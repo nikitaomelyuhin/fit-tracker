@@ -52,8 +52,10 @@ export const useAddWeightStore = defineStore('addWeight', {
         note: null,
       })
       this.submitting = false
-      if (ok) showToast('Вес сохранён')
-      else showSaveError(weightLog.error)
+      if (!ok) showSaveError(weightLog.error)
+      else if (weightLog.isPendingDate(this.form.date)) {
+        showToast('Нет сети — вес сохранён на телефоне, отправится позже', { tone: 'info', durationMs: 5000 })
+      } else showToast('Вес сохранён')
       if (ok) this.reset()
       return ok
     },

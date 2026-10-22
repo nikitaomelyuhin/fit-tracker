@@ -35,7 +35,10 @@
         <ul :class="$style.list">
           <li v-for="entry in meal.entries" :key="entry.id" :class="$style.row">
             <div :class="$style.rowMain">
-              <span :class="$style.name">{{ entry.productName }}</span>
+              <span :class="$style.name">
+                {{ entry.productName }}
+                <span v-if="store.isPendingEntry(entry.id)" :class="$style.pending">⏳ не отправлено</span>
+              </span>
               <span :class="$style.meta">
                 {{ entry.kcal }} ккал · Б{{ entry.protein }} Ж{{ entry.fat }} У{{ entry.carbs }} Кл{{ entry.fiber }}
               </span>
@@ -262,6 +265,12 @@ function onDelete(id: string) {
 .name {
   color: var(--text-primary);
   font-size: var(--font-size-m);
+}
+
+.pending {
+  margin-left: var(--space-s);
+  font-size: var(--font-size-s);
+  color: var(--warning);
 }
 
 .meta {
