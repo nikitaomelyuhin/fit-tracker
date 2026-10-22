@@ -21,7 +21,8 @@ registerSW({
 })
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') void swRegistration?.update()
+  // Без сети проверка обновления просто падает — это нормально, проверим в следующий раз.
+  if (document.visibilityState === 'visible') swRegistration?.update().catch(() => {})
 })
 
 async function bootstrap() {

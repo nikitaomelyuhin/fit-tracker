@@ -15,7 +15,7 @@ if (!url || !anonKey) {
 const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
 const PLACEHOLDER_KEY = 'placeholder-anon-key'
 
-const REQUEST_TIMEOUT_MS = 20_000
+const REQUEST_TIMEOUT_MS = 12_000
 
 /**
  * При плохой/заблокированной сети запрос к Supabase может висеть минутами —

@@ -17,6 +17,9 @@
         <div :class="$style.head">
           <span :class="$style.title">
             Тренировка {{ session.type ?? '?' }} · {{ formatHuman(session.date) }}
+            <span v-if="workouts.isPendingSession(session.date, session.type)" :class="$style.pending">
+              ⏳ не отправлено
+            </span>
           </span>
           <BaseButton variant="danger" @click="onDelete(session.date, session.type)">
             {{ isPending(session.date, session.type) ? 'Удалить?' : '✕' }}
@@ -146,6 +149,13 @@ function goal(entry: Workout): string | null {
   display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+.pending {
+  margin-left: var(--space-s);
+  font-size: var(--font-size-s);
+  font-weight: 400;
+  color: var(--warning);
 }
 
 .title {

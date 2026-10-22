@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
+import { clearCache, readCache, writeCache } from '@/shared/lib/offlineCache'
+import { isOfflineError } from '@/shared/lib/network'
 import type { SessionUser } from './types'
+
+const USER_CACHE_KEY = 'session-user'
+/** Сколько ждём восстановления сессии при старте, прежде чем считать, что сети нет. */
+const SESSION_WAIT_MS = 5_000
 
 interface AuthForm {
   email: string
@@ -29,19 +35,37 @@ export const useSessionStore = defineStore('session', {
   },
 
   actions: {
+    /**
+     * Если токен истёк, getSession пытается обновить его по сети. Без интернета (зал)
+     * это либо ошибка, либо долгое ожидание — и раньше пользователя выкидывало на
+     * экран входа. Теперь в этом случае берём последнего вошедшего из локальной копии:
+     * данные покажутся из кэша, а сессия обновится сама, когда появится сеть.
+     */
     async init() {
-      const { data } = await supabase.auth.getSession()
-      this.user = data.session
-        ? { id: data.session.user.id, email: data.session.user.email ?? null }
-        : null
+      const result = await Promise.race([
+        supabase.auth.getSession(),
+        new Promise<null>((resolve) => setTimeout(() => resolve(null), SESSION_WAIT_MS)),
+      ])
 
-      supabase.auth.onAuthStateChange((_event, session) => {
-        this.user = session
-          ? { id: session.user.id, email: session.user.email ?? null }
-          : null
+      if (result?.data.session) {
+        this.setUser({ id: result.data.session.user.id, email: result.data.session.user.email ?? null })
+      } else if (result === null || isOfflineError(result.error?.message)) {
+        this.user = readCache<SessionUser>(USER_CACHE_KEY)
+      } else {
+        this.user = null
+      }
+
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (session) this.setUser({ id: session.user.id, email: session.user.email ?? null })
+        else if (event === 'SIGNED_OUT') this.user = null
       })
 
       this.ready = true
+    },
+
+    setUser(user: SessionUser) {
+      this.user = user
+      writeCache(USER_CACHE_KEY, user)
     },
 
     async signIn(): Promise<boolean> {
@@ -70,6 +94,8 @@ export const useSessionStore = defineStore('session', {
 
     async signOut() {
       await supabase.auth.signOut()
+      this.user = null
+      clearCache()
     },
   },
 })

@@ -57,6 +57,10 @@
     <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
       {{ store.submitting ? 'Сохраняю…' : 'Сохранить тренировку' }}
     </BaseButton>
+    <p v-if="workouts.pendingCount" :class="$style.pending">
+      ⏳ Сохранено на телефоне, в базу ещё не отправлено ({{ workouts.pendingCount }}) — уйдёт само,
+      когда появится интернет.
+    </p>
   </form>
 </template>
 
@@ -188,6 +192,11 @@ async function onSubmit() {
 }
 
 .goalLabel {
+  font-size: var(--font-size-s);
+  color: var(--warning);
+}
+
+.pending {
   font-size: var(--font-size-s);
   color: var(--warning);
 }

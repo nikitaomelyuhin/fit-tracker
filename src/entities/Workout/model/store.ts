@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
+import { readCache, writeCache } from '@/shared/lib/offlineCache'
+import { isOfflineError } from '@/shared/lib/network'
 import { WORKOUT_TEMPLATES, exerciseNames, type WorkoutType } from '@/shared/config/workouts'
 import { mapWorkout } from '../helpers/mapWorkout'
 import type {
@@ -17,16 +19,61 @@ const assistNames = new Set(
     .map((exercise) => exercise.name),
 )
 
+/** Тренировка, сохранённая без интернета и ещё не отправленная в базу. */
+interface QueuedSession {
+  id: string
+  date: string
+  type: WorkoutType
+  entries: WorkoutEntryInput[]
+}
+
+const QUEUE_KEY = 'workout-queue'
+/** Префикс id у локальных (ещё не отправленных) записей. */
+const LOCAL_ID_PREFIX = 'local-'
+
 interface State {
   items: Workout[]
+  /** Очередь на отправку — живёт и в localStorage, чтобы пережить закрытие приложения. */
+  queue: QueuedSession[]
   loading: boolean
   error: string | null
 }
 
+function sameSlot(a: { date: string; type: WorkoutType | null; exercise: string }, b: typeof a): boolean {
+  return a.date === b.date && a.type === b.type && a.exercise === b.exercise
+}
+
+function toRows(date: string, type: WorkoutType, entries: WorkoutEntryInput[]) {
+  return entries.map((entry) => ({
+    date,
+    workout_type: type,
+    exercise: entry.exercise,
+    weight: entry.weight,
+    sets: entry.sets,
+    reps: entry.reps,
+    next_weight: entry.nextWeight,
+    next_sets: entry.nextSets,
+    next_reps: entry.nextReps,
+  }))
+}
+
 export const useWorkoutStore = defineStore('workout', {
-  state: (): State => ({ items: [], loading: false, error: null }),
+  state: (): State => ({
+    items: [],
+    queue: readCache<QueuedSession[]>(QUEUE_KEY) ?? [],
+    loading: false,
+    error: null,
+  }),
 
   getters: {
+    /** Сколько тренировок ждут отправки в базу. */
+    pendingCount: (state): number => state.queue.length,
+
+    /** Сессия ещё не отправлена (сохранена офлайн). */
+    isPendingSession(): (date: string, type: WorkoutType | null) => boolean {
+      return (date, type) => this.queue.some((session) => session.date === date && session.type === type)
+    },
+
     byDateDesc: (state): Workout[] => [...state.items].sort((a, b) => (a.date < b.date ? 1 : -1)),
 
     /** Сессии (дата + тип), свежие сверху, упражнения — в порядке шаблона. */
@@ -118,8 +165,69 @@ export const useWorkoutStore = defineStore('workout', {
         .select('*')
         .order('date', { ascending: false })
       if (error) this.error = error.message
-      else this.items = (data as WorkoutRow[]).map(mapWorkout)
+      else {
+        this.items = (data as WorkoutRow[]).map(mapWorkout)
+        // Неотправленные тренировки поверх серверных — иначе после загрузки они бы пропали из истории.
+        for (const session of this.queue) this.applyLocally(session)
+      }
       this.loading = false
+    },
+
+    /** Положить сессию в items как локальные записи (до подтверждения сервером). */
+    applyLocally(session: QueuedSession) {
+      for (const entry of session.entries) {
+        const local: Workout = {
+          id: `${LOCAL_ID_PREFIX}${session.id}-${entry.exercise}`,
+          date: session.date,
+          type: session.type,
+          exercise: entry.exercise,
+          weight: entry.weight,
+          sets: entry.sets,
+          reps: entry.reps,
+          nextWeight: entry.nextWeight,
+          nextSets: entry.nextSets,
+          nextReps: entry.nextReps,
+          note: null,
+        }
+        const index = this.items.findIndex((item) => sameSlot(item, local))
+        if (index >= 0) this.items[index] = local
+        else this.items.push(local)
+      }
+    },
+
+    persistQueue() {
+      writeCache(QUEUE_KEY, this.queue)
+    },
+
+    /**
+     * Отправить накопленные офлайн тренировки. Останавливается на первой сетевой
+     * ошибке (сети всё ещё нет) — остальное уйдёт при следующей попытке.
+     */
+    async flushQueue(): Promise<void> {
+      while (this.queue.length) {
+        const session = this.queue[0]
+        const { data, error } = await supabase
+          .from('workouts')
+          .upsert(toRows(session.date, session.type, session.entries), {
+            onConflict: 'user_id,date,workout_type,exercise',
+          })
+          .select()
+        if (error) {
+          if (!isOfflineError(error.message)) this.error = error.message
+          return
+        }
+        this.queue.shift()
+        this.persistQueue()
+        this.replaceWithSaved((data as WorkoutRow[]).map(mapWorkout))
+      }
+    },
+
+    replaceWithSaved(saved: Workout[]) {
+      for (const row of saved) {
+        const index = this.items.findIndex((item) => sameSlot(item, row))
+        if (index >= 0) this.items[index] = row
+        else this.items.push(row)
+      }
     },
 
     /** Сохранить всю сессию (upsert по дата+тип+упражнение). */
@@ -129,42 +237,49 @@ export const useWorkoutStore = defineStore('workout', {
       entries: WorkoutEntryInput[],
     ): Promise<boolean> {
       this.error = null
-      const rows = entries.map((entry) => ({
-        date,
-        workout_type: type,
-        exercise: entry.exercise,
-        weight: entry.weight,
-        sets: entry.sets,
-        reps: entry.reps,
-        next_weight: entry.nextWeight,
-        next_sets: entry.nextSets,
-        next_reps: entry.nextReps,
-      }))
+
+      const queueLocally = () => {
+        // Та же дата+тип уже ждёт отправки — заменяем, а не дублируем.
+        this.queue = this.queue.filter((session) => !(session.date === date && session.type === type))
+        const session: QueuedSession = { id: crypto.randomUUID(), date, type, entries }
+        this.queue.push(session)
+        this.persistQueue()
+        this.applyLocally(session)
+        return true
+      }
+
+      // Сети точно нет — не ждём таймаута, сразу кладём в очередь.
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return queueLocally()
 
       const { data, error } = await supabase
         .from('workouts')
-        .upsert(rows, { onConflict: 'user_id,date,workout_type,exercise' })
+        .upsert(toRows(date, type, entries), { onConflict: 'user_id,date,workout_type,exercise' })
         .select()
 
       if (error) {
+        if (isOfflineError(error.message)) return queueLocally()
         this.error = error.message
         return false
       }
 
-      const saved = (data as WorkoutRow[]).map(mapWorkout)
-      for (const row of saved) {
-        const index = this.items.findIndex(
-          (item) =>
-            item.date === row.date && item.type === row.type && item.exercise === row.exercise,
-        )
-        if (index >= 0) this.items[index] = row
-        else this.items.push(row)
-      }
+      this.replaceWithSaved((data as WorkoutRow[]).map(mapWorkout))
       return true
     },
 
     async removeSession(date: string, type: WorkoutType | null) {
       this.error = null
+
+      // Неотправленная тренировка живёт только на устройстве — достаточно убрать её из очереди.
+      const onlyLocal = this.items
+        .filter((item) => item.date === date && item.type === type)
+        .every((item) => item.id.startsWith(LOCAL_ID_PREFIX))
+      this.queue = this.queue.filter((session) => !(session.date === date && session.type === type))
+      this.persistQueue()
+      if (onlyLocal) {
+        this.items = this.items.filter((item) => !(item.date === date && item.type === type))
+        return
+      }
+
       const { error } = await supabase
         .from('workouts')
         .delete()
