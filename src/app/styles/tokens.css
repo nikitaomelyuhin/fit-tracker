@@ -6,7 +6,8 @@
 
   --text-primary: #f2f4f8;
   --text-secondary: #9aa3b2;
-  --text-muted: #6b7280;
+  /* ≥ 4.5:1 к самому светлому фону (WCAG AA) и всё ещё тусклее --text-secondary. */
+  --text-muted: #838b9a;
 
   --accent: #4f8cff;
   --accent-contrast: #ffffff;
@@ -14,12 +15,17 @@
   --warning: #e0a63a;
   --danger: #ff5c5c;
 
+  /* Минимум для мелких подписей (навигация, календарь) — мельче на телефоне не читается. */
+  --font-size-xs: 12px;
   --font-size-s: 13px;
   --font-size-m: 15px;
   --font-size-l: 18px;
   --font-size-xl: 28px;
   /* Поля ввода: меньше 16px — и iOS Safari зумит страницу при фокусе на поле. */
   --font-size-input: 16px;
+
+  /* Минимальная зона нажатия (Apple HIG: 44pt). */
+  --touch-target: 44px;
 
   --space-xs: 4px;
   --space-s: 8px;

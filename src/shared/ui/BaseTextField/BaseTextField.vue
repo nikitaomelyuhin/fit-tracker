@@ -52,6 +52,7 @@ function onInput(event: Event) {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
+  min-height: var(--touch-target);
   font-size: var(--font-size-input);
   color: var(--text-primary);
   outline: none;
@@ -69,7 +70,7 @@ function onInput(event: Event) {
 /*
  * iOS Safari рисует поле даты нативным контролом со своей минимальной шириной и
  * игнорирует width: 100% — на узком экране оно вылезает за контейнер. Снимаем
- * нативный вид и минимальную ширину, высоту выравниваем с обычными полями.
+ * нативный вид и минимальную ширину.
  */
 .input[type='date'] {
   -webkit-appearance: none;
@@ -77,7 +78,6 @@ function onInput(event: Event) {
   min-width: 0;
   max-width: 100%;
   display: block;
-  min-height: calc(var(--font-size-input) * 1.2 + var(--space-s) * 2 + 2px);
 }
 
 .input[type='date']::-webkit-date-and-time-value {

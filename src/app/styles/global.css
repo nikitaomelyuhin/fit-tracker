@@ -43,3 +43,11 @@ select {
   font: inherit;
   color: inherit;
 }
+
+/* На сенсорных экранах любая кнопка — не меньше пальца, иначе мимо ✕ легко промахнуться. */
+@media (pointer: coarse) {
+  button {
+    min-height: var(--touch-target);
+    min-width: var(--touch-target);
+  }
+}

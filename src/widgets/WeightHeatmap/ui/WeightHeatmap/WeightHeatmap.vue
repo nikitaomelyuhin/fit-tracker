@@ -271,7 +271,7 @@ watch(selectedYear, () => nextTick(scrollToToday))
 .month {
   flex: 1 1 0;
   min-width: 0;
-  font-size: 9px;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
   white-space: nowrap;
   overflow: visible;
@@ -294,7 +294,7 @@ watch(selectedYear, () => nextTick(scrollToToday))
   flex: 1 1 0;
   display: flex;
   align-items: center;
-  font-size: 9px;
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
 

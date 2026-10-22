@@ -480,7 +480,7 @@ async function onSignOut() {
 }
 
 .bottomNavLabel {
-  font-size: 10px;
+  font-size: var(--font-size-xs);
 }
 
 @media (max-width: 860px) {
@@ -488,8 +488,9 @@ async function onSignOut() {
     display: none;
   }
 
-  /* На телефоне отчёт, выход и «Обновить» не нужны — обновление свайпом вниз. */
-  .actions {
+  /* На телефоне шапка не нужна: где ты — видно по нижней навигации, отчёт/выход/
+     «Обновить» убраны, обновление свайпом вниз. */
+  .header {
     display: none;
   }
 

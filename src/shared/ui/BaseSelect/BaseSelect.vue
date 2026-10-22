@@ -42,6 +42,7 @@ function onChange(event: Event) {
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: var(--radius-m);
+  min-height: var(--touch-target);
   font-size: var(--font-size-input);
   color: var(--text-primary);
   outline: none;
