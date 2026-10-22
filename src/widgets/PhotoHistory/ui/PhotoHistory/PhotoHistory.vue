@@ -17,8 +17,8 @@
           </a>
           <div :class="$style.photoFoot">
             <span :class="$style.angle">{{ PHOTO_ANGLE_LABELS[photo.angle] }}</span>
-            <BaseButton type="button" variant="danger" @click="onDelete(photo.id)">
-              {{ pendingId === photo.id ? 'Удалить?' : '✕' }}
+            <BaseButton type="button" variant="danger" aria-label="Удалить" @click="onDelete(photo.id)">
+              ✕
             </BaseButton>
           </div>
         </div>
@@ -29,7 +29,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useProgressPhotoStore } from '@/entities/ProgressPhoto'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
@@ -42,7 +42,6 @@ import { formatHuman } from '@/shared/lib/date'
 const store = useProgressPhotoStore()
 const weightLog = useWeightLogStore()
 const diaryEntries = useDiaryEntryStore()
-const pendingId = ref<string | null>(null)
 
 const weightByDate = computed(() => new Map(weightLog.byDateAsc.map((w) => [w.date, w.weight])))
 const kcalByDate = computed(() => new Map(diaryEntries.dailyKcalWithCheatAsc.map((d) => [d.date, d.kcal])))
@@ -70,12 +69,7 @@ function statsFor(date: string): { weight: number; bodyFatPct: number | null } |
 }
 
 function onDelete(id: string) {
-  if (pendingId.value === id) {
-    store.remove(id)
-    pendingId.value = null
-  } else {
-    pendingId.value = id
-  }
+  store.remove(id)
 }
 </script>
 

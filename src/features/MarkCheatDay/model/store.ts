@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useCheatDayStore } from '@/entities/CheatDay'
 import { todayISO } from '@/shared/lib/date'
+import { showSaveError, showToast } from '@/shared/lib/toast'
 
 interface State {
   date: string
@@ -34,6 +35,8 @@ export const useMarkCheatDayStore = defineStore('markCheatDay', {
       this.submitting = true
       const ok = await useCheatDayStore().add(this.date)
       this.submitting = false
+      if (ok) showToast('День отмечен читмилом')
+      else showSaveError(useCheatDayStore().error)
       if (ok) this.dateTouched = false
       return ok
     },

@@ -37,8 +37,8 @@
         </div>
         <div :class="$style.itemActions">
           <BaseButton type="button" variant="ghost" @click="store.startEdit(product)">✎</BaseButton>
-          <BaseButton type="button" variant="danger" @click="onDelete(product.id)">
-            {{ pendingId === product.id ? 'Удалить?' : '✕' }}
+          <BaseButton type="button" variant="danger" aria-label="Удалить" @click="onDelete(product.id)">
+            ✕
           </BaseButton>
         </div>
       </li>
@@ -48,15 +48,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useProductStore } from '@/entities/Product'
 import { BaseButton, BaseSelect, BaseTextField } from '@/shared/ui'
 import { useManageProductsStore } from '../../model/store'
 
 const store = useManageProductsStore()
 const products = useProductStore()
-
-const pendingId = ref<string | null>(null)
 
 const categoryOptions = [
   { value: 'base', label: 'Базовый продукт' },
@@ -72,12 +69,7 @@ async function onSubmit() {
 }
 
 function onDelete(id: string) {
-  if (pendingId.value === id) {
-    products.remove(id)
-    pendingId.value = null
-  } else {
-    pendingId.value = id
-  }
+  products.remove(id)
 }
 </script>
 

@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
+import { deleteWithUndo } from '@/shared/lib/toast'
 import { mapProduct } from '../helpers/mapProduct'
 import type { Product, ProductInput, ProductRow } from './types'
 
@@ -68,14 +69,24 @@ export const useProductStore = defineStore('product', {
       return true
     },
 
-    async remove(id: string) {
-      this.error = null
-      const { error } = await supabase.from('products').delete().eq('id', id)
-      if (error) {
-        this.error = error.message
-        return
-      }
-      this.items = this.items.filter((item) => item.id !== id)
+    /** Удалить с возможностью отмены: сразу пропадает, на сервере удаляется через 5 с. */
+    remove(id: string) {
+      const item = this.items.find((entry) => entry.id === id)
+      if (!item) return
+      deleteWithUndo({
+        text: 'Продукт удалён',
+        apply: () => {
+          this.items = this.items.filter((entry) => entry.id !== id)
+        },
+        revert: () => {
+          if (!this.items.some((entry) => entry.id === id)) this.items.push(item)
+        },
+        commit: async () => {
+          const { error } = await supabase.from('products').delete().eq('id', id)
+          if (error) this.error = error.message
+          return !error
+        },
+      })
     },
   },
 })

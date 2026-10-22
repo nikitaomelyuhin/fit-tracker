@@ -21,8 +21,8 @@
               ⏳ не отправлено
             </span>
           </span>
-          <BaseButton variant="danger" @click="onDelete(session.date, session.type)">
-            {{ isPending(session.date, session.type) ? 'Удалить?' : '✕' }}
+          <BaseButton variant="danger" aria-label="Удалить" @click="onDelete(session.date, session.type)">
+            ✕
           </BaseButton>
         </div>
         <ul :class="$style.exercises">
@@ -56,7 +56,6 @@ import { formatHuman } from '@/shared/lib/date'
 const DEFAULT_SHOWN = 5
 
 const workouts = useWorkoutStore()
-const pendingKey = ref<string | null>(null)
 
 // Список за всё время нечитаем — по умолчанию последние тренировки,
 // остальное — по клику «показать все» или по своему диапазону дат.
@@ -82,22 +81,8 @@ function clearFilter() {
   filterTo.value = ''
 }
 
-function keyOf(date: string, type: WorkoutType | null): string {
-  return `${date}|${type ?? ''}`
-}
-
-function isPending(date: string, type: WorkoutType | null): boolean {
-  return pendingKey.value === keyOf(date, type)
-}
-
 function onDelete(date: string, type: WorkoutType | null) {
-  const key = keyOf(date, type)
-  if (pendingKey.value === key) {
-    workouts.removeSession(date, type)
-    pendingKey.value = null
-  } else {
-    pendingKey.value = key
-  }
+  workouts.removeSession(date, type)
 }
 
 function summary(entry: Workout): string {

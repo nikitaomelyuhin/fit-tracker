@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
+import { deleteWithUndo } from '@/shared/lib/toast'
 import { useCheatDayStore } from '@/entities/CheatDay'
 import { CHEAT_DAY_KCAL, MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
 import { addDays, todayISO } from '@/shared/lib/date'
@@ -261,14 +262,24 @@ export const useDiaryEntryStore = defineStore('diaryEntry', {
       return true
     },
 
-    async remove(id: string) {
-      this.error = null
-      const { error } = await supabase.from('diary_entries').delete().eq('id', id)
-      if (error) {
-        this.error = error.message
-        return
-      }
-      this.items = this.items.filter((item) => item.id !== id)
+    /** Удалить с возможностью отмены: сразу пропадает, на сервере удаляется через 5 с. */
+    remove(id: string) {
+      const item = this.items.find((entry) => entry.id === id)
+      if (!item) return
+      deleteWithUndo({
+        text: 'Удалено из рациона',
+        apply: () => {
+          this.items = this.items.filter((entry) => entry.id !== id)
+        },
+        revert: () => {
+          if (!this.items.some((entry) => entry.id === id)) this.items.push(item)
+        },
+        commit: async () => {
+          const { error } = await supabase.from('diary_entries').delete().eq('id', id)
+          if (error) this.error = error.message
+          return !error
+        },
+      })
     },
   },
 })

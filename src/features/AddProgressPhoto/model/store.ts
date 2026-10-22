@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { useProgressPhotoStore } from '@/entities/ProgressPhoto'
 import type { PhotoAngle } from '@/shared/config/photos'
 import { todayISO } from '@/shared/lib/date'
+import { showSaveError, showToast } from '@/shared/lib/toast'
 
 interface Form {
   date: string
@@ -65,6 +66,8 @@ export const useAddProgressPhotoStore = defineStore('addProgressPhoto', {
         note: this.form.note.trim() || null,
       })
       this.submitting = false
+      if (ok) showToast('Фото сохранено')
+      else showSaveError(photos.error)
       if (ok) {
         this.form = emptyForm()
         this.dateTouched = false

@@ -55,8 +55,8 @@
               <button type="button" :class="$style.amount" @click="startEdit(entry.id, entry.amount)">
                 {{ entry.amount }}
               </button>
-              <BaseButton type="button" variant="danger" @click="onDelete(entry.id)">
-                {{ pendingId === entry.id ? 'Удалить?' : '✕' }}
+              <BaseButton type="button" variant="danger" aria-label="Удалить" @click="onDelete(entry.id)">
+                ✕
               </BaseButton>
             </template>
           </li>
@@ -94,7 +94,6 @@ const cheatDays = useCheatDayStore()
 
 const editingId = ref<string | null>(null)
 const editAmount = ref('')
-const pendingId = ref<string | null>(null)
 
 // Список за всё время нечитаем — по умолчанию показываем последние дни,
 // остальное — по клику «показать все» или по своему диапазону дат.
@@ -147,12 +146,7 @@ async function saveEdit(id: string) {
 }
 
 function onDelete(id: string) {
-  if (pendingId.value === id) {
-    store.remove(id)
-    pendingId.value = null
-  } else {
-    pendingId.value = id
-  }
+  store.remove(id)
 }
 </script>
 

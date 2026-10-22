@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
 import { readCache, writeCache } from '@/shared/lib/offlineCache'
 import { isOfflineError } from '@/shared/lib/network'
+import { deleteWithUndo } from '@/shared/lib/toast'
 import { WORKOUT_TEMPLATES, exerciseNames, type WorkoutType } from '@/shared/config/workouts'
 import { mapWorkout } from '../helpers/mapWorkout'
 import type {
@@ -266,30 +267,33 @@ export const useWorkoutStore = defineStore('workout', {
       return true
     },
 
-    async removeSession(date: string, type: WorkoutType | null) {
-      this.error = null
+    /** Удалить тренировку с возможностью отмены (5 с). Неотправленная — удаляется только из очереди. */
+    removeSession(date: string, type: WorkoutType | null) {
+      const matches = (entry: { date: string; type: WorkoutType | null }) => entry.date === date && entry.type === type
+      const removedItems = this.items.filter(matches)
+      const removedQueue = this.queue.filter(matches)
+      const onlyLocal = removedItems.every((item) => item.id.startsWith(LOCAL_ID_PREFIX))
 
-      // Неотправленная тренировка живёт только на устройстве — достаточно убрать её из очереди.
-      const onlyLocal = this.items
-        .filter((item) => item.date === date && item.type === type)
-        .every((item) => item.id.startsWith(LOCAL_ID_PREFIX))
-      this.queue = this.queue.filter((session) => !(session.date === date && session.type === type))
-      this.persistQueue()
-      if (onlyLocal) {
-        this.items = this.items.filter((item) => !(item.date === date && item.type === type))
-        return
-      }
-
-      const { error } = await supabase
-        .from('workouts')
-        .delete()
-        .eq('date', date)
-        .eq('workout_type', type)
-      if (error) {
-        this.error = error.message
-        return
-      }
-      this.items = this.items.filter((item) => !(item.date === date && item.type === type))
+      deleteWithUndo({
+        text: 'Тренировка удалена',
+        apply: () => {
+          this.items = this.items.filter((item) => !matches(item))
+          this.queue = this.queue.filter((session) => !matches(session))
+          this.persistQueue()
+        },
+        revert: () => {
+          for (const item of removedItems) if (!this.items.some((entry) => entry.id === item.id)) this.items.push(item)
+          for (const session of removedQueue) if (!this.queue.some((entry) => entry.id === session.id)) this.queue.push(session)
+          this.persistQueue()
+        },
+        commit: async () => {
+          if (onlyLocal) return true
+          const query = supabase.from('workouts').delete().eq('date', date)
+          const { error } = await (type === null ? query.is('workout_type', null) : query.eq('workout_type', type))
+          if (error) this.error = error.message
+          return !error
+        },
+      })
     },
   },
 })

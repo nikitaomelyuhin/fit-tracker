@@ -12,8 +12,8 @@
       <li v-for="entry in visibleEntries" :key="entry.id" :class="$style.row">
         <span :class="$style.date">{{ formatHuman(entry.date) }}</span>
         <span :class="$style.weight">{{ entry.weight }} кг</span>
-        <BaseButton variant="danger" @click="onDelete(entry.id)">
-          {{ pendingId === entry.id ? 'Удалить?' : '✕' }}
+        <BaseButton variant="danger" aria-label="Удалить" @click="onDelete(entry.id)">
+          ✕
         </BaseButton>
       </li>
     </ul>
@@ -40,9 +40,6 @@ const DEFAULT_SHOWN = 14
 
 const store = useWeightLogStore()
 
-// Удаление в два клика: первый — «Удалить?», второй — подтверждение.
-const pendingId = ref<string | null>(null)
-
 // Список за всё время нечитаем — по умолчанию последние записи,
 // остальное — по клику «показать все» или по своему диапазону дат.
 const expanded = ref(false)
@@ -68,12 +65,7 @@ function clearFilter() {
 }
 
 function onDelete(id: string) {
-  if (pendingId.value === id) {
-    store.remove(id)
-    pendingId.value = null
-  } else {
-    pendingId.value = id
-  }
+  store.remove(id)
 }
 </script>
 

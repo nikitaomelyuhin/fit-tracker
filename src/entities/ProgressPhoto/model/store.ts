@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
+import { deleteWithUndo, showSaveError, showToast } from '@/shared/lib/toast'
 import { useSessionStore } from '@/entities/Session'
 import { PHOTO_SIGNED_URL_TTL, PROGRESS_PHOTOS_BUCKET } from '@/shared/config/photos'
 import { mapProgressPhoto } from '../helpers/mapProgressPhoto'
@@ -101,10 +102,12 @@ export const useProgressPhotoStore = defineStore('progressPhoto', {
       if (error) {
         this.error = error.message
         this.uploadingReference = false
+        showSaveError(error.message)
         return false
       }
       await this.loadReference()
       this.uploadingReference = false
+      showToast('Ориентир обновлён')
       return true
     },
 
@@ -151,18 +154,28 @@ export const useProgressPhotoStore = defineStore('progressPhoto', {
       return true
     },
 
-    async remove(id: string) {
-      this.error = null
+    /** Удалить с возможностью отмены: файл и запись удаляются только через 5 с. */
+    remove(id: string) {
       const photo = this.items.find((item) => item.id === id)
       if (!photo) return
-
-      await supabase.storage.from(PROGRESS_PHOTOS_BUCKET).remove([photo.storagePath])
-      const { error } = await supabase.from('progress_photos').delete().eq('id', id)
-      if (error) {
-        this.error = error.message
-        return
-      }
-      this.items = this.items.filter((item) => item.id !== id)
+      deleteWithUndo({
+        text: 'Фото удалено',
+        apply: () => {
+          this.items = this.items.filter((item) => item.id !== id)
+        },
+        revert: () => {
+          if (!this.items.some((item) => item.id === id)) this.items.push(photo)
+        },
+        commit: async () => {
+          const { error } = await supabase.from('progress_photos').delete().eq('id', id)
+          if (error) {
+            this.error = error.message
+            return false
+          }
+          await supabase.storage.from(PROGRESS_PHOTOS_BUCKET).remove([photo.storagePath])
+          return true
+        },
+      })
     },
   },
 })

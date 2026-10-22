@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { useProductStore, type Product, type ProductCategory, type ProductUnit } from '@/entities/Product'
 import { toNumber } from '@/shared/lib/number'
+import { showSaveError, showToast } from '@/shared/lib/toast'
 
 interface Form {
   name: string
@@ -78,6 +79,8 @@ export const useManageProductsStore = defineStore('manageProducts', {
         ? await products.update(this.editingId, input)
         : await products.add(input)
       this.submitting = false
+      if (ok) showToast('Продукт сохранён')
+      else showSaveError(products.error)
       if (ok) this.cancelEdit()
       return ok
     },

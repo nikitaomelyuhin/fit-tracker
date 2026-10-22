@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
+import { showSaveError, showToast } from '@/shared/lib/toast'
 
 interface Form {
   date: string
@@ -51,6 +52,8 @@ export const useAddWeightStore = defineStore('addWeight', {
         note: null,
       })
       this.submitting = false
+      if (ok) showToast('Вес сохранён')
+      else showSaveError(weightLog.error)
       if (ok) this.reset()
       return ok
     },

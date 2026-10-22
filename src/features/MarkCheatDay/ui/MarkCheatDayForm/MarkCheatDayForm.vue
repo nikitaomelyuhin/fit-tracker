@@ -18,8 +18,8 @@
     <ul v-if="cheatDays.byDateDesc.length" :class="$style.list">
       <li v-for="item in cheatDays.byDateDesc" :key="item.id" :class="$style.item">
         <span :class="$style.date">{{ formatHuman(item.date) }}</span>
-        <BaseButton type="button" variant="danger" @click="onDelete(item.id)">
-          {{ pendingId === item.id ? 'Убрать?' : '✕' }}
+        <BaseButton type="button" variant="danger" aria-label="Удалить" @click="onDelete(item.id)">
+          ✕
         </BaseButton>
       </li>
     </ul>
@@ -27,7 +27,6 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
 import { useCheatDayStore } from '@/entities/CheatDay'
 import { BaseButton, BaseTextField } from '@/shared/ui'
 import { formatHuman } from '@/shared/lib/date'
@@ -36,7 +35,6 @@ import { useMarkCheatDayStore } from '../../model/store'
 
 const store = useMarkCheatDayStore()
 const cheatDays = useCheatDayStore()
-const pendingId = ref<string | null>(null)
 
 useFreshDate(() => store.refreshDateIfUntouched())
 
@@ -45,12 +43,7 @@ async function onSubmit() {
 }
 
 function onDelete(id: string) {
-  if (pendingId.value === id) {
-    cheatDays.remove(id)
-    pendingId.value = null
-  } else {
-    pendingId.value = id
-  }
+  cheatDays.remove(id)
 }
 </script>
 

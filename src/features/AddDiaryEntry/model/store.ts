@@ -4,6 +4,7 @@ import { useDiaryEntryStore, type DiaryEntryInput } from '@/entities/DiaryEntry'
 import { MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
 import { todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
+import { showSaveError, showToast } from '@/shared/lib/toast'
 
 /** Разовый продукт, не сохраняется в базу — только для этой записи в дневник. */
 interface CustomDraft {
@@ -253,6 +254,8 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       const diary = useDiaryEntryStore()
       const ok = await diary.addMany(inputs)
       this.submitting = false
+      if (ok) showToast('Приём пищи сохранён')
+      else showSaveError(diary.error)
       if (ok) this.rows = [emptyRow()]
       return ok
     },

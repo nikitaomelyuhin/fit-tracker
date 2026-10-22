@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
+import { deleteWithUndo } from '@/shared/lib/toast'
 import { currentWeekStartISO, daysBetween, weekStartFor, todayISO } from '@/shared/lib/date'
 import { computeCleanStart, comparePaceWithPlan } from '@/shared/lib/pace'
 import type { CleanStart, PaceVsPlan } from '@/shared/lib/pace'
@@ -238,14 +239,24 @@ export const useWeightLogStore = defineStore('weightLog', {
       return true
     },
 
-    async remove(id: string) {
-      this.error = null
-      const { error } = await supabase.from('weight_logs').delete().eq('id', id)
-      if (error) {
-        this.error = error.message
-        return
-      }
-      this.items = this.items.filter((item) => item.id !== id)
+    /** Удалить с возможностью отмены: сразу пропадает, на сервере удаляется через 5 с. */
+    remove(id: string) {
+      const item = this.items.find((entry) => entry.id === id)
+      if (!item) return
+      deleteWithUndo({
+        text: 'Запись веса удалена',
+        apply: () => {
+          this.items = this.items.filter((entry) => entry.id !== id)
+        },
+        revert: () => {
+          if (!this.items.some((entry) => entry.id === id)) this.items.push(item)
+        },
+        commit: async () => {
+          const { error } = await supabase.from('weight_logs').delete().eq('id', id)
+          if (error) this.error = error.message
+          return !error
+        },
+      })
     },
   },
 })

@@ -3,6 +3,7 @@ import { useWorkoutStore } from '@/entities/Workout'
 import { WORKOUT_TEMPLATES, type WorkoutType } from '@/shared/config/workouts'
 import { todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
+import { showSaveError, showToast } from '@/shared/lib/toast'
 
 interface ExerciseForm {
   exercise: string
@@ -106,6 +107,10 @@ export const useLogWorkoutStore = defineStore('logWorkout', {
       this.submitting = true
       const ok = await workouts.saveSession(this.date, this.type, entries)
       this.submitting = false
+      if (!ok) showSaveError(workouts.error)
+      else if (workouts.isPendingSession(this.date, this.type)) {
+        showToast('Нет сети — сохранено на телефоне, отправится, когда появится интернет', { tone: 'info', durationMs: 5000 })
+      } else showToast('Тренировка сохранена')
       if (ok) this.setType(this.type) // обновить «прошлый раз»/план и очистить цели
       return ok
     },
