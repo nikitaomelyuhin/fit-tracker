@@ -29,6 +29,9 @@ export const useManageProductsStore = defineStore('manageProducts', {
   state: (): State => ({ form: emptyForm(), editingId: null, submitting: false }),
 
   getters: {
+    /** В форме есть несохранённый ввод — нельзя перезагружать страницу ради обновления. */
+    isDirty: (state): boolean => state.editingId != null || state.form.name.trim() !== '',
+
     canSubmit(): boolean {
       const f = this.form
       return (

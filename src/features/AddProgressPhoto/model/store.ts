@@ -26,6 +26,9 @@ export const useAddProgressPhotoStore = defineStore('addProgressPhoto', {
   state: (): State => ({ form: emptyForm(), dateTouched: false, submitting: false }),
 
   getters: {
+    /** В форме есть несохранённый ввод — нельзя перезагружать страницу ради обновления. */
+    isDirty: (state): boolean => state.form.file != null || state.form.note.trim() !== '',
+
     canSubmit(): boolean {
       return this.form.date !== '' && this.form.file != null
     },

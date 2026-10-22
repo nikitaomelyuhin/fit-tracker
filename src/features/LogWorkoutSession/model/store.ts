@@ -22,6 +22,8 @@ interface State {
   dateTouched: boolean
   type: WorkoutType
   exercises: ExerciseForm[]
+  /** Снимок предзаполненных значений: поля заполнены планом сами, «изменено» — это отличие от него. */
+  baseline: string
   submitting: boolean
 }
 
@@ -31,10 +33,14 @@ export const useLogWorkoutStore = defineStore('logWorkout', {
     dateTouched: false,
     type: 'A',
     exercises: [],
+    baseline: '[]',
     submitting: false,
   }),
 
   getters: {
+    /** Пользователь что-то поменял в предзаполненной форме — нельзя перезагружать ради обновления. */
+    isDirty: (state): boolean => JSON.stringify(state.exercises) !== state.baseline,
+
     canSubmit: (state): boolean =>
       state.exercises.some((item) => item.weight.trim() !== '' || item.reps.trim() !== ''),
     /** Форма ещё не тронута — можно безопасно перезаполнить, когда подъедут данные. */
@@ -87,6 +93,7 @@ export const useLogWorkoutStore = defineStore('logWorkout', {
           nextReps: '',
         }
       })
+      this.baseline = JSON.stringify(this.exercises)
     },
 
     async submit(): Promise<boolean> {

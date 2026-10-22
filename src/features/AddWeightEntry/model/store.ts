@@ -24,6 +24,8 @@ export const useAddWeightStore = defineStore('addWeight', {
   state: (): State => ({ form: initialForm(), dateTouched: false, submitting: false }),
 
   getters: {
+    /** В форме есть несохранённый ввод — нельзя перезагружать страницу ради обновления. */
+    isDirty: (state): boolean => state.form.weight.trim() !== '',
     canSubmit: (state): boolean => state.form.date !== '' && toNumber(state.form.weight) !== null,
   },
 

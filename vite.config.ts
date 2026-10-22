@@ -7,7 +7,9 @@ export default defineConfig({
   plugins: [
     vue(),
     VitePWA({
-      registerType: 'autoUpdate',
+      // prompt: новая версия ждёт, пока формы пустые (см. app/providers/pwa), а не
+      // перезагружает страницу сама посреди ввода.
+      registerType: 'prompt',
       manifest: {
         name: 'Fit Tracker',
         short_name: 'FitTracker',

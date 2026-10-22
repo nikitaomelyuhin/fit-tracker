@@ -73,6 +73,10 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
   }),
 
   getters: {
+    /** В форме есть несохранённый ввод — нельзя перезагружать страницу ради обновления. */
+    isDirty: (state): boolean =>
+      state.rows.some((row) => row.query.trim() !== '' || row.amount.trim() !== '' || row.selectedId != null || row.custom != null),
+
     mealTypes: () => MEAL_TYPES,
 
     matchesFor(): (key: string) => Product[] {
