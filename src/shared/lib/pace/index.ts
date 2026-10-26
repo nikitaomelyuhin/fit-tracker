@@ -35,9 +35,15 @@ export interface PaceVsPlan {
   /** Дней до цели по текущему темпу (от сегодня). */
   actualEtaDays: number | null
   actualEtaDate: string | null
-  /** Отклонение в днях: >0 — отстаёшь, <0 — опережаешь. */
+  /** Разница дат финиша (факт − план) в днях: >0 — финиш позже плана. Прогноз, а не уже потерянное. */
   diffDays: number | null
   ratePerWeek: number | null
+  /** Вес по плану на ту же дату, которую представляет текущий вес. */
+  planWeightNow: number | null
+  /** Сколько сейчас от плана (кг): >0 — отстаёшь, <0 — опережаешь. */
+  gapKg: number | null
+  /** То же в днях темпа плана на этом участке. */
+  gapDays: number | null
 }
 
 interface WeightPoint {
@@ -117,6 +123,12 @@ export function projectIdealPace(
   }
 
   return points
+}
+
+/** Вес по плану через `days` дней от старта (не ниже цели; при равновесии — вес равновесия). */
+export function planWeightAfter(startWeight: number, goalWeight: number, dailyKcal: number, days: number): number {
+  const points = projectIdealPace(startWeight, goalWeight, dailyKcal)
+  return points[Math.max(0, Math.min(days, points.length - 1))].weight
 }
 
 /** Сколько дней по плану от веса до цели. */
@@ -204,15 +216,31 @@ export function computeCleanStart(
 export function comparePaceWithPlan(params: {
   cleanStart: CleanStart
   currentWeight: number | null
+  /** Дата, которую представляет currentWeight (у недельного среднего — середина недели). По умолчанию today. */
+  currentWeightDate?: string
   today: string
   goalWeight: number
   dailyKcal: number
 }): PaceVsPlan {
   const { cleanStart, currentWeight, today, goalWeight, dailyKcal } = params
+  const currentWeightDate = params.currentWeightDate ?? today
 
   const planDays = idealDaysTo(cleanStart.baselineWeight, goalWeight, dailyKcal)
   const planEtaDate = addDays(cleanStart.baselineDate, planDays)
   const ratePerWeek = cleanStart.ratePerWeek
+
+  // Положение на сегодня: факт против плана на ту же дату. В отличие от diffDays,
+  // здесь только уже случившееся — без продления разницы в темпе на месяцы вперёд.
+  let planWeightNow: number | null = null
+  let gapKg: number | null = null
+  let gapDays: number | null = null
+  if (cleanStart.ready && currentWeight != null) {
+    const elapsed = daysBetween(cleanStart.baselineDate, currentWeightDate)
+    planWeightNow = planWeightAfter(cleanStart.baselineWeight, goalWeight, dailyKcal, elapsed)
+    gapKg = currentWeight - planWeightNow
+    const planLossPerDay = (maintenanceKcal(planWeightNow) - dailyKcal) / KCAL_PER_KG
+    gapDays = planLossPerDay > 0 ? gapKg / planLossPerDay : null
+  }
 
   if (!cleanStart.ready || ratePerWeek == null || ratePerWeek <= 0 || currentWeight == null) {
     return {
@@ -222,6 +250,9 @@ export function comparePaceWithPlan(params: {
       actualEtaDate: null,
       diffDays: null,
       ratePerWeek,
+      planWeightNow,
+      gapKg,
+      gapDays,
     }
   }
 
@@ -235,5 +266,8 @@ export function comparePaceWithPlan(params: {
     actualEtaDate,
     diffDays: daysBetween(planEtaDate, actualEtaDate),
     ratePerWeek,
+    planWeightNow,
+    gapKg,
+    gapDays,
   }
 }

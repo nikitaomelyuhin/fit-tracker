@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { computeCleanStart, idealDaysTo, maintenanceKcal, sumDeficitKcal } from './index'
+import {
+  comparePaceWithPlan,
+  computeCleanStart,
+  idealDaysTo,
+  maintenanceKcal,
+  planWeightAfter,
+  sumDeficitKcal,
+} from './index'
+import type { CleanStart } from './index'
 import { addDays } from '@/shared/lib/date'
 
 describe('maintenanceKcal', () => {
@@ -60,5 +68,52 @@ describe('idealDaysTo', () => {
     const fast = idealDaysTo(104, 88, 2000)
     expect(fast).toBeGreaterThan(0)
     expect(fast).toBeLessThan(slow)
+  })
+})
+
+describe('planWeightAfter', () => {
+  it('день 0 — стартовый вес, дальше снижение, но не ниже цели', () => {
+    expect(planWeightAfter(104, 88, 2000, 0)).toBe(104)
+    expect(planWeightAfter(104, 88, 2000, 30)).toBeLessThan(104)
+    expect(planWeightAfter(104, 88, 2000, 10_000)).toBe(88)
+  })
+})
+
+describe('comparePaceWithPlan — положение на сегодня', () => {
+  const cleanStart: CleanStart = {
+    ready: true,
+    startWeight: 107,
+    startDate: '2026-08-30',
+    baselineWeight: 104.2,
+    baselineDate: '2026-09-09',
+    waterDropKg: 1.5,
+    fatDropInWindowKg: 1.3,
+    windowDays: 10,
+    ratePerWeek: 0.56,
+  }
+  const base = { cleanStart, today: '2026-10-26', goalWeight: 88, dailyKcal: 2010 }
+
+  it('отставание считается против плана на дату текущего веса, а не по датам финиша', () => {
+    const date = '2026-10-23'
+    const plan = planWeightAfter(104.2, 88, 2010, 44)
+    const result = comparePaceWithPlan({ ...base, currentWeight: plan + 1, currentWeightDate: date })
+    expect(result.planWeightNow).toBeCloseTo(plan, 6)
+    expect(result.gapKg).toBeCloseTo(1, 6)
+    // 1 кг при плановом снижении ~0.1 кг/день — порядка 10 дней
+    expect(result.gapDays).toBeGreaterThan(8)
+    expect(result.gapDays).toBeLessThan(12)
+  })
+
+  it('впереди плана — отрицательный gap', () => {
+    const plan = planWeightAfter(104.2, 88, 2010, 47)
+    const result = comparePaceWithPlan({ ...base, currentWeight: plan - 0.5 })
+    expect(result.gapKg).toBeCloseTo(-0.5, 6)
+    expect(result.gapDays!).toBeLessThan(0)
+  })
+
+  it('пока точка отсчёта не готова — gap не считается', () => {
+    const result = comparePaceWithPlan({ ...base, cleanStart: { ...cleanStart, ready: false }, currentWeight: 100 })
+    expect(result.gapKg).toBeNull()
+    expect(result.gapDays).toBeNull()
   })
 })

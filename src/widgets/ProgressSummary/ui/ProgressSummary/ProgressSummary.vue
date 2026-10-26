@@ -86,20 +86,26 @@ const band = computed(() => {
   return 'стоит'
 })
 
-const paceDiff = computed(() => weightLog.paceVsPlan(effectiveKcal.value)?.diffDays ?? null)
+// Где ты сейчас относительно плана на ту же дату — уже случившееся, без прогноза вперёд.
+const paceGap = computed(() => {
+  const pace = weightLog.paceVsPlan(effectiveKcal.value)
+  return pace?.gapKg != null ? { kg: pace.gapKg, days: pace.gapDays } : null
+})
 
 const paceText = computed(() => {
-  const d = paceDiff.value
-  if (d == null) return 'мало данных'
-  if (d < -3) return `опережаешь на ~${Math.round(-d)} дн`
-  if (d > 3) return `отстаёшь на ~${Math.round(d)} дн`
-  return 'вровень с идеалом'
+  const gap = paceGap.value
+  if (!gap) return 'мало данных'
+  const days = gap.days != null ? ` (~${Math.round(Math.abs(gap.days))} дн)` : ''
+  if (gap.days != null ? Math.abs(gap.days) <= 3 : Math.abs(gap.kg) < 0.3) return 'вровень с идеалом'
+  const kg = Math.abs(gap.kg).toFixed(1)
+  return gap.kg > 0 ? `отстаёшь на ${kg} кг${days}` : `опережаешь на ${kg} кг${days}`
 })
 
 const paceTone = computed(() => {
-  const d = paceDiff.value
-  if (d == null) return 'muted'
-  return d > 3 ? 'warn' : 'good'
+  const gap = paceGap.value
+  if (!gap) return 'muted'
+  const behind = gap.days != null ? gap.days > 3 : gap.kg >= 0.3
+  return behind ? 'warn' : 'good'
 })
 
 interface Checkpoint {

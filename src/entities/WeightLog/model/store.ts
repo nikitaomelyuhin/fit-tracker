@@ -3,7 +3,7 @@ import { supabase } from '@/shared/supabase'
 import { readCache, writeCache } from '@/shared/lib/offlineCache'
 import { isOfflineError } from '@/shared/lib/network'
 import { deleteWithUndo } from '@/shared/lib/toast'
-import { currentWeekStartISO, daysBetween, weekStartFor, todayISO } from '@/shared/lib/date'
+import { addDays, currentWeekStartISO, daysBetween, weekStartFor, todayISO } from '@/shared/lib/date'
 import { computeCleanStart, comparePaceWithPlan } from '@/shared/lib/pace'
 import type { CleanStart, PaceVsPlan } from '@/shared/lib/pace'
 import { classifyDayDelta } from '@/shared/lib/dayDelta'
@@ -96,6 +96,20 @@ export const useWeightLogStore = defineStore('weightLog', {
       return Math.round((sum / week.length) * 10) / 10
     },
 
+    /**
+     * Дата, которую представляет smoothedWeight: середина взвешиваний, из которых он посчитан.
+     * Недельное среднее «живёт» в середине недели, а не сегодня — с планом сравниваем на эту дату.
+     */
+    smoothedWeightDate(): string | null {
+      const weekStart = this.currentWeekAverage != null ? currentWeekStartISO() : this.latestWeek?.weekStart
+      const dates = weekStart
+        ? this.items.filter((item) => weekStartFor(item.date) === weekStart).map((item) => item.date).sort()
+        : []
+      if (!dates.length) return this.latest?.date ?? null
+      const meanOffset = dates.reduce((sum, date) => sum + daysBetween(dates[0], date), 0) / dates.length
+      return addDays(dates[0], Math.round(meanOffset))
+    },
+
     /** Последняя неделя, в которой есть взвешивания. */
     latestWeek(): WeeklyAverage | null {
       const weeks = this.weeklyAverages
@@ -160,6 +174,7 @@ export const useWeightLogStore = defineStore('weightLog', {
         return comparePaceWithPlan({
           cleanStart: start,
           currentWeight: this.smoothedWeight,
+          currentWeightDate: this.smoothedWeightDate ?? undefined,
           today: todayISO(),
           goalWeight: WEIGHT_GOAL_KG,
           dailyKcal: dailyKcalOverride ?? DAILY_KCAL_TARGET,

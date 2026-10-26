@@ -71,6 +71,9 @@ export const useExportReportStore = defineStore('exportReport', {
           actualEtaDays: pace.actualEtaDays != null ? Math.round(pace.actualEtaDays) : null,
           actualEtaDate: pace.actualEtaDate,
           diffDays: pace.diffDays != null ? Math.round(pace.diffDays) : null,
+          planWeightNowKg: pace.planWeightNow != null ? Math.round(pace.planWeightNow * 10) / 10 : null,
+          gapKg: pace.gapKg != null ? Math.round(pace.gapKg * 10) / 10 : null,
+          gapDays: pace.gapDays != null ? Math.round(pace.gapDays) : null,
         },
         workouts: {
           sessions: workouts.sessions.map((session) => ({
