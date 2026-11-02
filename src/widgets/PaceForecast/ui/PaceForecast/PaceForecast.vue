@@ -1,15 +1,9 @@
 <template>
   <div :class="$style.pace">
     <template v-if="hasEnough">
-      <div :class="$style.rows">
-        <div :class="$style.row">
-          <span :class="$style.label"><span :class="$style.dotIdeal" />Идеальный ({{ effectiveKcal }} ккал)</span>
-          <span :class="$style.value">{{ idealText }}</span>
-        </div>
-        <div :class="$style.row">
-          <span :class="$style.label"><span :class="$style.dotActual" />Твой темп сейчас</span>
-          <span :class="[$style.value, behind && $style.warn]">{{ actualText }}</span>
-        </div>
+      <div :class="$style.row">
+        <span :class="$style.label"><span :class="$style.dotActual" />Твой темп сейчас</span>
+        <span :class="$style.value">{{ actualText }}</span>
       </div>
 
       <VChart :option="option" autoresize :class="$style.chart" />
@@ -92,19 +86,12 @@ const idealWeekly = computed(() => {
     return { date: point.date, weight: bucket.total / bucket.count }
   })
 })
-const idealText = computed(() => {
-  const p = pace.value
-  if (!p) return '—'
-  return `~${months(daysFromToday(p.planEtaDate))} мес · до ${formatHuman(p.planEtaDate)}`
-})
-
 const actualEtaDays = computed(() => pace.value?.actualEtaDays ?? null)
 const actualText = computed(() => {
   const p = pace.value
   if (!p || p.actualEtaDate == null) return 'мало данных (темп ~0)'
   return `~${months(daysFromToday(p.actualEtaDate))} мес · до ${formatHuman(p.actualEtaDate)}`
 })
-const behind = computed(() => (pace.value?.diffDays ?? 0) > 0)
 
 const projection = computed(() => {
   const p = pace.value
@@ -225,12 +212,6 @@ const option = computed(() => {
   gap: var(--space-m);
 }
 
-.rows {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
-}
-
 .row {
   display: flex;
   align-items: center;
@@ -246,18 +227,10 @@ const option = computed(() => {
   color: var(--text-secondary);
 }
 
-.dotIdeal,
 .dotActual {
   width: 10px;
   height: 10px;
   border-radius: 50%;
-}
-
-.dotIdeal {
-  background: var(--success);
-}
-
-.dotActual {
   background: var(--warning);
 }
 
@@ -265,10 +238,6 @@ const option = computed(() => {
   font-weight: 700;
   font-size: var(--font-size-xl);
   color: var(--text-primary);
-}
-
-.warn {
-  color: var(--warning);
 }
 
 .chart {
