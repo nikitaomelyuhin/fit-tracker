@@ -16,21 +16,15 @@
       <span :class="$style.label">Темп</span>
       <span :class="$style.value">{{ rateText }} <span :class="$style.band">· {{ band }}</span></span>
     </div>
-    <div :class="$style.row">
-      <span :class="$style.label">vs идеальный темп</span>
-      <span :class="[$style.value, $style[paceTone]]">{{ paceText }}</span>
-    </div>
 
     <div v-if="checkpoints.length" :class="$style.checkpoints">
       <div :class="$style.checkpointsHead">
         <span />
         <span :class="$style.checkpointsCol">Твой темп</span>
-        <span :class="$style.checkpointsCol">Идеальный</span>
       </div>
       <div v-for="cp in checkpoints" :key="cp.weight" :class="$style.checkpointRow">
         <span :class="$style.checkpointWeight">{{ cp.weight }} кг</span>
         <span :class="$style.checkpointDate">{{ cp.actualDate ? formatHuman(cp.actualDate) : '—' }}</span>
-        <span :class="$style.checkpointDateMuted">{{ cp.idealDate ? formatHuman(cp.idealDate) : '—' }}</span>
       </div>
     </div>
   </div>
@@ -39,16 +33,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { useDiaryEntryStore } from '@/entities/DiaryEntry'
-import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG } from '@/shared/config/goals'
-import { idealDaysTo } from '@/shared/lib/pace'
 import { addDays, formatHuman, todayISO } from '@/shared/lib/date'
 
 const weightLog = useWeightLogStore()
-const diaryEntries = useDiaryEntryStore()
-
-const effectiveKcal = computed(() => diaryEntries.effectiveDailyKcal(DAILY_KCAL_TARGET))
 
 const dryStart = computed(() => weightLog.dryStartWeight)
 const current = computed(() => weightLog.smoothedWeight)
@@ -86,34 +74,10 @@ const band = computed(() => {
   return 'стоит'
 })
 
-// Где ты сейчас относительно плана на ту же дату — уже случившееся, без прогноза вперёд.
-const paceGap = computed(() => {
-  const pace = weightLog.paceVsPlan(effectiveKcal.value)
-  return pace?.gapKg != null ? { kg: pace.gapKg, days: pace.gapDays } : null
-})
-
-const paceText = computed(() => {
-  const gap = paceGap.value
-  if (!gap) return 'мало данных'
-  const days = gap.days != null ? ` (~${Math.round(Math.abs(gap.days))} дн)` : ''
-  if (gap.days != null ? Math.abs(gap.days) <= 3 : Math.abs(gap.kg) < 0.3) return 'вровень с идеалом'
-  const kg = Math.abs(gap.kg).toFixed(1)
-  return gap.kg > 0 ? `отстаёшь на ${kg} кг${days}` : `опережаешь на ${kg} кг${days}`
-})
-
-const paceTone = computed(() => {
-  const gap = paceGap.value
-  if (!gap) return 'muted'
-  const behind = gap.days != null ? gap.days > 3 : gap.kg >= 0.3
-  return behind ? 'warn' : 'good'
-})
-
 interface Checkpoint {
   weight: number
   /** По твоему текущему темпу (линейно от текущего веса). null — темп ещё не считается/стоит. */
   actualDate: string | null
-  /** По плану от «чистой» точки отсчёта, на реальном среднем ккал. */
-  idealDate: string | null
 }
 
 /** Ожидаемые даты — только для ещё не пройденных отметок (пройденным дата не нужна). */
@@ -126,16 +90,13 @@ const checkpoints = computed<Checkpoint[]>(() => {
   const targets = [...WEIGHT_MILESTONES_KG, WEIGHT_GOAL_KG].filter((weight) => weight < cur)
 
   return targets.map((weight) => {
-    const idealDays = idealDaysTo(start.baselineWeight, weight, effectiveKcal.value)
-    const idealDate = addDays(start.baselineDate, idealDays)
-
     let actualDate: string | null = null
     if (rate != null && rate > 0) {
       const daysNeeded = (cur - weight) / (rate / 7)
       actualDate = addDays(todayISO(), Math.round(daysNeeded))
     }
 
-    return { weight, actualDate, idealDate }
+    return { weight, actualDate }
   })
 })
 </script>
@@ -170,19 +131,6 @@ const checkpoints = computed<Checkpoint[]>(() => {
   color: var(--text-muted);
 }
 
-.good {
-  color: var(--success);
-}
-
-.warn {
-  color: var(--warning);
-}
-
-.muted {
-  color: var(--text-muted);
-}
-
-
 .checkpoints {
   display: flex;
   flex-direction: column;
@@ -195,7 +143,7 @@ const checkpoints = computed<Checkpoint[]>(() => {
 .checkpointsHead,
 .checkpointRow {
   display: grid;
-  grid-template-columns: 1fr auto auto;
+  grid-template-columns: 1fr auto;
   gap: var(--space-m);
 }
 
@@ -225,14 +173,6 @@ const checkpoints = computed<Checkpoint[]>(() => {
   font-size: var(--font-size-s);
   font-weight: 600;
   color: var(--text-primary);
-  white-space: nowrap;
-}
-
-.checkpointDateMuted {
-  min-width: 76px;
-  text-align: right;
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
   white-space: nowrap;
 }
 </style>
