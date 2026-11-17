@@ -1,10 +1,11 @@
 import { defineStore } from 'pinia'
 import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
-import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG } from '@/shared/config/goals'
+import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG, WEIGHT_MINOR_STEP_KG } from '@/shared/config/goals'
 import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { estimateBodyFatPct } from '@/shared/lib/bodyFat'
 import { addDays, todayISO } from '@/shared/lib/date'
+import { milestonePoints } from '../helpers/milestonePoints'
 import { paceBand } from '../helpers/paceBand'
 import type { GoalMilestone, PaceBand } from './types'
 
@@ -81,21 +82,27 @@ export const useGoalProgressStore = defineStore('goalProgress', {
       return paceBand(this.ratePerWeek)
     },
 
-    /** Все отметки до цели: пройденные — галочкой, остальные — с ожидаемой датой. */
+    /**
+     * Отметки до цели: основные — всегда (пройденные с галочкой), мелкие через
+     * каждый килограмм — только впереди, «для интереса». У непройденных — дата
+     * по текущему темпу.
+     */
     milestones(): GoalMilestone[] {
       const cleanStart = useWeightLogStore().cleanStart
       const current = this.current
       const rate = cleanStart?.ready ? cleanStart.ratePerWeek : null
 
-      return [...WEIGHT_MILESTONES_KG, WEIGHT_GOAL_KG].map((weight) => {
-        const reached = current != null && current <= weight
-        let expectedDate: string | null = null
-        if (!reached && current != null && rate != null && rate > 0) {
-          const daysNeeded = (current - weight) / (rate / 7)
-          expectedDate = addDays(todayISO(), Math.round(daysNeeded))
-        }
-        return { weight, reached, expectedDate }
-      })
+      return milestonePoints(WEIGHT_MILESTONES_KG, WEIGHT_GOAL_KG, WEIGHT_MINOR_STEP_KG)
+        .map(({ weight, kind }) => {
+          const reached = current != null && current <= weight
+          let expectedDate: string | null = null
+          if (!reached && current != null && rate != null && rate > 0) {
+            const daysNeeded = (current - weight) / (rate / 7)
+            expectedDate = addDays(todayISO(), Math.round(daysNeeded))
+          }
+          return { weight, kind, reached, expectedDate }
+        })
+        .filter((point) => point.kind === 'main' || !point.reached)
     },
   },
 })

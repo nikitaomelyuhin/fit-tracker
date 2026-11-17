@@ -49,6 +49,7 @@
         :key="point.weight"
         :class="[
           $style.milestone,
+          point.kind === 'minor' && $style.milestoneMinor,
           point.reached && $style.milestoneReached,
           index === nextIndex && $style.milestoneNext,
         ]"
@@ -69,7 +70,7 @@ import type { GoalMilestone } from '../../model/types'
 
 const store = useGoalProgressStore()
 
-/** Первая непройденная отметка — ближайшая цель, её подсвечиваем. */
+/** Первая непройденная отметка (в том числе мелкая) — ближайшая цель, её подсвечиваем. */
 const nextIndex = computed(() => store.milestones.findIndex((point) => !point.reached))
 
 function formatKg(value: number | null): string {
@@ -236,6 +237,20 @@ function milestoneText(point: GoalMilestone): string {
   white-space: nowrap;
 }
 
+/* Мелкие отметки «для интереса» — тише основных: тонкое кольцо, обычный шрифт, плотнее. */
+.milestone-minor {
+  padding-block: var(--space-2xs);
+  color: var(--text-muted);
+}
+
+.milestone-minor .marker {
+  border-width: var(--border-width);
+}
+
+.milestone-minor .milestone-weight {
+  font-weight: 400;
+}
+
 .milestone-reached {
   color: var(--text-muted);
 }
@@ -246,6 +261,7 @@ function milestoneText(point: GoalMilestone): string {
 }
 
 .milestone-next {
+  padding-block: var(--space-xs);
   background: var(--accent-soft);
   color: var(--text-primary);
 }
