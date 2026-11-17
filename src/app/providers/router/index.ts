@@ -4,9 +4,12 @@ import { DashboardPage } from '@/pages/dashboard'
 import { AuthPage } from '@/pages/auth'
 
 const routes: RouteRecordRaw[] = [
-  { path: '/', redirect: '/weight' },
+  { path: '/', redirect: '/today' },
+  // Старые адреса вкладок (закладки, установленная PWA) ведут на новые.
+  { path: '/weight', redirect: '/today' },
+  { path: '/analytics', redirect: '/progress' },
   {
-    path: '/:tab(weight|workouts|nutrition|photos|analytics)',
+    path: '/:tab(today|nutrition|workouts|progress|photos)',
     name: 'dashboard',
     component: DashboardPage,
     meta: { requiresAuth: true },
@@ -26,6 +29,6 @@ export const router = createRouter({
 router.beforeEach((to) => {
   const session = useSessionStore()
   if (to.meta.requiresAuth && !session.isAuthenticated) return { name: 'auth' }
-  if (to.name === 'auth' && session.isAuthenticated) return '/weight'
+  if (to.name === 'auth' && session.isAuthenticated) return '/today'
   return true
 })

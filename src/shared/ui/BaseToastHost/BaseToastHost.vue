@@ -19,7 +19,7 @@ import { toasts } from '@/shared/lib/toast'
   left: 50%;
   bottom: var(--space-l);
   transform: translateX(-50%);
-  z-index: 50;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: var(--space-s);

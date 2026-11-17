@@ -15,7 +15,9 @@ export function usePullToRefresh(onRefresh: () => Promise<unknown>) {
   let startY: number | null = null
 
   function onStart(event: TouchEvent) {
-    startY = window.scrollY <= 0 && !refreshing.value ? event.touches[0].clientY : null
+    // Свайп вниз внутри шторки/диалога закрывает её, а не обновляет страницу под ней.
+    const inDialog = (event.target as Element | null)?.closest?.('[aria-modal="true"]') != null
+    startY = window.scrollY <= 0 && !refreshing.value && !inDialog ? event.touches[0].clientY : null
   }
 
   function onMove(event: TouchEvent) {

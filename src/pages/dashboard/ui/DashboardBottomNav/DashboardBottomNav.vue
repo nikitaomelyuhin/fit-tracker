@@ -36,7 +36,7 @@ const emit = defineEmits<{ select: [tab: DashboardTabKey] }>()
     left: 0;
     right: 0;
     bottom: 0;
-    z-index: 20;
+    z-index: var(--z-nav);
     background: var(--bg-surface);
     border-top: var(--border-width) solid var(--border);
     padding: var(--space-xs) var(--space-xs) calc(var(--space-xs) + env(safe-area-inset-bottom));

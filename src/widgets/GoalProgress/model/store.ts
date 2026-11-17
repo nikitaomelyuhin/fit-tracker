@@ -1,6 +1,9 @@
 import { defineStore } from 'pinia'
 import { useWeightLogStore } from '@/entities/WeightLog'
+import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG } from '@/shared/config/goals'
+import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
+import { estimateBodyFatPct } from '@/shared/lib/bodyFat'
 import { addDays, todayISO } from '@/shared/lib/date'
 import { paceBand } from '../helpers/paceBand'
 import type { GoalMilestone, PaceBand } from './types'
@@ -46,6 +49,33 @@ export const useGoalProgressStore = defineStore('goalProgress', {
 
     /** Темп по жиру — от «чистой» точки отсчёта, без стартового слива воды. */
     ratePerWeek: (): number | null => useWeightLogStore().cleanRatePerWeek,
+
+    /**
+     * % жира не по замерам (их нет), а по дефициту: сколько жира должно было уйти
+     * по факту питания (дневник, где его нет — эффективное среднее), вычитается
+     * из стартовой жировой массы. Вес отдельно, жир отдельно — а не «весь
+     * сброшенный вес = жир», что неверно из-за воды и мышц.
+     */
+    bodyFatPct: (): number | null => {
+      const weightLog = useWeightLogStore()
+      const diary = useDiaryEntryStore()
+      const start = weightLog.byDateAsc[0]
+      const currentWeight = weightLog.smoothedWeight ?? weightLog.byDateDesc[0]?.weight ?? null
+      if (!start || currentWeight == null) return null
+
+      const weightByDate = new Map(weightLog.byDateAsc.map((w) => [w.date, w.weight]))
+      const kcalByDate = new Map(diary.dailyKcalWithCheatAsc.map((d) => [d.date, d.kcal]))
+
+      return estimateBodyFatPct({
+        startDate: start.date,
+        startWeight: start.weight,
+        toDate: todayISO(),
+        weightAtTarget: currentWeight,
+        weightAt: (date) => weightByDate.get(date) ?? weightLog.smoothedWeight,
+        kcalAt: (date) => kcalByDate.get(date) ?? null,
+        fallbackKcal: diary.effectiveDailyKcal(DAILY_KCAL_TARGET),
+      })
+    },
 
     pace(): PaceBand {
       return paceBand(this.ratePerWeek)

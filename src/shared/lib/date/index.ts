@@ -15,6 +15,23 @@ const MONTHS_SHORT = [
   'дек',
 ]
 
+const MONTHS_GENITIVE = [
+  'января',
+  'февраля',
+  'марта',
+  'апреля',
+  'мая',
+  'июня',
+  'июля',
+  'августа',
+  'сентября',
+  'октября',
+  'ноября',
+  'декабря',
+]
+
+const WEEKDAYS = ['воскресенье', 'понедельник', 'вторник', 'среда', 'четверг', 'пятница', 'суббота']
+
 /** Сегодняшняя дата в формате YYYY-MM-DD (для input[type=date] и БД). */
 export function todayISO(): string {
   return dayjs().format('YYYY-MM-DD')
@@ -46,4 +63,19 @@ export function weekStartFor(dateISO: string): string {
 /** ISO-дата среды текущей недели. */
 export function currentWeekStartISO(): string {
   return weekStartFor(todayISO())
+}
+
+/** «Сегодня» / «Вчера» / «Завтра», иначе «30 авг» — для чипов дат в формах. */
+export function relativeDayLabel(dateISO: string): string {
+  const diff = daysBetween(todayISO(), dateISO)
+  if (diff === 0) return 'Сегодня'
+  if (diff === -1) return 'Вчера'
+  if (diff === 1) return 'Завтра'
+  return formatHuman(dateISO)
+}
+
+/** Полная дата с днём недели: «вторник, 17 ноября». */
+export function formatLongWithWeekday(dateISO: string): string {
+  const d = dayjs(dateISO)
+  return `${WEEKDAYS[d.day()]}, ${d.date()} ${MONTHS_GENITIVE[d.month()]}`
 }

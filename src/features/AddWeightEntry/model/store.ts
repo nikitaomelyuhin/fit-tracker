@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { useWeightLogStore } from '@/entities/WeightLog'
+import { useWeightLogStore, type WeightLog } from '@/entities/WeightLog'
 import { todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
 import { showSaveError, showToast } from '@/shared/lib/toast'
@@ -27,6 +27,16 @@ export const useAddWeightStore = defineStore('addWeight', {
     /** В форме есть несохранённый ввод — нельзя перезагружать страницу ради обновления. */
     isDirty: (state): boolean => state.form.weight.trim() !== '',
     canSubmit: (state): boolean => state.form.date !== '' && toNumber(state.form.weight) !== null,
+
+    /** Последнее взвешивание до выбранной даты — подсказка и отправная точка для кнопок ±. */
+    previous(state): WeightLog | null {
+      return useWeightLogStore().byDateDesc.find((item) => item.date < state.form.date) ?? null
+    },
+
+    /** Запись на выбранную дату уже есть — сохранение её перезапишет. */
+    existing(state): WeightLog | null {
+      return useWeightLogStore().byDateDesc.find((item) => item.date === state.form.date) ?? null
+    },
   },
 
   actions: {
@@ -38,6 +48,13 @@ export const useAddWeightStore = defineStore('addWeight', {
     /** Подтягивает сегодняшнюю дату, пока пользователь не выбрал дату вручную. */
     refreshDateIfUntouched() {
       if (!this.dateTouched) this.form.date = todayISO()
+    },
+
+    /** Кнопки ±0.1: от введённого, а если пусто — от прошлого взвешивания. */
+    nudge(delta: number) {
+      const base = toNumber(this.form.weight) ?? this.previous?.weight ?? null
+      if (base == null) return
+      this.form.weight = (Math.round((base + delta) * 10) / 10).toFixed(1)
     },
 
     async submit(): Promise<boolean> {

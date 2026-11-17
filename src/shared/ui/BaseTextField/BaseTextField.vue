@@ -2,29 +2,47 @@
   <label :class="$style.field">
     <span v-if="label" :class="$style.label">{{ label }}</span>
     <input
-      :class="$style.input"
+      ref="input"
+      :class="[$style.input, large && $style.inputLarge]"
       :type="type"
       :value="modelValue"
       :placeholder="placeholder"
       :inputmode="inputmode"
       :step="step"
+      :enterkeyhint="enterkeyhint"
+      :aria-label="label ? undefined : ariaLabel"
       @input="onInput"
     />
   </label>
 </template>
 
 <script setup lang="ts">
-withDefaults(
+import { onMounted, ref } from 'vue'
+
+const props = withDefaults(
   defineProps<{
     modelValue: string
     label?: string
     type?: string
     placeholder?: string
-    inputmode?: 'text' | 'decimal' | 'numeric' | 'email'
+    inputmode?: 'text' | 'decimal' | 'numeric' | 'email' | 'search'
     step?: string
+    enterkeyhint?: 'done' | 'search' | 'next' | 'go'
+    /** Фокус сразу при появлении — для поля, ради которого открыта шторка. */
+    autofocus?: boolean
+    /** Крупное поле для одной главной цифры (вес). */
+    large?: boolean
+    /** Подпись для скринридера, когда видимой метки нет. */
+    ariaLabel?: string
   }>(),
   { type: 'text' },
 )
+
+const input = ref<HTMLInputElement | null>(null)
+
+onMounted(() => {
+  if (props.autofocus) input.value?.focus()
+})
 
 const emit = defineEmits<{ 'update:modelValue': [string] }>()
 
@@ -70,6 +88,13 @@ function onInput(event: Event) {
   .input:hover:not(:focus) {
     border-color: var(--text-muted);
   }
+}
+
+.input-large {
+  padding: var(--space-s) var(--space-m);
+  font-size: var(--font-size-display);
+  font-weight: 700;
+  text-align: center;
 }
 
 .input::placeholder {

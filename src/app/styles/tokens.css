@@ -26,6 +26,8 @@
   --danger-soft: rgba(255, 92, 92, 0.14);
 
   --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.45);
+  /* Выбранный сегмент переключателя чуть «приподнят». */
+  --shadow-segment: 0 1px 2px rgba(0, 0, 0, 0.4);
 
   /* Минимум для мелких подписей (навигация, бейджи) — мельче на телефоне не читается. */
   --font-size-xs: 12px;
@@ -67,6 +69,7 @@
   /* Циклы индикаторов загрузки. */
   --duration-spin: 800ms;
   --duration-loop: 1s;
+  --duration-shimmer: 1.4s;
   --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
   --press-scale: 0.97;
   --opacity-disabled: 0.5;
@@ -82,9 +85,11 @@
   --exercise-min-width: 280px;
   --stat-value-min-width: 84px;
   --amount-input-width: 64px;
+  --macro-field-min-width: 88px;
   --dropdown-max-height: 220px;
   --photo-thumb-width: 160px;
   --dropzone-min-height: 96px;
+  --skeleton-card-height: 160px;
   --progress-bar-height: 8px;
   --legend-dot-size: 10px;
   --spinner-size-m: 24px;
@@ -92,4 +97,23 @@
   --spinner-stroke: 3px;
   --chart-height: 300px;
   --chart-height-l: 480px;
+
+  /* Нижняя шторка (на компе — диалог по центру). */
+  --overlay: rgba(0, 0, 0, 0.6);
+  --sheet-max-width: 520px;
+  --sheet-max-height: 92dvh;
+  --sheet-handle-width: 36px;
+  --sheet-handle-height: 4px;
+
+  /* Кольцо калорий на экране «Сегодня». */
+  --ring-size: 112px;
+
+  /* Крупное поле ввода (вес в шторке). */
+  --font-size-display: 40px;
+
+  /* Слои. */
+  --z-nav: 20;
+  --z-progress: 30;
+  --z-sheet: 40;
+  --z-toast: 50;
 }

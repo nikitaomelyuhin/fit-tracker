@@ -2,9 +2,10 @@ import { defineStore } from 'pinia'
 import { useProductStore, type Product, type ProductUnit } from '@/entities/Product'
 import { useDiaryEntryStore, type DiaryEntryInput } from '@/entities/DiaryEntry'
 import { MEAL_TYPES, type MealType } from '@/shared/config/nutrition'
-import { todayISO } from '@/shared/lib/date'
+import { addDays, todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
 import { showSaveError, showToast } from '@/shared/lib/toast'
+import { mealTypeByHour } from '../helpers/mealTypeByHour'
 
 /** Разовый продукт, не сохраняется в базу — только для этой записи в дневник. */
 interface CustomDraft {
@@ -45,6 +46,16 @@ interface Resolved {
   carbs: number
   fiber: number
 }
+
+/** Продукт из «частых» с порцией, которую брал в прошлый раз. */
+export interface FrequentProduct {
+  product: Product
+  lastAmount: number
+}
+
+/** Окно для «частых» продуктов и сколько их показывать. */
+const FREQUENT_WINDOW_DAYS = 30
+const FREQUENT_LIMIT = 8
 
 interface State {
   date: string
@@ -165,6 +176,52 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       }
     },
 
+    /**
+     * Частые продукты за последние 30 дней — сначала те, что обычно ешь в этот
+     * приём пищи, потом остальные. Узнать в списке быстрее, чем искать по буквам.
+     */
+    frequentProducts(): FrequentProduct[] {
+      const products = useProductStore()
+      const since = addDays(todayISO(), -FREQUENT_WINDOW_DAYS)
+      const stats = new Map<string, { sameMeal: number; total: number; lastDate: string; lastAmount: number }>()
+
+      for (const entry of useDiaryEntryStore().byDateDesc) {
+        if (entry.date < since) break
+        if (!entry.productId) continue
+        const stat = stats.get(entry.productId)
+        if (!stat) {
+          // byDateDesc — первая встреча и есть последняя порция.
+          stats.set(entry.productId, {
+            sameMeal: entry.mealType === this.mealType ? 1 : 0,
+            total: 1,
+            lastDate: entry.date,
+            lastAmount: entry.amount,
+          })
+        } else {
+          stat.total++
+          if (entry.mealType === this.mealType) stat.sameMeal++
+        }
+      }
+
+      return [...stats.entries()]
+        .map(([id, stat]) => ({ product: products.byId(id), stat }))
+        .filter((item): item is { product: Product; stat: typeof item.stat } => item.product != null)
+        .sort((a, b) => b.stat.sameMeal - a.stat.sameMeal || b.stat.total - a.stat.total || (a.stat.lastDate < b.stat.lastDate ? 1 : -1))
+        .slice(0, FREQUENT_LIMIT)
+        .map(({ product, stat }) => ({ product, lastAmount: stat.lastAmount }))
+    },
+
+    /** Порция продукта в прошлый раз — подставляется при выборе. */
+    lastAmountFor(): (productId: string) => number | null {
+      return (productId: string) =>
+        useDiaryEntryStore().byDateDesc.find((entry) => entry.productId === productId)?.amount ?? null
+    },
+
+    /** Строки, где ещё не выбран продукт — только у первой из них поле поиска получает фокус. */
+    firstEmptyRowKey(): string | null {
+      return this.rows.find((row) => !row.selectedId && !row.custom)?.key ?? null
+    },
+
     validRowsCount(): number {
       return this.rows.filter((row) => this.previewFor(row.key) != null).length
     },
@@ -204,11 +261,28 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       if (row) row.amount = amount
     },
 
+    /** Выбор продукта; порция подставляется из прошлого раза, если он был. */
     selectProduct(key: string, product: Product) {
       const row = this.rows.find((r) => r.key === key)
       if (!row) return
       row.selectedId = product.id
       row.query = product.name
+      const last = this.lastAmountFor(product.id)
+      if (last != null && row.amount.trim() === '') row.amount = String(last)
+    },
+
+    setMealType(mealType: MealType) {
+      this.mealType = mealType
+    },
+
+    /**
+     * Подготовка к открытию формы: дата — сегодня (если не выбирал вручную), приём
+     * пищи — явно переданный или угаданный по времени. Начатый ввод не трогаем.
+     */
+    prepare(mealType?: MealType) {
+      this.refreshDateIfUntouched()
+      if (mealType) this.mealType = mealType
+      else if (!this.isDirty) this.mealType = mealTypeByHour(new Date().getHours())
     },
 
     /** Переключить строку в режим разового продукта (без сохранения в базу). */

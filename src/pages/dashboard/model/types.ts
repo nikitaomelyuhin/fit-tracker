@@ -1,6 +1,6 @@
 import type { AppIconName } from '@/shared/types/icon'
 
-export type DashboardTabKey = 'weight' | 'workouts' | 'nutrition' | 'photos' | 'analytics'
+export type DashboardTabKey = 'today' | 'nutrition' | 'workouts' | 'progress' | 'photos'
 
 export interface DashboardTab {
   key: DashboardTabKey
@@ -9,3 +9,6 @@ export interface DashboardTab {
 }
 
 export type NutritionView = 'diary' | 'products'
+
+/** Шторка ввода, открытая поверх экрана. */
+export type DashboardSheet = 'weight' | 'food'

@@ -1,170 +1,61 @@
 <template>
   <form :class="$style.form" @submit.prevent="onSubmit">
-    <div :class="$style.row">
-      <BaseTextField
-        :model-value="store.date"
-        label="Дата"
-        type="date"
-        @update:model-value="store.setDate($event)"
-      />
-      <BaseSelect v-model="store.mealType" label="Время суток" :options="mealTypeOptions" />
-    </div>
+    <DateChip :model-value="store.date" aria-label="Дата приёма пищи" @update:model-value="store.setDate($event)" />
+    <BaseSegmented
+      :model-value="store.mealType"
+      :options="mealTypeOptions"
+      aria-label="Приём пищи"
+      @update:model-value="store.setMealType($event)"
+    />
 
     <div :class="$style.dishes">
-      <div v-for="row in store.rows" :key="row.key" :class="$style.dish">
-        <div :class="$style.dishHead">
-          <span :class="$style.dishLabel">Блюдо</span>
-          <button
-            v-if="store.rows.length > 1"
-            type="button"
-            :class="$style.removeRow"
-            @click="store.removeRow(row.key)"
-          >
-            Убрать
-          </button>
-        </div>
-
-        <template v-if="row.custom">
-          <BaseTextField
-            :model-value="row.custom.name"
-            label="Название"
-            placeholder="Кусок пиццы"
-            @update:model-value="store.setCustomField(row.key, 'name', $event)"
-          />
-          <BaseSelect
-            :model-value="row.custom.unit"
-            label="Единица БЖУ ниже"
-            :options="unitOptions"
-            @update:model-value="store.setCustomField(row.key, 'unit', $event)"
-          />
-          <div :class="$style.grid4">
-            <BaseTextField
-              :model-value="row.custom.kcal"
-              label="Ккал"
-              inputmode="decimal"
-              @update:model-value="store.setCustomField(row.key, 'kcal', $event)"
-            />
-            <BaseTextField
-              :model-value="row.custom.protein"
-              label="Белки"
-              inputmode="decimal"
-              @update:model-value="store.setCustomField(row.key, 'protein', $event)"
-            />
-            <BaseTextField
-              :model-value="row.custom.fat"
-              label="Жиры"
-              inputmode="decimal"
-              @update:model-value="store.setCustomField(row.key, 'fat', $event)"
-            />
-            <BaseTextField
-              :model-value="row.custom.carbs"
-              label="Углеводы"
-              inputmode="decimal"
-              @update:model-value="store.setCustomField(row.key, 'carbs', $event)"
-            />
-            <BaseTextField
-              :model-value="row.custom.fiber"
-              label="Клетчатка"
-              inputmode="decimal"
-              placeholder="0"
-              @update:model-value="store.setCustomField(row.key, 'fiber', $event)"
-            />
-          </div>
-          <button type="button" :class="$style.clear" @click="store.clearRow(row.key)">
-            ✕ отменить свой продукт, вернуться к поиску
-          </button>
-        </template>
-
-        <template v-else>
-          <BaseTextField
-            v-if="!store.selectedFor(row.key)"
-            :model-value="row.query"
-            label="Продукт"
-            placeholder="Начни вводить название…"
-            @update:model-value="store.setQuery(row.key, $event)"
-          />
-          <span v-else :class="$style.chosen">
-            выбрано: <b>{{ store.selectedFor(row.key)!.name }}</b>
-            <button type="button" :class="$style.clear" @click="store.clearRow(row.key)">✕</button>
-          </span>
-
-          <ul v-if="store.matchesFor(row.key).length" :class="$style.matches">
-            <li v-for="product in store.matchesFor(row.key)" :key="product.id">
-              <button type="button" :class="$style.match" @click="store.selectProduct(row.key, product)">
-                <span>{{ product.name }}</span>
-                <span :class="$style.matchMeta">{{ product.kcal }} ккал / {{ unitLabel(product) }}</span>
-              </button>
-            </li>
-          </ul>
-          <p v-else-if="!store.selectedFor(row.key) && row.query.trim()" :class="$style.empty">
-            Ничего не нашлось
-          </p>
-
-          <button
-            v-if="!store.selectedFor(row.key)"
-            type="button"
-            :class="$style.customLink"
-            @click="store.startCustom(row.key)"
-          >
-            + Свой продукт (разово, без сохранения в базу)
-          </button>
-        </template>
-
-        <BaseTextField
-          v-if="store.resolvedFor(row.key)"
-          :model-value="row.amount"
-          :label="store.amountLabelFor(row.key)"
-          inputmode="decimal"
-          :placeholder="store.resolvedFor(row.key)!.unit === 'piece' ? '1' : '150'"
-          @update:model-value="store.setAmount(row.key, $event)"
-        />
-
-        <div v-if="store.previewFor(row.key)" :class="$style.preview">
-          <span>{{ store.previewFor(row.key)!.kcal }} ккал</span>
-          <span>Б {{ store.previewFor(row.key)!.protein }}</span>
-          <span>Ж {{ store.previewFor(row.key)!.fat }}</span>
-          <span>У {{ store.previewFor(row.key)!.carbs }}</span>
-          <span>Кл {{ store.previewFor(row.key)!.fiber }}</span>
-        </div>
-      </div>
+      <DishRowEditor
+        v-for="row in store.rows"
+        :key="row.key"
+        :row-key="row.key"
+        :removable="store.rows.length > 1"
+      />
     </div>
 
-    <BaseButton type="button" variant="ghost" @click="store.addRow">+ Ещё блюдо</BaseButton>
+    <button type="button" :class="$style.addDish" @click="store.addRow">
+      <AppIcon name="plus" />
+      Ещё блюдо
+    </button>
 
-    <div v-if="store.validRowsCount > 0" :class="$style.total">
-      Итого: {{ store.totalPreview.kcal }} ккал · Б{{ store.totalPreview.protein }}
-      Ж{{ store.totalPreview.fat }} У{{ store.totalPreview.carbs }} Кл{{ store.totalPreview.fiber }}
+    <div :class="$style.footer">
+      <p v-if="store.validRowsCount > 0" :class="$style.total">
+        <b>{{ store.totalPreview.kcal }} ккал</b>
+        · Б {{ store.totalPreview.protein }} · Ж {{ store.totalPreview.fat }} · У {{ store.totalPreview.carbs }}
+      </p>
+      <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
+        {{ store.submitting ? 'Сохраняю…' : submitLabel }}
+      </BaseButton>
     </div>
-
-    <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
-      {{ store.submitting ? 'Сохраняю…' : 'Сохранить приём пищи' }}
-    </BaseButton>
   </form>
 </template>
 
 <script setup lang="ts">
-import type { Product } from '@/entities/Product'
+import { computed } from 'vue'
 import { MEAL_TYPE_LABELS } from '@/shared/config/nutrition'
-import { BaseButton, BaseSelect, BaseTextField } from '@/shared/ui'
+import { AppIcon, BaseButton, BaseSegmented, DateChip } from '@/shared/ui'
 import { useFreshDate } from '@/shared/lib/freshDate'
 import { useAddDiaryEntryStore } from '../../model/store'
+import DishRowEditor from '../DishRowEditor/DishRowEditor.vue'
+
+const emit = defineEmits<{ saved: [] }>()
 
 const store = useAddDiaryEntryStore()
 
 useFreshDate(() => store.refreshDateIfUntouched())
 
 const mealTypeOptions = store.mealTypes.map((type) => ({ value: type, label: MEAL_TYPE_LABELS[type] }))
-const unitOptions = [
-  { value: 'g', label: 'Граммы (БЖУ на 100г)' },
-  { value: 'piece', label: 'Штуки (БЖУ на 1 шт.)' },
-]
 
-function unitLabel(product: Product): string {
-  return product.unit === 'piece' ? 'шт.' : '100г'
-}
+const submitLabel = computed(() =>
+  store.validRowsCount > 1 ? `Добавить ${store.validRowsCount} блюда` : 'Добавить',
+)
 
 async function onSubmit() {
-  await store.submit()
+  if (await store.submit()) emit('saved')
 }
 </script>
 
@@ -175,150 +66,58 @@ async function onSubmit() {
   gap: var(--space-m);
 }
 
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-m);
-}
-
-@media (max-width: 520px) {
-  .row {
-    grid-template-columns: 1fr;
-  }
-}
-
 .dishes {
   display: flex;
   flex-direction: column;
-  gap: var(--space-m);
-}
-
-.dish {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-s);
-  padding: var(--space-m);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-m);
 }
 
-.dish-head {
-  display: flex;
+.add-dish {
+  display: inline-flex;
   align-items: center;
-  justify-content: space-between;
-}
-
-.dish-label {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.02em;
-}
-
-.remove-row {
-  background: transparent;
-  border: none;
-  color: var(--danger);
-  font-size: var(--font-size-s);
-  cursor: pointer;
-}
-
-.chosen {
-  font-size: var(--font-size-s);
-  color: var(--text-secondary);
-  display: flex;
-  align-items: center;
-  gap: var(--space-s);
-}
-
-.clear {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  font-size: var(--font-size-s);
-  cursor: pointer;
-  text-align: left;
-}
-
-.custom-link {
-  background: transparent;
-  border: none;
-  color: var(--accent);
-  font-size: var(--font-size-s);
-  cursor: pointer;
-  text-align: left;
-  padding: 0;
-}
-
-.grid4 {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-s);
-}
-
-@media (max-width: 520px) {
-  .grid4 {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.matches {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2xs);
-  max-height: var(--dropdown-max-height);
-  overflow-y: auto;
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-m);
-  padding: var(--space-xs);
-}
-
-.match {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-s);
+  justify-content: center;
+  gap: var(--space-xs);
+  min-height: var(--touch-target);
   padding: var(--space-s);
-  background: var(--bg-surface);
-  border: none;
-  border-radius: var(--radius-s);
-  color: var(--text-primary);
-  font-size: var(--font-size-m);
-  text-align: left;
-  cursor: pointer;
-}
-
-.match-meta {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
-  white-space: nowrap;
-}
-
-.empty {
-  font-size: var(--font-size-s);
-  color: var(--text-muted);
-}
-
-.preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-m);
-  padding: var(--space-s) var(--space-m);
-  background: var(--bg-surface);
+  background: transparent;
+  border: var(--border-width) dashed var(--border);
   border-radius: var(--radius-m);
-  font-size: var(--font-size-s);
   color: var(--text-secondary);
+  font-size: var(--font-size-m);
   font-weight: 600;
 }
 
+.add-dish:active {
+  background: var(--bg-pressed);
+}
+
+/* Итог и кнопка всегда под пальцем: прилипают к низу шторки при прокрутке. */
+.footer {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-s);
+  margin: 0 calc(-1 * var(--space-m));
+  padding: var(--space-s) var(--space-m) calc(var(--space-s) + env(safe-area-inset-bottom));
+  background: var(--bg-surface);
+  border-top: var(--border-width) solid var(--border);
+}
+
 .total {
-  padding: var(--space-s) var(--space-m);
-  background: var(--bg-elevated);
-  border-radius: var(--radius-m);
-  font-size: var(--font-size-m);
-  font-weight: 700;
+  font-size: var(--font-size-s);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.total b {
   color: var(--text-primary);
+}
+
+@media (hover: hover) {
+  .add-dish:hover {
+    border-color: var(--text-muted);
+    color: var(--text-primary);
+  }
 }
 </style>

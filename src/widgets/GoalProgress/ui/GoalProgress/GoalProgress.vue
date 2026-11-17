@@ -37,6 +37,10 @@
         <dd :class="$style.statValue">{{ rateText }}</dd>
         <dd :class="[$style.band, $style[store.pace.tone]]">{{ store.pace.label }}</dd>
       </div>
+      <div :class="$style.stat">
+        <dt :class="$style.statLabel">Жир (оценка)</dt>
+        <dd :class="$style.statValue">{{ store.bodyFatPct != null ? `${store.bodyFatPct}%` : '—' }}</dd>
+      </div>
     </dl>
 
     <ul :class="$style.milestones">
@@ -159,7 +163,7 @@ function milestoneText(point: GoalMilestone): string {
 
 .stats {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: var(--space-m);
   padding: var(--space-m) 0;
   border-top: var(--border-width) solid var(--border);

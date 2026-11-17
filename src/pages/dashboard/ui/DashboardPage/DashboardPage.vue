@@ -23,105 +23,111 @@
           <BaseButton variant="ghost" :disabled="sync.loading" @click="sync.loadAll()">Повторить</BaseButton>
         </div>
 
-        <div v-if="!sync.loadedOnce" :class="$style.loader">
-          <span :class="$style.spinner" />
-          Загружаю данные…
+        <!-- Первая загрузка: силуэт экрана вместо крутилки — видно, что и где появится. -->
+        <div v-if="!sync.loadedOnce" :class="$style.content" aria-busy="true" aria-label="Загрузка">
+          <BaseSkeleton :class="[$style.skeletonCard, $style.wide]" />
+          <BaseSkeleton :class="$style.skeletonCard" />
+          <BaseSkeleton :class="$style.skeletonCard" />
         </div>
 
-        <template v-else>
-          <DashboardSummary />
+        <Transition v-else :enter-active-class="$style.tabEnterActive" mode="out-in">
+          <div :key="activeTab" :class="$style.content">
+            <template v-if="activeTab === 'today'">
+              <p :class="$style.todayDate">{{ todayTitle }}</p>
+              <BaseCard title="Питание" :class="$style.wide">
+                <TodayNutrition @add="sheets.openFood($event)" />
+              </BaseCard>
+              <BaseCard title="Вес">
+                <TodayWeight @log="sheets.openWeight()" />
+              </BaseCard>
+              <BaseCard title="Тренировка">
+                <TodayWorkout @log="selectTab('workouts')" />
+              </BaseCard>
+            </template>
 
-          <Transition :enter-active-class="$style.tabEnterActive" mode="out-in">
-            <div :key="activeTab" :class="$style.content">
-              <template v-if="activeTab === 'weight'">
-                <BaseCard title="Записать вес">
-                  <AddWeightForm />
+            <template v-else-if="activeTab === 'nutrition'">
+              <BaseSegmented
+                v-model="nutritionView"
+                :options="NUTRITION_VIEWS"
+                aria-label="Раздел питания"
+                :class="$style.wide"
+              />
+
+              <template v-if="nutritionView === 'diary'">
+                <BaseButton :class="$style.wide" @click="sheets.openFood()">
+                  <AppIcon name="plus" />
+                  Добавить еду
+                </BaseButton>
+                <BaseCard title="Рацион" :class="$style.wide">
+                  <DiaryHistory />
                 </BaseCard>
-                <BaseCard title="История" :class="$style.wide">
-                  <WeightHistory />
+                <BaseCard title="Читмил" :class="$style.wide">
+                  <MarkCheatDayForm />
                 </BaseCard>
               </template>
 
-              <template v-else-if="activeTab === 'workouts'">
-                <BaseCard title="Записать тренировку" :class="$style.wide">
-                  <WorkoutSessionForm />
-                </BaseCard>
-                <BaseCard title="История тренировок" :class="$style.wide">
-                  <WorkoutHistory />
-                </BaseCard>
-              </template>
+              <BaseCard v-else title="База продуктов" :class="$style.wide">
+                <ManageProductsPanel />
+              </BaseCard>
+            </template>
 
-              <template v-else-if="activeTab === 'nutrition'">
-                <div :class="[$style.subTabs, $style.wide]" role="tablist">
-                  <button
-                    v-for="view in NUTRITION_VIEWS"
-                    :key="view.key"
-                    type="button"
-                    role="tab"
-                    :aria-selected="nutritionView === view.key"
-                    :class="[$style.subTab, nutritionView === view.key && $style.subTabActive]"
-                    @click="nutritionView = view.key"
-                  >
-                    {{ view.label }}
-                  </button>
-                </div>
+            <template v-else-if="activeTab === 'workouts'">
+              <BaseCard title="Записать тренировку" :class="$style.wide">
+                <WorkoutSessionForm />
+              </BaseCard>
+              <BaseCard title="История тренировок" :class="$style.wide">
+                <WorkoutHistory />
+              </BaseCard>
+            </template>
 
-                <template v-if="nutritionView === 'diary'">
-                  <BaseCard title="Записать приём пищи" :class="$style.wide">
-                    <AddDiaryEntryForm />
-                  </BaseCard>
-                  <BaseCard title="Рацион" :class="$style.wide">
-                    <DiaryHistory />
-                  </BaseCard>
-                  <BaseCard title="Читмил" :class="$style.wide">
-                    <MarkCheatDayForm />
-                  </BaseCard>
-                </template>
+            <template v-else-if="activeTab === 'progress'">
+              <p :class="$style.sectionTitle">Вес</p>
+              <BaseCard title="Путь к цели">
+                <GoalProgress />
+              </BaseCard>
+              <BaseCard title="Неделя к неделе">
+                <WeeklyComparison />
+              </BaseCard>
+              <BaseCard title="Динамика веса" :class="$style.wide">
+                <WeightTrendChart />
+              </BaseCard>
+              <BaseCard title="Темп: факт и идеал" :class="$style.wide">
+                <PaceForecast />
+              </BaseCard>
+              <BaseCard title="Взвешивания" :class="$style.wide">
+                <WeightHistory />
+              </BaseCard>
 
-                <BaseCard v-else title="База продуктов" :class="$style.wide">
-                  <ManageProductsPanel />
-                </BaseCard>
-              </template>
+              <p :class="$style.sectionTitle">Питание</p>
+              <BaseCard title="Ккал по дням" :class="$style.wide">
+                <CalorieTrend />
+              </BaseCard>
+            </template>
 
-              <template v-else-if="activeTab === 'photos'">
-                <BaseCard title="Ориентир" :class="$style.wide">
-                  <ProgressReferenceView />
-                </BaseCard>
-                <BaseCard title="Добавить фото">
-                  <AddProgressPhotoForm />
-                </BaseCard>
-                <BaseCard title="История фото" :class="$style.wide">
-                  <PhotoHistory />
-                </BaseCard>
-              </template>
-
-              <template v-else-if="activeTab === 'analytics'">
-                <p :class="$style.sectionTitle">Вес</p>
-                <BaseCard title="Путь к цели">
-                  <GoalProgress />
-                </BaseCard>
-                <BaseCard title="Неделя к неделе">
-                  <WeeklyComparison />
-                </BaseCard>
-                <BaseCard title="Динамика веса" :class="$style.wide">
-                  <WeightTrendChart />
-                </BaseCard>
-                <BaseCard title="Темп: факт и идеал" :class="$style.wide">
-                  <PaceForecast />
-                </BaseCard>
-
-                <p :class="$style.sectionTitle">Питание</p>
-                <BaseCard title="Ккал по дням" :class="$style.wide">
-                  <CalorieTrend />
-                </BaseCard>
-              </template>
-            </div>
-          </Transition>
-        </template>
+            <template v-else-if="activeTab === 'photos'">
+              <BaseCard title="Ориентир" :class="$style.wide">
+                <ProgressReferenceView />
+              </BaseCard>
+              <BaseCard title="Добавить фото">
+                <AddProgressPhotoForm />
+              </BaseCard>
+              <BaseCard title="История фото" :class="$style.wide">
+                <PhotoHistory />
+              </BaseCard>
+            </template>
+          </div>
+        </Transition>
       </div>
     </div>
 
     <DashboardBottomNav :tabs="DASHBOARD_TABS" :active="activeTab" @select="selectTab" />
+
+    <BaseSheet :open="sheets.active === 'weight'" title="Вес" @close="sheets.close()">
+      <AddWeightForm @saved="sheets.close()" />
+    </BaseSheet>
+    <BaseSheet :open="sheets.active === 'food'" title="Еда" @close="sheets.close()">
+      <AddDiaryEntryForm @saved="sheets.close()" />
+    </BaseSheet>
   </div>
 </template>
 
@@ -140,12 +146,17 @@ import { PhotoHistory } from '@/widgets/PhotoHistory'
 import { WeightHistory } from '@/widgets/WeightHistory'
 import { GoalProgress } from '@/widgets/GoalProgress'
 import { WorkoutHistory } from '@/widgets/WorkoutHistory'
-import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
-import { BaseButton, BaseCard } from '@/shared/ui'
+import { TodayNutrition } from '@/widgets/TodayNutrition'
+import { TodayWeight } from '@/widgets/TodayWeight'
+import { TodayWorkout } from '@/widgets/TodayWorkout'
+import { AppIcon, BaseButton, BaseCard, BaseSegmented, BaseSheet, BaseSkeleton } from '@/shared/ui'
 import { usePullToRefresh } from '@/shared/lib/pullToRefresh'
+import { formatLongWithWeekday } from '@/shared/lib/date'
+import { today } from '@/shared/lib/today'
 import { useDashboardSyncStore } from '../../model/store'
+import { useDashboardSheetsStore } from '../../model/sheets'
 import type { DashboardTabKey, NutritionView } from '../../model/types'
 import { DASHBOARD_TABS, NUTRITION_VIEWS } from '../../config/tabs'
 import DashboardSidebar from '../DashboardSidebar/DashboardSidebar.vue'
@@ -166,7 +177,7 @@ const CalorieTrend = defineAsyncComponent(() =>
 const route = useRoute()
 const router = useRouter()
 const activeTab = computed<DashboardTabKey>(
-  () => (route.params.tab as DashboardTabKey) || 'weight',
+  () => (route.params.tab as DashboardTabKey) || 'today',
 )
 const activeTabLabel = computed(
   () => DASHBOARD_TABS.find((tab) => tab.key === activeTab.value)?.label ?? 'Fit Tracker',
@@ -176,8 +187,15 @@ function selectTab(tab: DashboardTabKey) {
   router.push({ name: 'dashboard', params: { tab } })
 }
 
+/** «Вторник, 17 ноября» — шапка экрана «Сегодня». */
+const todayTitle = computed(() => {
+  const text = formatLongWithWeekday(today.value)
+  return text.charAt(0).toUpperCase() + text.slice(1)
+})
+
 const session = useSessionStore()
 const sync = useDashboardSyncStore()
+const sheets = useDashboardSheetsStore()
 
 // На телефоне кнопки «Обновить» нет — обновление свайпом вниз от верха страницы.
 const pull = usePullToRefresh(() => sync.loadAll())
@@ -231,17 +249,6 @@ async function onSignOut() {
   gap: var(--space-l);
 }
 
-.loader {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-m);
-  min-height: 50vh;
-  color: var(--text-secondary);
-  font-size: var(--font-size-m);
-}
-
 .spinner {
   width: var(--spinner-size-l);
   height: var(--spinner-size-l);
@@ -276,52 +283,13 @@ async function onSignOut() {
 }
 
 /* Подвкладки — сегментированный переключатель, как в iOS. */
-.sub-tabs {
-  display: flex;
-  gap: var(--space-xs);
-  padding: var(--space-xs);
-  background: var(--bg-surface);
-  border: var(--border-width) solid var(--border);
-  border-radius: var(--radius-m);
-}
-
-.sub-tab {
-  flex: 1;
-  padding: var(--space-s) var(--space-m);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-s);
-  color: var(--text-secondary);
-  font-size: var(--font-size-m);
-  font-weight: 600;
-  transition:
-    background var(--duration-fast) var(--ease-out),
-    color var(--duration-fast) var(--ease-out);
-}
-
-.sub-tab:active {
-  background: var(--bg-pressed);
-}
-
-.sub-tab-active,
-.sub-tab-active:active {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-}
-
-@media (hover: hover) {
-  .sub-tab:not(.sub-tab-active):hover {
-    color: var(--text-primary);
-  }
-}
-
 .refresh-bar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   height: var(--border-width-accent);
-  z-index: 30;
+  z-index: var(--z-progress);
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   background-size: 50% 100%;
   background-repeat: no-repeat;
@@ -378,6 +346,18 @@ async function onSignOut() {
 
 .wide {
   grid-column: 1 / -1;
+}
+
+.today-date {
+  grid-column: 1 / -1;
+  font-size: var(--font-size-l);
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.skeleton-card {
+  min-height: var(--skeleton-card-height);
+  border-radius: var(--radius-l);
 }
 
 .section-title {
