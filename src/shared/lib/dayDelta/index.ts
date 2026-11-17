@@ -1,8 +1,8 @@
 export type DayDeltaClass = 'first' | 'down' | 'flat' | 'up' | 'strong'
 
 /**
- * Классифицирует дневное изменение веса. Используется и календарём (цвет
- * ячейки), и стриком (что считается «чёрной зоной», ломающей серию).
+ * Классифицирует дневное изменение веса. Используется ПП-стриком: класс
+ * 'strong' — «чёрная зона», которая ломает серию.
  */
 export function classifyDayDelta(delta: number | null): DayDeltaClass {
   if (delta == null) return 'first'

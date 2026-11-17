@@ -112,6 +112,12 @@ const tiles = computed(() => [
     tone: weightTone.value,
   },
   {
+    label: 'ПП-стрик',
+    value: `🔥 ${weightLog.currentStreak} дн.`,
+    sub: `рекорд ${weightLog.bestStreak} дн.`,
+    tone: 'muted' as Tone,
+  },
+  {
     label: 'Ккал сегодня',
     value: todayKcal.value != null ? `${todayKcal.value}` : '—',
     sub: `цель ${DAILY_KCAL_RANGE.min}–${DAILY_KCAL_RANGE.max}`,

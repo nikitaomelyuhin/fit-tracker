@@ -128,9 +128,6 @@
               <BaseCard title="Динамика веса" :class="$style.wide">
                 <WeightTrendChart />
               </BaseCard>
-              <BaseCard title="Календарь веса" :class="$style.wide">
-                <WeightHeatmap />
-              </BaseCard>
               <BaseCard title="Идеальный темп vs текущий" :class="$style.wide">
                 <PaceForecast />
               </BaseCard>
@@ -179,7 +176,6 @@ import { DashboardSummary } from '@/widgets/DashboardSummary'
 import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
-import { WeightHeatmap } from '@/widgets/WeightHeatmap'
 import { BaseButton, BaseCard } from '@/shared/ui'
 import { usePullToRefresh } from '@/shared/lib/pullToRefresh'
 import { useDashboardSyncStore } from '../../model/store'
