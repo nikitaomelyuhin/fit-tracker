@@ -125,7 +125,12 @@
     <BaseSheet :open="sheets.active === 'weight'" title="Вес" @close="sheets.close()">
       <AddWeightForm @saved="sheets.close()" />
     </BaseSheet>
-    <BaseSheet :open="sheets.active === 'food'" title="Еда" @close="sheets.close()">
+    <BaseSheet
+      :open="sheets.active === 'food'"
+      title="Еда"
+      :expanded="sheets.foodExpanded"
+      @close="sheets.close()"
+    >
       <AddDiaryEntryForm @saved="sheets.close()" />
     </BaseSheet>
   </div>

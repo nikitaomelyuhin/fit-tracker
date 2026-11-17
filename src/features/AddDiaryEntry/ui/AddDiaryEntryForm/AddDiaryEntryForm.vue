@@ -1,28 +1,31 @@
 <template>
   <form :class="$style.form" @submit.prevent="onSubmit">
-    <DateChip :model-value="store.date" aria-label="Дата приёма пищи" @update:model-value="store.setDate($event)" />
-    <BaseSegmented
-      :model-value="store.mealType"
-      :options="mealTypeOptions"
-      aria-label="Приём пищи"
-      @update:model-value="store.setMealType($event)"
-    />
+    <!-- Пока идёт поиск продукта, видны только поле и результаты: так список не прячется под клавиатурой. -->
+    <template v-if="!store.isSearching">
+      <DateChip :model-value="store.date" aria-label="Дата приёма пищи" @update:model-value="store.setDate($event)" />
+      <BaseSegmented
+        :model-value="store.mealType"
+        :options="mealTypeOptions"
+        aria-label="Приём пищи"
+        @update:model-value="store.setMealType($event)"
+      />
+    </template>
 
     <div :class="$style.dishes">
       <DishRowEditor
-        v-for="row in store.rows"
+        v-for="row in store.rowsInView"
         :key="row.key"
         :row-key="row.key"
         :removable="store.rows.length > 1"
       />
     </div>
 
-    <button type="button" :class="$style.addDish" @click="store.addRow">
+    <button v-if="!store.isSearching" type="button" :class="$style.addDish" @click="store.addRow">
       <AppIcon name="plus" />
       Ещё блюдо
     </button>
 
-    <div :class="$style.footer">
+    <div v-if="!store.isSearching" :class="$style.footer">
       <p v-if="store.validRowsCount > 0" :class="$style.total">
         <b>{{ store.totalPreview.kcal }} ккал</b>
         · Б {{ store.totalPreview.protein }} · Ж {{ store.totalPreview.fat }} · У {{ store.totalPreview.carbs }}

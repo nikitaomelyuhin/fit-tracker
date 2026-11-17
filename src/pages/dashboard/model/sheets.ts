@@ -11,6 +11,11 @@ import type { DashboardSheet } from './types'
 export const useDashboardSheetsStore = defineStore('dashboardSheets', {
   state: () => ({ active: null as DashboardSheet | null }),
 
+  getters: {
+    /** Пока в форме еды идёт поиск, шторка во всю высоту: поле сверху, список до клавиатуры. */
+    foodExpanded: (): boolean => useAddDiaryEntryStore().isSearching,
+  },
+
   actions: {
     openWeight() {
       useAddWeightStore().refreshDateIfUntouched()
@@ -23,6 +28,8 @@ export const useDashboardSheetsStore = defineStore('dashboardSheets', {
     },
 
     close() {
+      // Поиск — временный режим: при следующем открытии форма снова целиком.
+      if (this.active === 'food') useAddDiaryEntryStore().cancelSearch()
       this.active = null
     },
   },

@@ -63,6 +63,11 @@ interface State {
   dateTouched: boolean
   mealType: MealType
   rows: DishRow[]
+  /**
+   * Строка, в которой идёт поиск продукта. Пока он идёт, форма показывает только
+   * поле поиска и результаты — иначе клавиатура закрывает список целиком.
+   */
+  searchRowKey: string | null
   submitting: boolean
 }
 
@@ -80,6 +85,7 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
     dateTouched: false,
     mealType: 'breakfast',
     rows: [emptyRow()],
+    searchRowKey: null,
     submitting: false,
   }),
 
@@ -89,6 +95,12 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       state.rows.some((row) => row.query.trim() !== '' || row.amount.trim() !== '' || row.selectedId != null || row.custom != null),
 
     mealTypes: () => MEAL_TYPES,
+
+    isSearching: (state): boolean => state.searchRowKey != null,
+
+    /** Во время поиска видна только строка, где ищут. */
+    rowsInView: (state): DishRow[] =>
+      state.searchRowKey == null ? state.rows : state.rows.filter((row) => row.key === state.searchRowKey),
 
     matchesFor(): (key: string) => Product[] {
       return (key: string) => {
@@ -242,6 +254,7 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
     },
 
     removeRow(key: string) {
+      if (this.searchRowKey === key) this.searchRowKey = null
       this.rows = this.rows.filter((row) => row.key !== key)
       if (this.rows.length === 0) this.rows.push(emptyRow())
     },
@@ -256,10 +269,23 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       if (row) row.amount = amount
     },
 
+    /** Тап в поле поиска — форма переходит в режим поиска по этой строке. */
+    openSearch(key: string) {
+      this.searchRowKey = key
+    },
+
+    /** «Отмена»: выйти из поиска и очистить запрос. */
+    cancelSearch() {
+      const row = this.rows.find((r) => r.key === this.searchRowKey)
+      if (row && !row.selectedId) row.query = ''
+      this.searchRowKey = null
+    },
+
     /** Выбор продукта; порция подставляется из прошлого раза, если он был. */
     selectProduct(key: string, product: Product) {
       const row = this.rows.find((r) => r.key === key)
       if (!row) return
+      this.searchRowKey = null
       row.selectedId = product.id
       row.query = product.name
       const last = this.lastAmountFor(product.id)
@@ -284,6 +310,7 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
     startCustom(key: string) {
       const row = this.rows.find((r) => r.key === key)
       if (!row) return
+      this.searchRowKey = null
       row.selectedId = null
       row.query = ''
       row.custom = emptyCustomDraft()
@@ -332,7 +359,10 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       else if (diary.queue.length > queuedBefore) {
         showToast('Нет сети — сохранено на телефоне, отправится позже', { tone: 'info', durationMs: 5000 })
       } else showToast('Приём пищи сохранён')
-      if (ok) this.rows = [emptyRow()]
+      if (ok) {
+        this.rows = [emptyRow()]
+        this.searchRowKey = null
+      }
       return ok
     },
   },

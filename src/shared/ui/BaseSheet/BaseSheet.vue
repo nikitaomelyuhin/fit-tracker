@@ -10,52 +10,130 @@
     </Transition>
 
     <Transition
-      :enter-from-class="$style.panelHidden"
-      :leave-to-class="$style.panelHidden"
-      :enter-active-class="$style.panelActive"
-      :leave-active-class="$style.panelActive"
+      :enter-from-class="$style.frameHidden"
+      :leave-to-class="$style.frameHidden"
+      :enter-active-class="$style.frameActive"
+      :leave-active-class="$style.frameActive"
     >
-      <section
-        v-if="open"
-        ref="panel"
-        :class="[$style.panel, dragging && $style.panelDragging]"
-        :style="panelStyle"
-        role="dialog"
-        aria-modal="true"
-        :aria-labelledby="titleId"
-      >
-        <header
-          :class="$style.head"
-          @pointerdown="onDragStart"
-          @pointermove="onDragMove"
-          @pointerup="onDragEnd"
-          @pointercancel="onDragEnd"
+      <!-- Рамка = видимая часть экрана (над клавиатурой, если она открыта); шторка прижата к её низу. -->
+      <div v-if="open" :class="$style.frame" :style="frameStyle">
+        <section
+          ref="panel"
+          :class="[$style.panel, expanded && $style.panelExpanded, dragging && $style.panelDragging]"
+          :style="dragOffset > 0 ? { transform: `translateY(${dragOffset}px)` } : undefined"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="titleId"
+          @focusin="onFocusIn"
+          @focusout="onFocusOut"
         >
-          <span :class="$style.handle" aria-hidden="true" />
-          <h2 :id="titleId" :class="$style.title">{{ title }}</h2>
-          <button type="button" :class="$style.close" aria-label="Закрыть" @click="emit('close')">
-            <AppIcon name="close" />
-          </button>
-        </header>
+          <header
+            :class="$style.head"
+            @pointerdown="onDragStart"
+            @pointermove="onDragMove"
+            @pointerup="onDragEnd"
+            @pointercancel="onDragEnd"
+          >
+            <span :class="$style.handle" aria-hidden="true" />
+            <h2 :id="titleId" :class="$style.title">{{ title }}</h2>
+            <button type="button" :class="$style.close" aria-label="Закрыть" @click="emit('close')">
+              <AppIcon name="close" />
+            </button>
+          </header>
 
-        <div :class="$style.body">
-          <slot />
-        </div>
-      </section>
+          <div ref="body" :class="$style.body">
+            <slot />
+          </div>
+        </section>
+      </div>
     </Transition>
   </Teleport>
 </template>
 
 <script setup lang="ts">
-import { computed, onUnmounted, ref, toRef, useId, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, toRef, useId, watch } from 'vue'
 import { useVisibleViewport } from '@/shared/lib/visibleViewport'
 import AppIcon from '../AppIcon/AppIcon.vue'
 
-const props = defineProps<{ open: boolean; title: string }>()
+const props = defineProps<{
+  open: boolean
+  title: string
+  /** Во всю видимую высоту — например, пока идёт поиск: поле сверху, список до клавиатуры. */
+  expanded?: boolean
+}>()
 const emit = defineEmits<{ close: [] }>()
 
 const titleId = useId()
 const panel = ref<HTMLElement | null>(null)
+const body = ref<HTMLElement | null>(null)
+
+/* ---------- Клавиатура ---------- */
+
+const viewport = useVisibleViewport(toRef(props, 'open'))
+
+/** Поле ввода в фокусе — на телефоне это значит, что открыта клавиатура. */
+const editing = ref(false)
+
+const TEXT_ENTRY =
+  'input:not([type=checkbox]):not([type=radio]):not([type=date]):not([type=file]):not([type=button]):not([type=submit]), textarea'
+
+/**
+ * Тап по пункту списка сначала снимает фокус с поля, и только потом приходит click.
+ * Если шторка в этот момент поменяет размер, палец попадёт не туда — поэтому даём
+ * событиям устояться.
+ */
+const BLUR_SETTLE_MS = 150
+let blurTimer: ReturnType<typeof setTimeout> | undefined
+
+function isTextEntry(element: Element | null): boolean {
+  return element instanceof HTMLElement && element.matches(TEXT_ENTRY)
+}
+
+function onFocusIn(event: FocusEvent) {
+  clearTimeout(blurTimer)
+  editing.value = isTextEntry(event.target as Element)
+}
+
+function onFocusOut() {
+  clearTimeout(blurTimer)
+  blurTimer = setTimeout(() => {
+    const active = document.activeElement
+    editing.value = !!panel.value?.contains(active) && isTextEntry(active)
+  }, BLUR_SETTLE_MS)
+}
+
+const frameStyle = computed(() => {
+  const style: Record<string, string> = {}
+  if (viewport.top.value != null) style['--viewport-top'] = `${viewport.top.value}px`
+  if (viewport.height.value != null) style['--viewport-height'] = `${viewport.height.value}px`
+  // Над клавиатурой отступ под home-индикатор не нужен — низ экрана занят ей.
+  if (editing.value) style['--sheet-safe-bottom'] = '0px'
+  return style
+})
+
+/**
+ * Клавиатура выехала — шторка ужалась, и поле в фокусе могло оказаться ниже видимой
+ * части. Прокручиваем его к середине, чтобы его не закрывал и липкий низ формы.
+ */
+function revealFocused() {
+  const container = body.value
+  const active = document.activeElement
+  if (!container || !(active instanceof HTMLElement) || !container.contains(active)) return
+  const box = container.getBoundingClientRect()
+  const field = active.getBoundingClientRect()
+  const comfortableBottom = box.top + box.height * (2 / 3)
+  if (field.top >= box.top && field.bottom <= comfortableBottom) return
+  container.scrollTop += field.top + field.height / 2 - (box.top + box.height / 2)
+}
+
+watch(
+  () => viewport.height.value,
+  () => {
+    if (editing.value) nextTick(revealFocused)
+  },
+)
+
+/* ---------- Свайп вниз ---------- */
 
 /** Свайп вниз за шапку закрывает шторку — как в iOS. Порог — доля высоты шторки. */
 const CLOSE_SHARE = 0.25
@@ -65,21 +143,6 @@ let startY = 0
 
 /** Свайп только у нижней шторки; на компе это диалог по центру (см. стили, тот же брейкпоинт). */
 const SHEET_MEDIA = '(max-width: 860px)'
-
-/** С клавиатурой шторка встаёт над ней и ужимается до видимой высоты — верх не уезжает за экран. */
-const viewport = useVisibleViewport(toRef(props, 'open'))
-
-const panelStyle = computed(() => {
-  const style: Record<string, string> = {}
-  if (dragOffset.value > 0) style.transform = `translateY(${dragOffset.value}px)`
-  if (viewport.keyboardInset.value > 0) {
-    style['--keyboard-inset'] = `${viewport.keyboardInset.value}px`
-    // Над клавиатурой safe-area внизу не нужна — её занимает сама клавиатура.
-    style['--sheet-safe-bottom'] = '0px'
-  }
-  if (viewport.visibleHeight.value != null) style['--visible-height'] = `${viewport.visibleHeight.value}px`
-  return style
-})
 
 function onDragStart(event: PointerEvent) {
   if ((event.target as HTMLElement).closest('button')) return
@@ -102,6 +165,8 @@ function onDragEnd() {
   dragOffset.value = 0
 }
 
+/* ---------- Открытие ---------- */
+
 function onKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') emit('close')
 }
@@ -115,11 +180,20 @@ function lockPage(locked: boolean) {
 
 watch(
   () => props.open,
-  (open) => lockPage(open),
+  (open) => {
+    lockPage(open)
+    if (!open) {
+      clearTimeout(blurTimer)
+      editing.value = false
+    }
+  },
   { immediate: true },
 )
 
-onUnmounted(() => lockPage(false))
+onUnmounted(() => {
+  clearTimeout(blurTimer)
+  lockPage(false)
+})
 </script>
 
 <style module>
@@ -130,23 +204,41 @@ onUnmounted(() => lockPage(false))
   background: var(--overlay);
 }
 
-.panel {
-  /* Отступ под home-индикатор; с открытой клавиатурой обнуляется (см. panelStyle). */
+/*
+ * Рамка повторяет видимую часть экрана (данные visualViewport, см. frameStyle):
+ * с клавиатурой она кончается ровно над ней. Сама рамка прозрачна для нажатий —
+ * тап выше шторки попадает в затемнение и закрывает её.
+ */
+.frame {
+  /* Отступ под home-индикатор; с открытой клавиатурой обнуляется (см. frameStyle). */
   --sheet-safe-bottom: env(safe-area-inset-bottom);
 
   position: fixed;
   left: 0;
   right: 0;
-  bottom: var(--keyboard-inset, 0);
+  top: calc(var(--viewport-top, 0px) + var(--sheet-top-gap));
+  height: calc(var(--viewport-height, 100dvh) - var(--sheet-top-gap));
   z-index: var(--z-sheet);
   display: flex;
   flex-direction: column;
-  max-height: min(var(--sheet-max-height), calc(var(--visible-height, 100dvh) - var(--space-l)));
+  justify-content: flex-end;
+  pointer-events: none;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  max-height: 100%;
   background: var(--bg-surface);
   border-top: var(--border-width) solid var(--border);
   border-radius: var(--radius-l) var(--radius-l) 0 0;
   box-shadow: var(--shadow-elevated);
+  pointer-events: auto;
   transition: transform var(--duration-base) var(--ease-out);
+}
+
+.panel-expanded {
+  height: 100%;
 }
 
 .panel-dragging {
@@ -213,34 +305,40 @@ onUnmounted(() => lockPage(false))
   opacity: 0;
 }
 
-.panel-active {
+.frame-active {
   transition: transform var(--duration-base) var(--ease-out);
 }
 
-.panel-hidden {
+.frame-hidden {
   transform: translateY(100%);
 }
 
 /* На компе — обычный диалог по центру, без свайпа. */
 @media (min-width: 861px) {
-  .panel {
-    left: 50%;
-    right: auto;
-    bottom: auto;
-    top: 50%;
-    width: min(var(--sheet-max-width), calc(100vw - var(--space-l) * 2));
-    max-height: calc(100dvh - var(--space-xl) * 2);
-    border: var(--border-width) solid var(--border);
-    border-radius: var(--radius-l);
-    transform: translate(-50%, -50%);
+  .frame {
+    top: 0;
+    height: 100dvh;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-xl) var(--space-l);
   }
 
-  .panel-hidden {
-    transform: translate(-50%, -46%);
+  .panel {
+    width: min(var(--sheet-max-width), 100%);
+    border: var(--border-width) solid var(--border);
+    border-radius: var(--radius-l);
+  }
+
+  .panel-expanded {
+    height: auto;
+  }
+
+  .frame-hidden {
+    transform: translateY(var(--space-l));
     opacity: 0;
   }
 
-  .panel-active {
+  .frame-active {
     transition:
       transform var(--duration-base) var(--ease-out),
       opacity var(--duration-base) var(--ease-out);
