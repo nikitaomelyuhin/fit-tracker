@@ -217,11 +217,6 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
         useDiaryEntryStore().byDateDesc.find((entry) => entry.productId === productId)?.amount ?? null
     },
 
-    /** Строки, где ещё не выбран продукт — только у первой из них поле поиска получает фокус. */
-    firstEmptyRowKey(): string | null {
-      return this.rows.find((row) => !row.selectedId && !row.custom)?.key ?? null
-    },
-
     validRowsCount(): number {
       return this.rows.filter((row) => this.previewFor(row.key) != null).length
     },

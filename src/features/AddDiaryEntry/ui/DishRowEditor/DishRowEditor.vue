@@ -48,7 +48,6 @@
       <label :class="$style.search">
         <AppIcon name="search" :class="$style.searchIcon" />
         <input
-          ref="searchInput"
           :class="$style.searchInput"
           :value="row.query"
           placeholder="Найти продукт"
@@ -110,7 +109,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed } from 'vue'
 import type { Product } from '@/entities/Product'
 import { AppIcon, BaseSegmented, BaseTextField } from '@/shared/ui'
 import { useAddDiaryEntryStore } from '../../model/store'
@@ -151,12 +150,6 @@ function unitLabel(product: Product): string {
 function formatAmount(amount: number, product: Product): string {
   return product.unit === 'piece' ? `${amount} шт.` : `${amount} г`
 }
-
-/** Поиск в фокусе только у первого пустого блюда — иначе клавиатура прыгала бы между строками. */
-const searchInput = ref<HTMLInputElement | null>(null)
-onMounted(() => {
-  if (store.firstEmptyRowKey === props.rowKey) searchInput.value?.focus()
-})
 </script>
 
 <style module>

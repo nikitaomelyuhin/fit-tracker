@@ -19,7 +19,7 @@
         v-if="open"
         ref="panel"
         :class="[$style.panel, dragging && $style.panelDragging]"
-        :style="dragOffset > 0 ? { transform: `translateY(${dragOffset}px)` } : undefined"
+        :style="panelStyle"
         role="dialog"
         aria-modal="true"
         :aria-labelledby="titleId"
@@ -47,7 +47,8 @@
 </template>
 
 <script setup lang="ts">
-import { onUnmounted, ref, useId, watch } from 'vue'
+import { computed, onUnmounted, ref, toRef, useId, watch } from 'vue'
+import { useVisibleViewport } from '@/shared/lib/visibleViewport'
 import AppIcon from '../AppIcon/AppIcon.vue'
 
 const props = defineProps<{ open: boolean; title: string }>()
@@ -64,6 +65,21 @@ let startY = 0
 
 /** Свайп только у нижней шторки; на компе это диалог по центру (см. стили, тот же брейкпоинт). */
 const SHEET_MEDIA = '(max-width: 860px)'
+
+/** С клавиатурой шторка встаёт над ней и ужимается до видимой высоты — верх не уезжает за экран. */
+const viewport = useVisibleViewport(toRef(props, 'open'))
+
+const panelStyle = computed(() => {
+  const style: Record<string, string> = {}
+  if (dragOffset.value > 0) style.transform = `translateY(${dragOffset.value}px)`
+  if (viewport.keyboardInset.value > 0) {
+    style['--keyboard-inset'] = `${viewport.keyboardInset.value}px`
+    // Над клавиатурой safe-area внизу не нужна — её занимает сама клавиатура.
+    style['--sheet-safe-bottom'] = '0px'
+  }
+  if (viewport.visibleHeight.value != null) style['--visible-height'] = `${viewport.visibleHeight.value}px`
+  return style
+})
 
 function onDragStart(event: PointerEvent) {
   if ((event.target as HTMLElement).closest('button')) return
@@ -115,14 +131,17 @@ onUnmounted(() => lockPage(false))
 }
 
 .panel {
+  /* Отступ под home-индикатор; с открытой клавиатурой обнуляется (см. panelStyle). */
+  --sheet-safe-bottom: env(safe-area-inset-bottom);
+
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--keyboard-inset, 0);
   z-index: var(--z-sheet);
   display: flex;
   flex-direction: column;
-  max-height: var(--sheet-max-height);
+  max-height: min(var(--sheet-max-height), calc(var(--visible-height, 100dvh) - var(--space-l)));
   background: var(--bg-surface);
   border-top: var(--border-width) solid var(--border);
   border-radius: var(--radius-l) var(--radius-l) 0 0;
@@ -183,7 +202,7 @@ onUnmounted(() => lockPage(false))
   min-height: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: var(--space-s) var(--space-m) calc(var(--space-m) + env(safe-area-inset-bottom));
+  padding: var(--space-s) var(--space-m) calc(var(--space-m) + var(--sheet-safe-bottom));
 }
 
 .fade-active {

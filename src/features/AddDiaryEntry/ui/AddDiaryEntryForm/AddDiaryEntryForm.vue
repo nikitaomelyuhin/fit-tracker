@@ -99,7 +99,7 @@ async function onSubmit() {
   flex-direction: column;
   gap: var(--space-s);
   margin: 0 calc(-1 * var(--space-m));
-  padding: var(--space-s) var(--space-m) calc(var(--space-s) + env(safe-area-inset-bottom));
+  padding: var(--space-s) var(--space-m) calc(var(--space-s) + var(--sheet-safe-bottom, env(safe-area-inset-bottom)));
   background: var(--bg-surface);
   border-top: var(--border-width) solid var(--border);
 }
