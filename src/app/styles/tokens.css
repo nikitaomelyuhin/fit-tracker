@@ -101,7 +101,8 @@
   /* Нижняя шторка (на компе — диалог по центру). */
   --overlay: rgba(0, 0, 0, 0.6);
   --sheet-max-width: 520px;
-  --sheet-top-gap: var(--space-xl);
+  /* Как у системных шторок iOS: сразу под статус-баром, полоска страницы сзади. */
+  --sheet-top-gap: calc(env(safe-area-inset-top) + var(--space-s));
   --sheet-handle-width: 36px;
   --sheet-handle-height: 4px;
 
