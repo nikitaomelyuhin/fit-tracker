@@ -3,7 +3,8 @@ import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG, WEIGHT_MINOR_STEP_KG } from '@/shared/config/goals'
 import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
-import { estimateBodyFatPct } from '@/shared/lib/bodyFat'
+import { FAT_SHARE_OF_LOSS } from '@/shared/config/profile'
+import { estimateBodyFatPct, projectBodyFatPct } from '@/shared/lib/bodyFat'
 import { addDays, todayISO } from '@/shared/lib/date'
 import { milestonePoints } from '../helpers/milestonePoints'
 import { paceBand } from '../helpers/paceBand'
@@ -85,12 +86,13 @@ export const useGoalProgressStore = defineStore('goalProgress', {
     /**
      * Отметки до цели: основные — всегда (пройденные с галочкой), мелкие через
      * каждый килограмм — только впереди, «для интереса». У непройденных — дата
-     * по текущему темпу.
+     * по текущему темпу и прогноз % жира на этом весе.
      */
     milestones(): GoalMilestone[] {
       const cleanStart = useWeightLogStore().cleanStart
       const current = this.current
       const rate = cleanStart?.ready ? cleanStart.ratePerWeek : null
+      const fatPct = this.bodyFatPct
 
       return milestonePoints(WEIGHT_MILESTONES_KG, WEIGHT_GOAL_KG, WEIGHT_MINOR_STEP_KG)
         .map(({ weight, kind }) => {
@@ -100,7 +102,16 @@ export const useGoalProgressStore = defineStore('goalProgress', {
             const daysNeeded = (current - weight) / (rate / 7)
             expectedDate = addDays(todayISO(), Math.round(daysNeeded))
           }
-          return { weight, kind, reached, expectedDate }
+          const bodyFatPct =
+            !reached && current != null && fatPct != null
+              ? projectBodyFatPct({
+                  currentWeight: current,
+                  currentFatPct: fatPct,
+                  targetWeight: weight,
+                  fatShare: FAT_SHARE_OF_LOSS,
+                })
+              : null
+          return { weight, kind, reached, bodyFatPct, expectedDate }
         })
         .filter((point) => point.kind === 'main' || !point.reached)
     },
