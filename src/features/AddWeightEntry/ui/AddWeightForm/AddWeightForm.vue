@@ -1,5 +1,5 @@
 <template>
-  <form :class="$style['weight-form']" @submit.prevent="onSubmit">
+  <form :class="$style.weightForm" @submit.prevent="onSubmit">
     <div :class="$style.row">
       <BaseTextField
         :model-value="store.form.date"

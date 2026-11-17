@@ -274,20 +274,20 @@ async function onSignOut() {
   padding: var(--space-m);
 }
 
-.sidebarBrand {
+.sidebar-brand {
   font-size: var(--font-size-l);
   font-weight: 700;
   color: var(--text-primary);
   padding: 0 var(--space-s);
 }
 
-.sidebarNav {
+.sidebar-nav {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
 }
 
-.navItem {
+.nav-item {
   display: flex;
   align-items: center;
   gap: var(--space-s);
@@ -301,12 +301,12 @@ async function onSignOut() {
   text-align: left;
 }
 
-.navIcon {
+.nav-icon {
   font-size: 1.1em;
   line-height: 1;
 }
 
-.navItemActive {
+.nav-item-active {
   background: var(--accent);
   color: var(--accent-contrast);
 }
@@ -364,7 +364,7 @@ async function onSignOut() {
   }
 }
 
-.pullIndicator {
+.pull-indicator {
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -372,7 +372,7 @@ async function onSignOut() {
   padding-bottom: var(--space-s);
 }
 
-.pullSpinner {
+.pull-spinner {
   width: 24px;
   height: 24px;
   animation: none;
@@ -382,7 +382,7 @@ async function onSignOut() {
   animation: spin 0.8s linear infinite;
 }
 
-.subTabs {
+.sub-tabs {
   display: flex;
   gap: var(--space-xs);
   padding: var(--space-xs);
@@ -391,7 +391,7 @@ async function onSignOut() {
   border-radius: var(--radius-m);
 }
 
-.subTab {
+.sub-tab {
   flex: 1;
   padding: var(--space-s) var(--space-m);
   background: transparent;
@@ -402,12 +402,12 @@ async function onSignOut() {
   font-weight: 600;
 }
 
-.subTabActive {
+.sub-tab-active {
   background: var(--accent);
   color: var(--accent-contrast);
 }
 
-.refreshBar {
+.refresh-bar {
   position: fixed;
   top: 0;
   left: 0;
@@ -429,7 +429,7 @@ async function onSignOut() {
   }
 }
 
-.errorBanner {
+.error-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -455,7 +455,7 @@ async function onSignOut() {
 }
 
 
-.sectionTitle {
+.section-title {
   grid-column: 1 / -1;
   font-size: var(--font-size-s);
   font-weight: 700;
@@ -467,15 +467,15 @@ async function onSignOut() {
   border-bottom: 1px solid var(--border);
 }
 
-.sectionTitle:first-child {
+.section-title:first-child {
   margin-top: 0;
 }
 
-.bottomNav {
+.bottom-nav {
   display: none;
 }
 
-.bottomNavLabel {
+.bottom-nav-label {
   font-size: var(--font-size-xs);
 }
 
@@ -494,7 +494,7 @@ async function onSignOut() {
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 
-  .bottomNav {
+  .bottom-nav {
     display: flex;
     position: fixed;
     left: 0;
@@ -506,7 +506,7 @@ async function onSignOut() {
     padding: var(--space-xs) var(--space-xs) calc(var(--space-xs) + env(safe-area-inset-bottom));
   }
 
-  .bottomNavItem {
+  .bottom-nav-item {
     flex: 1;
     display: flex;
     flex-direction: column;

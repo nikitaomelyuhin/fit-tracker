@@ -86,7 +86,7 @@ function onDelete(id: string) {
   gap: var(--space-s);
 }
 
-.dayHead {
+.day-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -101,7 +101,7 @@ function onDelete(id: string) {
   color: var(--text-primary);
 }
 
-.dayStats {
+.day-stats {
   font-size: var(--font-size-m);
   color: var(--text-secondary);
   white-space: nowrap;
@@ -128,7 +128,7 @@ function onDelete(id: string) {
   background: var(--bg-elevated);
 }
 
-.photoFoot {
+.photo-foot {
   display: flex;
   align-items: center;
   justify-content: space-between;

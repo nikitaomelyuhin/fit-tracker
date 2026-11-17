@@ -131,7 +131,7 @@ function onDelete(id: string) {
   border-radius: var(--radius-m);
 }
 
-.itemMain {
+.item-main {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -149,7 +149,7 @@ function onDelete(id: string) {
   color: var(--text-muted);
 }
 
-.itemActions {
+.item-actions {
   display: flex;
   gap: var(--space-xs);
   flex-shrink: 0;

@@ -34,6 +34,13 @@ export default defineConfig({
       },
     }),
   ],
+  css: {
+    modules: {
+      // В CSS классы пишутся в kebab-case (правило проекта), а в шаблоне
+      // доступны как $style.camelCase — без $style['kebab-name'].
+      localsConvention: 'camelCaseOnly',
+    },
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),

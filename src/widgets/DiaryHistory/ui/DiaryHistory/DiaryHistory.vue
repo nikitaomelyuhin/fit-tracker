@@ -179,7 +179,7 @@ function onDelete(id: string) {
   gap: var(--space-s);
 }
 
-.dayHead {
+.day-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -194,7 +194,7 @@ function onDelete(id: string) {
   color: var(--text-primary);
 }
 
-.cheatBadge {
+.cheat-badge {
   margin-left: var(--space-s);
   padding: 2px var(--space-s);
   border-radius: var(--radius-s);
@@ -205,7 +205,7 @@ function onDelete(id: string) {
   vertical-align: middle;
 }
 
-.dayTotals {
+.day-totals {
   font-size: var(--font-size-m);
   color: var(--text-primary);
   font-weight: 600;
@@ -218,14 +218,14 @@ function onDelete(id: string) {
   padding-left: var(--space-s);
 }
 
-.mealHead {
+.meal-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-m);
 }
 
-.mealLabel {
+.meal-label {
   font-size: var(--font-size-s);
   font-weight: 600;
   color: var(--accent);
@@ -233,7 +233,7 @@ function onDelete(id: string) {
   letter-spacing: 0.02em;
 }
 
-.mealTotals {
+.meal-totals {
   font-size: var(--font-size-s);
   color: var(--text-muted);
 }
@@ -254,7 +254,7 @@ function onDelete(id: string) {
   border-radius: var(--radius-m);
 }
 
-.rowMain {
+.row-main {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -289,7 +289,7 @@ function onDelete(id: string) {
   cursor: pointer;
 }
 
-.amountInput {
+.amount-input {
   width: 64px;
   flex-shrink: 0;
   padding: var(--space-xs) var(--space-s);

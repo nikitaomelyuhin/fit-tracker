@@ -112,17 +112,17 @@ async function onSubmit() {
   transition: border-color 0.15s ease, background 0.15s ease;
 }
 
-.dropzoneActive {
+.dropzone-active {
   border-color: var(--accent);
   background: var(--bg-surface);
 }
 
-.dropzoneText {
+.dropzone-text {
   font-size: var(--font-size-s);
   color: var(--text-secondary);
 }
 
-.fileInput {
+.file-input {
   position: absolute;
   width: 1px;
   height: 1px;

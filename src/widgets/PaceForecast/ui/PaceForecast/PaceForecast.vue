@@ -227,7 +227,7 @@ const option = computed(() => {
   color: var(--text-secondary);
 }
 
-.dotActual {
+.dot-actual {
   width: 10px;
   height: 10px;
   border-radius: 50%;

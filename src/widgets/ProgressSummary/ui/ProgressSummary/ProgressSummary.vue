@@ -140,34 +140,34 @@ const checkpoints = computed<Checkpoint[]>(() => {
   border-top: 1px solid var(--border);
 }
 
-.checkpointsHead,
-.checkpointRow {
+.checkpoints-head,
+.checkpoint-row {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: var(--space-m);
 }
 
-.checkpointsHead {
+.checkpoints-head {
   padding-bottom: var(--space-xs);
 }
 
-.checkpointsCol {
+.checkpoints-col {
   min-width: 76px;
   text-align: right;
   font-size: var(--font-size-s);
   color: var(--text-muted);
 }
 
-.checkpointRow {
+.checkpoint-row {
   padding: 2px 0;
 }
 
-.checkpointWeight {
+.checkpoint-weight {
   font-size: var(--font-size-s);
   color: var(--text-secondary);
 }
 
-.checkpointDate {
+.checkpoint-date {
   min-width: 76px;
   text-align: right;
   font-size: var(--font-size-s);

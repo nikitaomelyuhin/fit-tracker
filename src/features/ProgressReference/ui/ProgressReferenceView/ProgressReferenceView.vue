@@ -68,7 +68,7 @@ async function onFile(event: Event) {
   color: var(--text-muted);
 }
 
-.fileInput {
+.file-input {
   position: absolute;
   width: 1px;
   height: 1px;

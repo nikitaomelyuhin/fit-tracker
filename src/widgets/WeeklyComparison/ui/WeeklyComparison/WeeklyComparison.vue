@@ -105,19 +105,19 @@ function hintFor(week: WeeklyAverage): Hint {
   border: 1px solid transparent;
 }
 
-.rowInProgress {
+.row-in-progress {
   border: 1px dashed var(--border);
   background: transparent;
 }
 
-.rowTop {
+.row-top {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-s);
 }
 
-.rowBottom {
+.row-bottom {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -125,13 +125,13 @@ function hintFor(week: WeeklyAverage): Hint {
   min-height: 1.2em;
 }
 
-.rowWeek {
+.row-week {
   font-size: var(--font-size-m);
   color: var(--text-secondary);
   white-space: nowrap;
 }
 
-.rowValue {
+.row-value {
   flex-shrink: 0;
   min-width: 84px;
   text-align: right;
@@ -141,12 +141,12 @@ function hintFor(week: WeeklyAverage): Hint {
   white-space: nowrap;
 }
 
-.rowMeta {
+.row-meta {
   font-size: var(--font-size-s);
   color: var(--text-muted);
 }
 
-.rowDelta {
+.row-delta {
   font-size: var(--font-size-s);
   font-weight: 600;
   white-space: nowrap;

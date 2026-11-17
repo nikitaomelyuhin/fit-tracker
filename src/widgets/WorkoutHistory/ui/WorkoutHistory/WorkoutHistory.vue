@@ -162,18 +162,18 @@ function goal(entry: Workout): string | null {
   gap: var(--space-s);
 }
 
-.exName {
+.ex-name {
   color: var(--text-secondary);
   font-size: var(--font-size-m);
 }
 
-.exVal {
+.ex-val {
   color: var(--text-primary);
   font-weight: 600;
   font-size: var(--font-size-s);
 }
 
-.exGoal {
+.ex-goal {
   color: var(--warning);
   font-size: var(--font-size-s);
 }

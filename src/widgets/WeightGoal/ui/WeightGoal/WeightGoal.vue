@@ -122,7 +122,7 @@ function isReached(point: number): boolean {
   transition: width 0.3s ease;
 }
 
-.progressText {
+.progress-text {
   font-size: var(--font-size-s);
   color: var(--text-secondary);
 }
@@ -145,7 +145,7 @@ function isReached(point: number): boolean {
   color: var(--text-muted);
 }
 
-.reachedItem {
+.reached-item {
   color: var(--success);
 }
 

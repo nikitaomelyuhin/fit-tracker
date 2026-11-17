@@ -132,7 +132,7 @@ async function onSubmit() {
   padding: var(--space-xs);
 }
 
-.typeBtn {
+.type-btn {
   flex: 1;
   padding: var(--space-s);
   background: transparent;
@@ -143,7 +143,7 @@ async function onSubmit() {
   font-weight: 600;
 }
 
-.typeActive {
+.type-active {
   background: var(--accent);
   color: var(--accent-contrast);
 }
@@ -164,14 +164,14 @@ async function onSubmit() {
   border-radius: var(--radius-m);
 }
 
-.exHead {
+.ex-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: var(--space-s);
 }
 
-.exName {
+.ex-name {
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -191,7 +191,7 @@ async function onSubmit() {
   color: var(--text-secondary);
 }
 
-.goalLabel {
+.goal-label {
   font-size: var(--font-size-s);
   color: var(--warning);
 }

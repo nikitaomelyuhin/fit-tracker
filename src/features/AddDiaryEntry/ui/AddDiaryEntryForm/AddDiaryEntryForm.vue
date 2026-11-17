@@ -202,20 +202,20 @@ async function onSubmit() {
   border-radius: var(--radius-m);
 }
 
-.dishHead {
+.dish-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
 
-.dishLabel {
+.dish-label {
   font-size: var(--font-size-s);
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
-.removeRow {
+.remove-row {
   background: transparent;
   border: none;
   color: var(--danger);
@@ -240,7 +240,7 @@ async function onSubmit() {
   text-align: left;
 }
 
-.customLink {
+.custom-link {
   background: transparent;
   border: none;
   color: var(--accent);
@@ -290,7 +290,7 @@ async function onSubmit() {
   cursor: pointer;
 }
 
-.matchMeta {
+.match-meta {
   font-size: var(--font-size-s);
   color: var(--text-muted);
   white-space: nowrap;
