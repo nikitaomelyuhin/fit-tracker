@@ -1,10 +1,6 @@
 <template>
   <div v-if="store.groupedByDateDesc.length" :class="$style.wrap">
-    <div v-if="expanded" :class="$style.filters">
-      <BaseTextField v-model="filterFrom" label="С" type="date" />
-      <BaseTextField v-model="filterTo" label="По" type="date" />
-      <BaseButton v-if="isFiltered" type="button" variant="ghost" @click="clearFilter">Сбросить</BaseButton>
-    </div>
+    <DateRangeFilter v-if="expanded" v-model:from="filterFrom" v-model:to="filterTo" />
 
     <p v-if="!visibleDays.length" :class="$style.empty">
       {{ expanded ? 'За этот период записей нет.' : 'За последние три дня записей нет.' }}
@@ -51,16 +47,20 @@
                 inputmode="decimal"
                 @keyup.enter="saveEdit(entry.id)"
               />
-              <BaseButton type="button" @click="saveEdit(entry.id)">✓</BaseButton>
-              <BaseButton type="button" variant="ghost" @click="cancelEdit">✕</BaseButton>
+              <BaseButton type="button" aria-label="Сохранить порцию" @click="saveEdit(entry.id)">
+                <AppIcon name="check" />
+              </BaseButton>
+              <BaseButton type="button" variant="ghost" aria-label="Отменить" @click="cancelEdit">
+                <AppIcon name="close" />
+              </BaseButton>
             </template>
             <template v-else>
               <button type="button" :class="$style.amount" @click="startEdit(entry.id, entry.amount)">
                 {{ entry.amount }}
               </button>
-              <BaseButton type="button" variant="danger" aria-label="Удалить" @click="onDelete(entry.id)">
-                ✕
-              </BaseButton>
+              <BaseButton type="button" variant="subtle" aria-label="Удалить" @click="onDelete(entry.id)">
+<AppIcon name="trash" />
+</BaseButton>
             </template>
           </li>
         </ul>
@@ -85,7 +85,7 @@ import { computed, ref } from 'vue'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { useCheatDayStore } from '@/entities/CheatDay'
 import { MEAL_TYPE_LABELS } from '@/shared/config/nutrition'
-import { BaseButton, BaseTextField } from '@/shared/ui'
+import { AppIcon, BaseButton, DateRangeFilter } from '@/shared/ui'
 import { addDays, formatHuman, todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
 
@@ -122,14 +122,14 @@ const visibleDays = computed(() => {
   return expanded.value ? days : recentDays.value
 })
 
-function toggleExpanded() {
-  expanded.value = !expanded.value
-  if (!expanded.value) clearFilter()
-}
-
 function clearFilter() {
   filterFrom.value = ''
   filterTo.value = ''
+}
+
+function toggleExpanded() {
+  expanded.value = !expanded.value
+  if (!expanded.value) clearFilter()
 }
 
 function startEdit(id: string, amount: number) {
@@ -160,12 +160,6 @@ function onDelete(id: string) {
   gap: var(--space-m);
 }
 
-.filters {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-m);
-  flex-wrap: wrap;
-}
 
 .days {
   display: flex;

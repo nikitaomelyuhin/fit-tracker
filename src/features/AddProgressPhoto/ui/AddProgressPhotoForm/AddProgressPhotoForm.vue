@@ -1,14 +1,12 @@
 <template>
   <form :class="$style.form" @submit.prevent="onSubmit">
-    <div :class="$style.row">
-      <BaseTextField
-        :model-value="store.form.date"
-        label="Дата"
-        type="date"
-        @update:model-value="store.setDate($event)"
-      />
-      <BaseSelect v-model="store.form.angle" label="Ракурс" :options="angleOptions" />
-    </div>
+    <DateChip :model-value="store.form.date" aria-label="Дата фото" @update:model-value="store.setDate($event)" />
+    <BaseSegmented
+      :model-value="store.form.angle"
+      :options="angleOptions"
+      aria-label="Ракурс"
+      @update:model-value="store.setAngle($event)"
+    />
 
     <label
       :class="[$style.dropzone, isDragging && $style.dropzoneActive]"
@@ -41,7 +39,7 @@
 import { ref } from 'vue'
 import { useProgressPhotoStore } from '@/entities/ProgressPhoto'
 import { PHOTO_ANGLES, PHOTO_ANGLE_LABELS } from '@/shared/config/photos'
-import { BaseButton, BaseSelect, BaseTextField } from '@/shared/ui'
+import { BaseButton, BaseSegmented, DateChip, BaseTextField } from '@/shared/ui'
 import { useFreshDate } from '@/shared/lib/freshDate'
 import { useAddProgressPhotoStore } from '../../model/store'
 
@@ -85,17 +83,6 @@ async function onSubmit() {
   gap: var(--space-m);
 }
 
-.row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-m);
-}
-
-@media (max-width: 520px) {
-  .row {
-    grid-template-columns: 1fr;
-  }
-}
 
 .dropzone {
   position: relative;

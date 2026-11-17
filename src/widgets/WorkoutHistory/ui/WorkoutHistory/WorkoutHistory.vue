@@ -1,10 +1,6 @@
 <template>
   <div v-if="workouts.sessions.length" :class="$style.wrap">
-    <div :class="$style.filters">
-      <BaseTextField v-model="filterFrom" label="С" type="date" />
-      <BaseTextField v-model="filterTo" label="По" type="date" />
-      <BaseButton v-if="isFiltered" type="button" variant="ghost" @click="clearFilter">Сбросить</BaseButton>
-    </div>
+    <DateRangeFilter v-model:from="filterFrom" v-model:to="filterTo" />
 
     <p v-if="!visibleSessions.length" :class="$style.empty">За этот период тренировок нет.</p>
 
@@ -21,9 +17,9 @@
               ⏳ не отправлено
             </span>
           </span>
-          <BaseButton variant="danger" aria-label="Удалить" @click="onDelete(session.date, session.type)">
-            ✕
-          </BaseButton>
+          <BaseButton variant="subtle" aria-label="Удалить" @click="onDelete(session.date, session.type)">
+<AppIcon name="trash" />
+</BaseButton>
         </div>
         <ul :class="$style.exercises">
           <li v-for="entry in session.entries" :key="entry.id" :class="$style.ex">
@@ -50,7 +46,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useWorkoutStore, type Workout, type WorkoutType } from '@/entities/Workout'
-import { BaseButton, BaseTextField } from '@/shared/ui'
+import { AppIcon, BaseButton, DateRangeFilter } from '@/shared/ui'
 import { formatHuman } from '@/shared/lib/date'
 
 const DEFAULT_SHOWN = 5
@@ -76,10 +72,6 @@ const visibleSessions = computed(() => {
   return expanded.value ? sessions : sessions.slice(0, DEFAULT_SHOWN)
 })
 
-function clearFilter() {
-  filterFrom.value = ''
-  filterTo.value = ''
-}
 
 function onDelete(date: string, type: WorkoutType | null) {
   workouts.removeSession(date, type)
@@ -108,12 +100,6 @@ function goal(entry: Workout): string | null {
   gap: var(--space-m);
 }
 
-.filters {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-m);
-  flex-wrap: wrap;
-}
 
 .list {
   display: flex;

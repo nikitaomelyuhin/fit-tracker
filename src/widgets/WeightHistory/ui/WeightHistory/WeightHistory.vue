@@ -1,23 +1,19 @@
 <template>
   <div v-if="store.byDateDesc.length" :class="$style.wrap">
-    <div :class="$style.filters">
-      <BaseTextField v-model="filterFrom" label="С" type="date" />
-      <BaseTextField v-model="filterTo" label="По" type="date" />
-      <BaseButton v-if="isFiltered" type="button" variant="ghost" @click="clearFilter">Сбросить</BaseButton>
-    </div>
+    <DateRangeFilter v-model:from="filterFrom" v-model:to="filterTo" />
 
     <p v-if="!visibleEntries.length" :class="$style.empty">За этот период записей нет.</p>
 
     <ul v-else :class="$style.list">
       <li v-for="entry in visibleEntries" :key="entry.id" :class="$style.row">
-        <span :class="$style.date">{{ formatHuman(entry.date) }}</span>
+        <span :class="$style.date">{{ relativeDayLabel(entry.date) }}</span>
         <span :class="$style.weight">
           {{ entry.weight }} кг
           <span v-if="store.isPendingDate(entry.date)" :class="$style.pending">⏳</span>
         </span>
-        <BaseButton variant="danger" aria-label="Удалить" @click="onDelete(entry.id)">
-          ✕
-        </BaseButton>
+        <BaseButton variant="subtle" aria-label="Удалить" @click="onDelete(entry.id)">
+<AppIcon name="trash" />
+</BaseButton>
       </li>
     </ul>
 
@@ -36,8 +32,8 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useWeightLogStore } from '@/entities/WeightLog'
-import { BaseButton, BaseTextField } from '@/shared/ui'
-import { formatHuman } from '@/shared/lib/date'
+import { AppIcon, BaseButton, DateRangeFilter } from '@/shared/ui'
+import { relativeDayLabel } from '@/shared/lib/date'
 
 const DEFAULT_SHOWN = 14
 
@@ -62,10 +58,6 @@ const visibleEntries = computed(() => {
   return expanded.value ? entries : entries.slice(0, DEFAULT_SHOWN)
 })
 
-function clearFilter() {
-  filterFrom.value = ''
-  filterTo.value = ''
-}
 
 function onDelete(id: string) {
   store.remove(id)
@@ -79,12 +71,6 @@ function onDelete(id: string) {
   gap: var(--space-m);
 }
 
-.filters {
-  display: flex;
-  align-items: flex-end;
-  gap: var(--space-m);
-  flex-wrap: wrap;
-}
 
 .list {
   list-style: none;

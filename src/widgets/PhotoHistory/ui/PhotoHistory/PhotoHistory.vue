@@ -17,9 +17,9 @@
           </a>
           <div :class="$style.photoFoot">
             <span :class="$style.angle">{{ PHOTO_ANGLE_LABELS[photo.angle] }}</span>
-            <BaseButton type="button" variant="danger" aria-label="Удалить" @click="onDelete(photo.id)">
-              ✕
-            </BaseButton>
+            <BaseButton type="button" variant="subtle" aria-label="Удалить" @click="onDelete(photo.id)">
+<AppIcon name="trash" />
+</BaseButton>
           </div>
         </div>
       </div>
@@ -36,7 +36,7 @@ import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { PHOTO_ANGLE_LABELS } from '@/shared/config/photos'
 import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
 import { estimateBodyFatPct } from '@/shared/lib/bodyFat'
-import { BaseButton } from '@/shared/ui'
+import { AppIcon, BaseButton } from '@/shared/ui'
 import { formatHuman } from '@/shared/lib/date'
 
 const store = useProgressPhotoStore()

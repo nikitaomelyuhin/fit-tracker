@@ -37,9 +37,9 @@
         </div>
         <div :class="$style.itemActions">
           <BaseButton type="button" variant="ghost" @click="store.startEdit(product)">✎</BaseButton>
-          <BaseButton type="button" variant="danger" aria-label="Удалить" @click="onDelete(product.id)">
-            ✕
-          </BaseButton>
+          <BaseButton type="button" variant="subtle" aria-label="Удалить" @click="onDelete(product.id)">
+<AppIcon name="trash" />
+</BaseButton>
         </div>
       </li>
     </ul>
@@ -49,7 +49,7 @@
 
 <script setup lang="ts">
 import { useProductStore } from '@/entities/Product'
-import { BaseButton, BaseSelect, BaseTextField } from '@/shared/ui'
+import { AppIcon, BaseButton, BaseSelect, BaseTextField } from '@/shared/ui'
 import { useManageProductsStore } from '../../model/store'
 
 const store = useManageProductsStore()

@@ -1,12 +1,7 @@
 <template>
   <div :class="$style.panel">
     <form :class="$style.form" @submit.prevent="onSubmit">
-      <BaseTextField
-        :model-value="store.date"
-        label="Дата"
-        type="date"
-        @update:model-value="store.setDate($event)"
-      />
+      <DateChip :model-value="store.date" aria-label="Дата читмила" @update:model-value="store.setDate($event)" />
       <BaseButton type="submit" :disabled="!store.canSubmit || store.submitting">
         {{ store.submitting ? 'Сохраняю…' : 'Отметить читмилом' }}
       </BaseButton>
@@ -18,9 +13,9 @@
     <ul v-if="cheatDays.byDateDesc.length" :class="$style.list">
       <li v-for="item in cheatDays.byDateDesc" :key="item.id" :class="$style.item">
         <span :class="$style.date">{{ formatHuman(item.date) }}</span>
-        <BaseButton type="button" variant="danger" aria-label="Удалить" @click="onDelete(item.id)">
-          ✕
-        </BaseButton>
+        <BaseButton type="button" variant="subtle" aria-label="Удалить" @click="onDelete(item.id)">
+<AppIcon name="trash" />
+</BaseButton>
       </li>
     </ul>
   </div>
@@ -28,7 +23,7 @@
 
 <script setup lang="ts">
 import { useCheatDayStore } from '@/entities/CheatDay'
-import { BaseButton, BaseTextField } from '@/shared/ui'
+import { AppIcon, BaseButton, DateChip } from '@/shared/ui'
 import { formatHuman } from '@/shared/lib/date'
 import { useFreshDate } from '@/shared/lib/freshDate'
 import { useMarkCheatDayStore } from '../../model/store'

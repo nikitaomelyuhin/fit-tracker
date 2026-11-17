@@ -7,7 +7,7 @@
 <script setup lang="ts">
 withDefaults(
   defineProps<{
-    variant?: 'primary' | 'ghost' | 'danger'
+    variant?: 'primary' | 'ghost' | 'danger' | 'subtle'
     type?: 'button' | 'submit'
     disabled?: boolean
   }>(),
@@ -74,6 +74,19 @@ withDefaults(
   background: var(--danger-soft);
 }
 
+/* Второстепенное действие в строке списка (удалить): тихое, пока не нажмёшь. */
+.subtle {
+  background: transparent;
+  border-color: transparent;
+  color: var(--text-muted);
+  padding: var(--space-xs);
+}
+
+.subtle:active:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
 /* Наведение — только там, где есть мышь: на тач-экране hover «залипает» после тапа. */
 @media (hover: hover) {
   .primary:hover:not(:disabled) {
@@ -87,6 +100,10 @@ withDefaults(
 
   .danger:hover:not(:disabled) {
     background: var(--danger-soft);
+  }
+
+  .subtle:hover:not(:disabled) {
+    color: var(--danger);
   }
 }
 </style>
