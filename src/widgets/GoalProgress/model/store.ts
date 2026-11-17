@@ -3,7 +3,8 @@ import { useWeightLogStore } from '@/entities/WeightLog'
 import { useDiaryEntryStore } from '@/entities/DiaryEntry'
 import { WEIGHT_GOAL_KG, WEIGHT_MILESTONES_KG, WEIGHT_MINOR_STEP_KG } from '@/shared/config/goals'
 import { DAILY_KCAL_TARGET } from '@/shared/config/pace'
-import { estimateBodyFatPct } from '@/shared/lib/bodyFat'
+import { FAT_SHARE_OF_LOSS } from '@/shared/config/profile'
+import { estimateBodyFatPct, projectBodyFatPct } from '@/shared/lib/bodyFat'
 import { addDays, todayISO } from '@/shared/lib/date'
 import { milestonePoints } from '../helpers/milestonePoints'
 import { paceBand } from '../helpers/paceBand'
@@ -57,25 +58,33 @@ export const useGoalProgressStore = defineStore('goalProgress', {
      * из стартовой жировой массы. Вес отдельно, жир отдельно — а не «весь
      * сброшенный вес = жир», что неверно из-за воды и мышц.
      */
-    bodyFatPct: (): number | null => {
+    bodyFatPct(): number | null {
+      const weightLog = useWeightLogStore()
+      const currentWeight = weightLog.smoothedWeight ?? weightLog.byDateDesc[0]?.weight ?? null
+      return currentWeight != null ? this.bodyFatAt(todayISO(), currentWeight) : null
+    },
+
+    /** Оценка % жира на дату при заданном весе — та же модель, что и для текущего. */
+    bodyFatAt: (): ((toDate: string, weight: number) => number | null) => {
       const weightLog = useWeightLogStore()
       const diary = useDiaryEntryStore()
       const start = weightLog.byDateAsc[0]
-      const currentWeight = weightLog.smoothedWeight ?? weightLog.byDateDesc[0]?.weight ?? null
-      if (!start || currentWeight == null) return null
+      if (!start) return () => null
 
       const weightByDate = new Map(weightLog.byDateAsc.map((w) => [w.date, w.weight]))
       const kcalByDate = new Map(diary.dailyKcalWithCheatAsc.map((d) => [d.date, d.kcal]))
+      const fallbackKcal = diary.effectiveDailyKcal(DAILY_KCAL_TARGET)
 
-      return estimateBodyFatPct({
-        startDate: start.date,
-        startWeight: start.weight,
-        toDate: todayISO(),
-        weightAtTarget: currentWeight,
-        weightAt: (date) => weightByDate.get(date) ?? weightLog.smoothedWeight,
-        kcalAt: (date) => kcalByDate.get(date) ?? null,
-        fallbackKcal: diary.effectiveDailyKcal(DAILY_KCAL_TARGET),
-      })
+      return (toDate, weight) =>
+        estimateBodyFatPct({
+          startDate: start.date,
+          startWeight: start.weight,
+          toDate,
+          weightAtTarget: weight,
+          weightAt: (date) => weightByDate.get(date) ?? weightLog.smoothedWeight,
+          kcalAt: (date) => kcalByDate.get(date) ?? null,
+          fallbackKcal,
+        })
     },
 
     pace(): PaceBand {
@@ -84,13 +93,16 @@ export const useGoalProgressStore = defineStore('goalProgress', {
 
     /**
      * Отметки до цели: основные — всегда (пройденные с галочкой), мелкие через
-     * каждый килограмм — только впереди, «для интереса». У непройденных — дата
-     * по текущему темпу.
+     * каждый килограмм — только впереди, «для интереса». У каждой — % жира:
+     * у пройденных — оценка модели на день, когда вес впервые опустился до
+     * отметки; у непройденных — прогноз и дата по текущему темпу.
      */
     milestones(): GoalMilestone[] {
-      const cleanStart = useWeightLogStore().cleanStart
+      const weightLog = useWeightLogStore()
+      const cleanStart = weightLog.cleanStart
       const current = this.current
       const rate = cleanStart?.ready ? cleanStart.ratePerWeek : null
+      const fatPct = this.bodyFatPct
 
       return milestonePoints(WEIGHT_MILESTONES_KG, WEIGHT_GOAL_KG, WEIGHT_MINOR_STEP_KG)
         .map(({ weight, kind }) => {
@@ -100,7 +112,19 @@ export const useGoalProgressStore = defineStore('goalProgress', {
             const daysNeeded = (current - weight) / (rate / 7)
             expectedDate = addDays(todayISO(), Math.round(daysNeeded))
           }
-          return { weight, kind, reached, expectedDate }
+          let bodyFatPct: number | null = null
+          if (reached) {
+            const crossed = weightLog.byDateAsc.find((row) => row.weight <= weight)
+            if (crossed) bodyFatPct = this.bodyFatAt(crossed.date, weight)
+          } else if (current != null && fatPct != null) {
+            bodyFatPct = projectBodyFatPct({
+              currentWeight: current,
+              currentFatPct: fatPct,
+              targetWeight: weight,
+              fatShare: FAT_SHARE_OF_LOSS,
+            })
+          }
+          return { weight, kind, reached, bodyFatPct, expectedDate }
         })
         .filter((point) => point.kind === 'main' || !point.reached)
     },

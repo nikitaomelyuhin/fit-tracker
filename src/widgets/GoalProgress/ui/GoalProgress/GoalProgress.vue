@@ -55,7 +55,10 @@
         ]"
       >
         <span :class="$style.marker" aria-hidden="true" />
-        <span :class="$style.milestoneWeight">{{ point.weight }} кг</span>
+        <span :class="$style.milestoneWeight">
+          {{ point.weight }} кг
+          <span v-if="point.bodyFatPct != null" :class="$style.milestoneFat">· жир {{ point.bodyFatPct.toFixed(1) }}%</span>
+        </span>
         <span :class="$style.milestoneDate">{{ milestoneText(point) }}</span>
       </li>
     </ul>
@@ -265,6 +268,14 @@ function milestoneText(point: GoalMilestone): string {
   font-weight: 700;
 }
 
+/* Прогноз % жира рядом с весом — вторичная информация, тише веса. */
+.milestone-fat {
+  margin-left: var(--space-xs);
+  font-size: var(--font-size-s);
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
 .milestone-date {
   white-space: nowrap;
   font-size: var(--font-size-s);
@@ -288,6 +299,10 @@ function milestoneText(point: GoalMilestone): string {
 .milestone-minor .milestone-weight {
   padding-left: var(--space-s);
   font-weight: 400;
+}
+
+.milestone-minor .milestone-fat {
+  font-size: var(--font-size-xs);
 }
 
 .milestone-minor .milestone-date {
@@ -327,12 +342,17 @@ function milestoneText(point: GoalMilestone): string {
   font-weight: 600;
 }
 
+.milestone-next .milestone-fat {
+  color: var(--text-secondary);
+}
+
 .milestone-minor.milestone-next {
   padding-block: var(--space-xs);
   font-size: var(--font-size-s);
 }
 
-.milestone-minor.milestone-next .milestone-date {
+.milestone-minor.milestone-next .milestone-date,
+.milestone-minor.milestone-next .milestone-fat {
   font-size: var(--font-size-s);
 }
 </style>
