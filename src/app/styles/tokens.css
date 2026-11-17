@@ -92,6 +92,10 @@
   --skeleton-card-height: 160px;
   --progress-bar-height: 8px;
   --legend-dot-size: 10px;
+  /* Линия отметок «Путь к цели»: ширина колонки, узел основной отметки, точка мелкой. */
+  --timeline-rail-width: 16px;
+  --timeline-node-size: 12px;
+  --timeline-tick-size: 6px;
   --spinner-size-m: 24px;
   --spinner-size-l: 32px;
   --spinner-stroke: 3px;

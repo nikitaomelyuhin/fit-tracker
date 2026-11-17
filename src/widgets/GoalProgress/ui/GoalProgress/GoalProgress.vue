@@ -210,47 +210,92 @@ function milestoneText(point: GoalMilestone): string {
   flex-direction: column;
 }
 
+/*
+ * Отметки стоят на линии маршрута: основные — крупные узлы и крупный шрифт,
+ * мелкие «для интереса» — точки на линии, мелкий бледный шрифт со сдвигом.
+ */
 .milestone {
+  position: relative;
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: var(--timeline-rail-width) 1fr auto;
   align-items: center;
-  gap: var(--space-s);
-  padding: var(--space-xs) var(--space-s);
+  column-gap: var(--space-s);
+  padding: var(--space-s) var(--space-s) var(--space-s) var(--space-xs);
   border-radius: var(--radius-s);
-  font-size: var(--font-size-s);
-  color: var(--text-secondary);
+  font-size: var(--font-size-m);
+  color: var(--text-primary);
 }
 
-/* Точка: пройдено — залитая зелёная, ближайшая — акцентное кольцо, дальше — серое кольцо. */
+/* Линия маршрута через центры отметок; пройденный участок — зелёный. */
+.milestone::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--space-xs) + var(--timeline-rail-width) / 2);
+  width: var(--border-width-thick);
+  background: var(--border);
+  transform: translateX(-50%);
+}
+
+.milestone:first-child::before {
+  top: 50%;
+}
+
+.milestone:last-child::before {
+  bottom: 50%;
+}
+
+.milestone-reached::before {
+  background: var(--success);
+}
+
 .marker {
-  width: var(--legend-dot-size);
-  height: var(--legend-dot-size);
-  border: var(--border-width-thick) solid var(--border);
+  position: relative;
+  z-index: 1;
+  justify-self: center;
+  width: var(--timeline-node-size);
+  height: var(--timeline-node-size);
+  border: var(--border-width-thick) solid var(--text-muted);
   border-radius: 50%;
+  background: var(--bg-surface);
 }
 
 .milestone-weight {
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .milestone-date {
   white-space: nowrap;
+  font-size: var(--font-size-s);
+  color: var(--text-secondary);
 }
 
-/* Мелкие отметки «для интереса» — тише основных: тонкое кольцо, обычный шрифт, плотнее. */
+/* Мелкие отметки. */
 .milestone-minor {
   padding-block: var(--space-2xs);
+  font-size: var(--font-size-xs);
   color: var(--text-muted);
 }
 
 .milestone-minor .marker {
-  border-width: var(--border-width);
+  width: var(--timeline-tick-size);
+  height: var(--timeline-tick-size);
+  border: none;
+  background: var(--text-muted);
 }
 
 .milestone-minor .milestone-weight {
+  padding-left: var(--space-s);
   font-weight: 400;
 }
 
+.milestone-minor .milestone-date {
+  font-size: var(--font-size-xs);
+  color: var(--text-muted);
+}
+
+/* Пройденные — зелёный узел, текст приглушён. */
 .milestone-reached {
   color: var(--text-muted);
 }
@@ -260,17 +305,34 @@ function milestoneText(point: GoalMilestone): string {
   border-color: var(--success);
 }
 
+.milestone-reached .milestone-date {
+  color: var(--text-muted);
+}
+
+/* Ближайшая непройденная — подсветка и акцентный узел, даже если она мелкая. */
 .milestone-next {
-  padding-block: var(--space-xs);
   background: var(--accent-soft);
   color: var(--text-primary);
 }
 
 .milestone-next .marker {
-  border-color: var(--accent);
+  width: var(--timeline-node-size);
+  height: var(--timeline-node-size);
+  border: var(--border-width-thick) solid var(--accent);
+  background: var(--bg-surface);
 }
 
 .milestone-next .milestone-date {
+  color: var(--text-primary);
   font-weight: 600;
+}
+
+.milestone-minor.milestone-next {
+  padding-block: var(--space-xs);
+  font-size: var(--font-size-s);
+}
+
+.milestone-minor.milestone-next .milestone-date {
+  font-size: var(--font-size-s);
 }
 </style>
