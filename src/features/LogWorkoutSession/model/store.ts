@@ -4,6 +4,7 @@ import { WORKOUT_TEMPLATES, type WorkoutType } from '@/shared/config/workouts'
 import { todayISO } from '@/shared/lib/date'
 import { toNumber } from '@/shared/lib/number'
 import { showSaveError, showToast } from '@/shared/lib/toast'
+import { formatSet } from '../helpers/formatSet'
 
 interface ExerciseForm {
   exercise: string
@@ -25,6 +26,8 @@ interface State {
   /** Снимок предзаполненных значений: поля заполнены планом сами, «изменено» — это отличие от него. */
   baseline: string
   submitting: boolean
+  /** Упражнения, где вручную раскрыт блок «Цель на следующий раз». */
+  nextOpen: string[]
 }
 
 export const useLogWorkoutStore = defineStore('logWorkout', {
@@ -35,6 +38,7 @@ export const useLogWorkoutStore = defineStore('logWorkout', {
     exercises: [],
     baseline: '[]',
     submitting: false,
+    nextOpen: [],
   }),
 
   getters: {
@@ -43,6 +47,36 @@ export const useLogWorkoutStore = defineStore('logWorkout', {
 
     canSubmit: (state): boolean =>
       state.exercises.some((item) => item.weight.trim() !== '' || item.reps.trim() !== ''),
+    /** Сколько упражнений будет сохранено — для подписи кнопки. */
+    filledCount: (state): number =>
+      state.exercises.filter((item) => toNumber(item.weight) !== null || toNumber(item.reps) !== null).length,
+
+    /** «Прошлый раз: 105 × 3 × 8» по упражнению, до выбранной даты. */
+    lastSummaryFor(): (exercise: string) => string {
+      return (exercise: string) => {
+        const last = useWorkoutStore().lastEntryFor(exercise, this.date)
+        return last ? formatSet(last.weight, last.sets, last.reps) : 'первый раз'
+      }
+    },
+
+    /** План, поставленный в прошлый раз; null — не ставил. */
+    plannedFor(): (exercise: string) => string | null {
+      return (exercise: string) => {
+        const last = useWorkoutStore().lastEntryFor(exercise, this.date)
+        if (!last || (last.nextWeight == null && last.nextReps == null)) return null
+        return formatSet(last.nextWeight, last.nextSets, last.nextReps)
+      }
+    },
+
+    /** Блок цели раскрыт: вручную или потому что в нём уже что-то введено. */
+    isNextOpen(): (exercise: string) => boolean {
+      return (exercise: string) => {
+        if (this.nextOpen.includes(exercise)) return true
+        const item = this.exercises.find((ex) => ex.exercise === exercise)
+        return !!item && (item.nextWeight !== '' || item.nextSets !== '' || item.nextReps !== '')
+      }
+    },
+
     /** Форма ещё не тронута — можно безопасно перезаполнить, когда подъедут данные. */
     isPristine: (state): boolean =>
       state.exercises.every(
@@ -94,6 +128,13 @@ export const useLogWorkoutStore = defineStore('logWorkout', {
         }
       })
       this.baseline = JSON.stringify(this.exercises)
+      this.nextOpen = []
+    },
+
+    toggleNext(exercise: string) {
+      this.nextOpen = this.nextOpen.includes(exercise)
+        ? this.nextOpen.filter((name) => name !== exercise)
+        : [...this.nextOpen, exercise]
     },
 
     async submit(): Promise<boolean> {

@@ -14,7 +14,7 @@
           <span :class="$style.title">
             Тренировка {{ session.type ?? '?' }} · {{ formatHuman(session.date) }}
             <span v-if="workouts.isPendingSession(session.date, session.type)" :class="$style.pending">
-              ⏳ не отправлено
+              не отправлено
             </span>
           </span>
           <BaseButton variant="subtle" aria-label="Удалить" @click="onDelete(session.date, session.type)">
@@ -25,7 +25,7 @@
           <li v-for="entry in session.entries" :key="entry.id" :class="$style.ex">
             <span :class="$style.exName">{{ entry.exercise }}</span>
             <span :class="$style.exVal">{{ summary(entry) }}</span>
-            <span v-if="goal(entry)" :class="$style.exGoal">🎯 {{ goal(entry) }}</span>
+            <span v-if="goal(entry)" :class="$style.exGoal">цель: {{ goal(entry) }}</span>
           </li>
         </ul>
       </section>

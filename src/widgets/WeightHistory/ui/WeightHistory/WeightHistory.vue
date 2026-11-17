@@ -9,7 +9,7 @@
         <span :class="$style.date">{{ relativeDayLabel(entry.date) }}</span>
         <span :class="$style.weight">
           {{ entry.weight }} кг
-          <span v-if="store.isPendingDate(entry.date)" :class="$style.pending">⏳</span>
+          <span v-if="store.isPendingDate(entry.date)" :class="$style.pending">не отправлено</span>
         </span>
         <BaseButton variant="subtle" aria-label="Удалить" @click="onDelete(entry.id)">
 <AppIcon name="trash" />

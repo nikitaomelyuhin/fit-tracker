@@ -33,7 +33,7 @@
             <div :class="$style.rowMain">
               <span :class="$style.name">
                 {{ entry.productName }}
-                <span v-if="store.isPendingEntry(entry.id)" :class="$style.pending">⏳ не отправлено</span>
+                <span v-if="store.isPendingEntry(entry.id)" :class="$style.pending">не отправлено</span>
               </span>
               <span :class="$style.meta">
                 {{ entry.kcal }} ккал · Б{{ entry.protein }} Ж{{ entry.fat }} У{{ entry.carbs }} Кл{{ entry.fiber }}
