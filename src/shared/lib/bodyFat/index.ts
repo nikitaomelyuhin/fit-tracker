@@ -32,18 +32,3 @@ export function estimateBodyFatPct(params: {
   const currentFatMassKg = Math.max(0, startFatMassKg - fatLostKg)
   return Math.round((currentFatMassKg / params.weightAtTarget) * 1000) / 10
 }
-
-/**
- * Прогноз % жира на будущем весе: из текущей жировой массы уходит `fatShare`
- * от каждого будущего сброшенного килограмма, остальное — не жир.
- */
-export function projectBodyFatPct(params: {
-  currentWeight: number
-  currentFatPct: number
-  targetWeight: number
-  fatShare: number
-}): number {
-  const fatMassKg = (params.currentWeight * params.currentFatPct) / 100
-  const fatLeftKg = Math.max(0, fatMassKg - (params.currentWeight - params.targetWeight) * params.fatShare)
-  return Math.round((fatLeftKg / params.targetWeight) * 1000) / 10
-}

@@ -17,8 +17,6 @@ export interface GoalMilestone {
   weight: number
   kind: MilestoneKind
   reached: boolean
-  /** Прогноз % жира на этом весе — только для непройденных; null — оценки жира нет. */
-  bodyFatPct: number | null
   /** Ожидаемая дата по текущему темпу — только для непройденных отметок; null — темп не считается. */
   expectedDate: string | null
 }
