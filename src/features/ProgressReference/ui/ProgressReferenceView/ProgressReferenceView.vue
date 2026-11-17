@@ -55,10 +55,10 @@ async function onFile(event: Event) {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 96px;
+  min-height: var(--dropzone-min-height);
   padding: var(--space-m);
   background: var(--bg-elevated);
-  border: 2px dashed var(--border);
+  border: var(--border-width-thick) dashed var(--border);
 }
 
 .replace {

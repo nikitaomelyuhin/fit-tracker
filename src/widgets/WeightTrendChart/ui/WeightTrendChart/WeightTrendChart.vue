@@ -109,7 +109,7 @@ const option = computed(() => {
 <style module>
 .chart {
   width: 100%;
-  height: 300px;
+  height: var(--chart-height);
 }
 
 .canvas {

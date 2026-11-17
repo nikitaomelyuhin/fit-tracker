@@ -266,10 +266,10 @@ async function onSubmit() {
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  max-height: 220px;
+  gap: var(--space-2xs);
+  max-height: var(--dropdown-max-height);
   overflow-y: auto;
-  border: 1px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-m);
   padding: var(--space-xs);
 }

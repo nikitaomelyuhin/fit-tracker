@@ -141,17 +141,17 @@ const tiles = computed(() => [
 <style module>
 .summary {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--summary-tile-min-width), 1fr));
   gap: var(--space-s);
 }
 
 .tile {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   padding: var(--space-m);
   background: var(--bg-surface);
-  border: 1px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-m);
 }
 
@@ -181,6 +181,33 @@ const tiles = computed(() => [
 
 .muted {
   color: var(--text-muted);
+}
+
+/* На телефоне сетка из 6 плиток занимала пол-экрана над каждой вкладкой —
+   вместо неё лента с прокруткой вбок, от края до края экрана. Следующая
+   плитка выглядывает справа — видно, что лента листается. */
+@media (max-width: 520px) {
+  .summary {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: var(--summary-tile-min-width);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: var(--space-m);
+    margin-inline: calc(-1 * var(--space-m));
+    padding-inline: var(--space-m);
+    scrollbar-width: none;
+  }
+
+  .summary::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tile {
+    scroll-snap-align: start;
+    padding: var(--space-s) var(--space-m);
+  }
 }
 
 </style>

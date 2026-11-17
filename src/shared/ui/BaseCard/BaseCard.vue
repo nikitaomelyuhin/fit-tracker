@@ -17,12 +17,21 @@ defineProps<{ title?: string }>()
   padding: var(--space-l);
   min-width: 0;
   background: var(--bg-surface);
-  border: 1px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-l);
 }
 
+/* Заголовок — подпись к данным, а не главное в карточке: главное — цифры. */
 .title {
-  font-size: var(--font-size-l);
+  font-size: var(--font-size-m);
+  font-weight: 600;
   color: var(--text-primary);
+}
+
+/* На телефоне каждый пиксель ширины — под контент. */
+@media (max-width: 520px) {
+  .card {
+    padding: var(--space-m);
+  }
 }
 </style>

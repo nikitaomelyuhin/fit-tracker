@@ -23,7 +23,7 @@ import { toasts } from '@/shared/lib/toast'
   display: flex;
   flex-direction: column;
   gap: var(--space-s);
-  width: min(420px, calc(100vw - var(--space-m) * 2));
+  width: min(var(--toast-width), calc(100vw - var(--space-m) * 2));
   pointer-events: none;
 }
 
@@ -35,10 +35,10 @@ import { toasts } from '@/shared/lib/toast'
   padding: var(--space-s) var(--space-m);
   min-height: var(--touch-target);
   background: var(--bg-elevated);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--accent);
+  border: var(--border-width) solid var(--border);
+  border-left: var(--border-width-accent) solid var(--accent);
   border-radius: var(--radius-m);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-elevated);
   color: var(--text-primary);
   font-size: var(--font-size-m);
   pointer-events: auto;
@@ -72,7 +72,7 @@ import { toasts } from '@/shared/lib/toast'
 /* Над нижней навигацией на телефоне. */
 @media (max-width: 860px) {
   .host {
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    bottom: calc(var(--bottom-nav-height) + var(--space-s) + env(safe-area-inset-bottom));
   }
 }
 </style>

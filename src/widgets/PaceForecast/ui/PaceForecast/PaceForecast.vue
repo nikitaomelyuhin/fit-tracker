@@ -228,8 +228,8 @@ const option = computed(() => {
 }
 
 .dot-actual {
-  width: 10px;
-  height: 10px;
+  width: var(--legend-dot-size);
+  height: var(--legend-dot-size);
   border-radius: 50%;
   background: var(--warning);
 }
@@ -242,7 +242,7 @@ const option = computed(() => {
 
 .chart {
   width: 100%;
-  height: 480px;
+  height: var(--chart-height-l);
 }
 
 .hint {

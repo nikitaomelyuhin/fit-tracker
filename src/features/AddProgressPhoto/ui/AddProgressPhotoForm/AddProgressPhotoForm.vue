@@ -103,13 +103,13 @@ async function onSubmit() {
   align-items: center;
   justify-content: center;
   text-align: center;
-  min-height: 96px;
+  min-height: var(--dropzone-min-height);
   padding: var(--space-m);
   background: var(--bg-elevated);
-  border: 2px dashed var(--border);
+  border: var(--border-width-thick) dashed var(--border);
   border-radius: var(--radius-m);
   cursor: pointer;
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition: border-color var(--duration-fast) var(--ease-out), background var(--duration-fast) var(--ease-out);
 }
 
 .dropzone-active {

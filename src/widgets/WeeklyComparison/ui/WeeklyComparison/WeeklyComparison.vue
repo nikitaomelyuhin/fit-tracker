@@ -98,15 +98,15 @@ function hintFor(week: WeeklyAverage): Hint {
 .row {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   padding: var(--space-s) var(--space-m);
   border-radius: var(--radius-m);
   background: var(--bg-elevated);
-  border: 1px solid transparent;
+  border: var(--border-width) solid transparent;
 }
 
 .row-in-progress {
-  border: 1px dashed var(--border);
+  border: var(--border-width) dashed var(--border);
   background: transparent;
 }
 
@@ -133,7 +133,7 @@ function hintFor(week: WeeklyAverage): Hint {
 
 .row-value {
   flex-shrink: 0;
-  min-width: 84px;
+  min-width: var(--stat-value-min-width);
   text-align: right;
   font-size: var(--font-size-l);
   font-weight: 700;

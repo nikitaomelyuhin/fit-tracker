@@ -150,7 +150,7 @@ async function onSubmit() {
 
 .exercises {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--exercise-min-width), 1fr));
   gap: var(--space-m);
   align-items: start;
 }

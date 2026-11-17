@@ -134,7 +134,7 @@ function onDelete(id: string) {
 .item-main {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
 }
 

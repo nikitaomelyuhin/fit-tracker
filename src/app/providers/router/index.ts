@@ -19,6 +19,8 @@ export const router = createRouter({
   // и в корне домена, и в подпапке (например, GitHub Pages: /fit-tracker/).
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  // Новая вкладка открывается сверху; «назад» возвращает туда, где был.
+  scrollBehavior: (_to, _from, saved) => saved ?? { top: 0 },
 })
 
 router.beforeEach((to) => {

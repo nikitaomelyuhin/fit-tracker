@@ -185,7 +185,7 @@ function onDelete(id: string) {
   justify-content: space-between;
   gap: var(--space-m);
   padding-bottom: var(--space-xs);
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--border-width) solid var(--border);
 }
 
 .date {
@@ -196,7 +196,7 @@ function onDelete(id: string) {
 
 .cheat-badge {
   margin-left: var(--space-s);
-  padding: 2px var(--space-s);
+  padding: var(--space-2xs) var(--space-s);
   border-radius: var(--radius-s);
   background: var(--danger);
   color: var(--accent-contrast);
@@ -257,7 +257,7 @@ function onDelete(id: string) {
 .row-main {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: var(--space-2xs);
   min-width: 0;
   flex: 1;
 }
@@ -281,7 +281,7 @@ function onDelete(id: string) {
 .amount {
   flex-shrink: 0;
   background: transparent;
-  border: 1px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-s);
   padding: var(--space-xs) var(--space-s);
   color: var(--text-secondary);
@@ -290,11 +290,11 @@ function onDelete(id: string) {
 }
 
 .amount-input {
-  width: 64px;
+  width: var(--amount-input-width);
   flex-shrink: 0;
   padding: var(--space-xs) var(--space-s);
   background: var(--bg-surface);
-  border: 1px solid var(--accent);
+  border: var(--border-width) solid var(--accent);
   border-radius: var(--radius-s);
   color: var(--text-primary);
   font-size: var(--font-size-input);

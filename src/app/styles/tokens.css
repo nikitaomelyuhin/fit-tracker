@@ -4,6 +4,10 @@
   --bg-elevated: #1f232c;
   --border: #2a2f3a;
 
+  /* Нейтральные состояния поверх любой поверхности: наведение и нажатие. */
+  --bg-hover: rgba(255, 255, 255, 0.05);
+  --bg-pressed: rgba(255, 255, 255, 0.09);
+
   --text-primary: #f2f4f8;
   --text-secondary: #9aa3b2;
   /* ≥ 4.5:1 к самому светлому фону (WCAG AA) и всё ещё тусклее --text-secondary. */
@@ -14,6 +18,14 @@
   --success: #35c07a;
   --warning: #e0a63a;
   --danger: #ff5c5c;
+
+  /* Мягкие подложки тех же цветов — для активной вкладки, бейджей, подсветок. */
+  --accent-soft: rgba(79, 140, 255, 0.15);
+  --success-soft: rgba(53, 192, 122, 0.14);
+  --warning-soft: rgba(224, 166, 58, 0.14);
+  --danger-soft: rgba(255, 92, 92, 0.14);
+
+  --shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.45);
 
   /* Минимум для мелких подписей (навигация, бейджи) — мельче на телефоне не читается. */
   --font-size-xs: 12px;
@@ -27,6 +39,7 @@
   /* Минимальная зона нажатия (Apple HIG: 44pt). */
   --touch-target: 44px;
 
+  --space-2xs: 2px;
   --space-xs: 4px;
   --space-s: 8px;
   --space-m: 16px;
@@ -36,4 +49,47 @@
   --radius-s: 8px;
   --radius-m: 12px;
   --radius-l: 16px;
+
+  --border-width: 1px;
+  --border-width-thick: 2px;
+  /* Цветная полоска слева у баннеров и тостов. */
+  --border-width-accent: 3px;
+
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  /* Мягкий ореол вокруг поля ввода в фокусе. */
+  --focus-halo: 0 0 0 3px var(--accent-soft);
+
+  /* Движение: короткое — отклик на нажатие, базовое — появление контента. */
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 300ms;
+  /* Циклы индикаторов загрузки. */
+  --duration-spin: 800ms;
+  --duration-loop: 1s;
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --press-scale: 0.97;
+  --opacity-disabled: 0.5;
+
+  /* Раскладка. Брейкпоинты (860/520) — литералы в @media: CSS-переменные там не работают. */
+  --layout-max-width: 1600px;
+  --sidebar-width: 220px;
+  --card-min-width: 360px;
+  --auth-card-width: 360px;
+  --toast-width: 420px;
+  --bottom-nav-height: 64px;
+  --summary-tile-min-width: 140px;
+  --exercise-min-width: 280px;
+  --stat-value-min-width: 84px;
+  --amount-input-width: 64px;
+  --dropdown-max-height: 220px;
+  --photo-thumb-width: 160px;
+  --dropzone-min-height: 96px;
+  --progress-bar-height: 8px;
+  --legend-dot-size: 10px;
+  --spinner-size-m: 24px;
+  --spinner-size-l: 32px;
+  --spinner-stroke: 3px;
+  --chart-height: 300px;
+  --chart-height-l: 480px;
 }

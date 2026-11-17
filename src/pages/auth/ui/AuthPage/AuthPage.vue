@@ -53,7 +53,7 @@ async function onSignUp() {
 
 .card {
   width: 100%;
-  max-width: 360px;
+  max-width: var(--auth-card-width);
 }
 
 .actions {

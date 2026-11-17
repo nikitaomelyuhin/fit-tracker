@@ -50,17 +50,26 @@ function onInput(event: Event) {
   width: 100%;
   padding: var(--space-s) var(--space-m);
   background: var(--bg-elevated);
-  border: 1px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-m);
   min-height: var(--touch-target);
   font-size: var(--font-size-input);
   color: var(--text-primary);
   outline: none;
-  transition: border-color 0.15s ease;
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .input:focus {
   border-color: var(--accent);
+  box-shadow: var(--focus-halo);
+}
+
+@media (hover: hover) {
+  .input:hover:not(:focus) {
+    border-color: var(--text-muted);
+  }
 }
 
 .input::placeholder {

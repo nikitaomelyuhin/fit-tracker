@@ -11,32 +11,10 @@
       />
     </div>
     <div :class="$style.shell">
-      <aside :class="$style.sidebar">
-        <div :class="$style.sidebarBrand">Fit Tracker</div>
-        <nav :class="$style.sidebarNav">
-          <button
-            v-for="tab in tabs"
-            :key="tab.key"
-            :class="[$style.navItem, activeTab === tab.key && $style.navItemActive]"
-            @click="selectTab(tab.key)"
-          >
-            <span :class="$style.navIcon">{{ tab.icon }}</span>
-            {{ tab.label }}
-          </button>
-        </nav>
-      </aside>
+      <DashboardSidebar :tabs="DASHBOARD_TABS" :active="activeTab" @select="selectTab" />
 
       <div :class="$style.main">
-        <header :class="$style.header">
-          <h1 :class="$style.brand">Fit Tracker</h1>
-          <div :class="$style.actions">
-            <ExportReportButton />
-            <BaseButton variant="ghost" :disabled="sync.loading" @click="sync.loadAll()">
-              {{ sync.loading ? 'Обновляю…' : '⟳ Обновить' }}
-            </BaseButton>
-            <BaseButton variant="ghost" @click="onSignOut">Выйти</BaseButton>
-          </div>
-        </header>
+        <DashboardHeader :title="activeTabLabel" @sign-out="onSignOut" />
 
         <div v-if="sync.loading && sync.loadedOnce" :class="$style.refreshBar" />
 
@@ -53,106 +31,97 @@
         <template v-else>
           <DashboardSummary />
 
-          <div :class="$style.content">
-            <template v-if="activeTab === 'weight'">
-              <BaseCard title="Записать вес">
-                <AddWeightForm />
-              </BaseCard>
-              <BaseCard title="История" :class="$style.wide">
-                <WeightHistory />
-              </BaseCard>
-            </template>
-
-            <template v-else-if="activeTab === 'workouts'">
-              <BaseCard title="Записать тренировку" :class="$style.wide">
-                <WorkoutSessionForm />
-              </BaseCard>
-              <BaseCard title="История тренировок" :class="$style.wide">
-                <WorkoutHistory />
-              </BaseCard>
-            </template>
-
-            <template v-else-if="activeTab === 'nutrition'">
-              <div :class="[$style.subTabs, $style.wide]">
-                <button
-                  v-for="view in nutritionViews"
-                  :key="view.key"
-                  type="button"
-                  :class="[$style.subTab, nutritionView === view.key && $style.subTabActive]"
-                  @click="nutritionView = view.key"
-                >
-                  {{ view.label }}
-                </button>
-              </div>
-
-              <template v-if="nutritionView === 'diary'">
-                <BaseCard title="Записать приём пищи" :class="$style.wide">
-                  <AddDiaryEntryForm />
+          <Transition :enter-active-class="$style.tabEnterActive" mode="out-in">
+            <div :key="activeTab" :class="$style.content">
+              <template v-if="activeTab === 'weight'">
+                <BaseCard title="Записать вес">
+                  <AddWeightForm />
                 </BaseCard>
-                <BaseCard title="Рацион" :class="$style.wide">
-                  <DiaryHistory />
-                </BaseCard>
-                <BaseCard title="Читмил" :class="$style.wide">
-                  <MarkCheatDayForm />
+                <BaseCard title="История" :class="$style.wide">
+                  <WeightHistory />
                 </BaseCard>
               </template>
 
-              <BaseCard v-else title="База продуктов" :class="$style.wide">
-                <ManageProductsPanel />
-              </BaseCard>
-            </template>
+              <template v-else-if="activeTab === 'workouts'">
+                <BaseCard title="Записать тренировку" :class="$style.wide">
+                  <WorkoutSessionForm />
+                </BaseCard>
+                <BaseCard title="История тренировок" :class="$style.wide">
+                  <WorkoutHistory />
+                </BaseCard>
+              </template>
 
-            <template v-else-if="activeTab === 'photos'">
-              <BaseCard title="Ориентир" :class="$style.wide">
-                <ProgressReferenceView />
-              </BaseCard>
-              <BaseCard title="Добавить фото">
-                <AddProgressPhotoForm />
-              </BaseCard>
-              <BaseCard title="История фото" :class="$style.wide">
-                <PhotoHistory />
-              </BaseCard>
-            </template>
+              <template v-else-if="activeTab === 'nutrition'">
+                <div :class="[$style.subTabs, $style.wide]" role="tablist">
+                  <button
+                    v-for="view in NUTRITION_VIEWS"
+                    :key="view.key"
+                    type="button"
+                    role="tab"
+                    :aria-selected="nutritionView === view.key"
+                    :class="[$style.subTab, nutritionView === view.key && $style.subTabActive]"
+                    @click="nutritionView = view.key"
+                  >
+                    {{ view.label }}
+                  </button>
+                </div>
 
-            <template v-else-if="activeTab === 'analytics'">
-              <p :class="$style.sectionTitle">Вес</p>
-              <BaseCard title="Цель">
-                <WeightGoal />
-              </BaseCard>
-              <BaseCard title="Прогресс">
-                <ProgressSummary />
-              </BaseCard>
-              <BaseCard title="Неделя к неделе">
-                <WeeklyComparison />
-              </BaseCard>
-              <BaseCard title="Динамика веса" :class="$style.wide">
-                <WeightTrendChart />
-              </BaseCard>
-              <BaseCard title="Идеальный темп vs текущий" :class="$style.wide">
-                <PaceForecast />
-              </BaseCard>
+                <template v-if="nutritionView === 'diary'">
+                  <BaseCard title="Записать приём пищи" :class="$style.wide">
+                    <AddDiaryEntryForm />
+                  </BaseCard>
+                  <BaseCard title="Рацион" :class="$style.wide">
+                    <DiaryHistory />
+                  </BaseCard>
+                  <BaseCard title="Читмил" :class="$style.wide">
+                    <MarkCheatDayForm />
+                  </BaseCard>
+                </template>
 
-              <p :class="$style.sectionTitle">Питание</p>
-              <BaseCard title="Ккал по дням" :class="$style.wide">
-                <CalorieTrend />
-              </BaseCard>
-            </template>
-          </div>
+                <BaseCard v-else title="База продуктов" :class="$style.wide">
+                  <ManageProductsPanel />
+                </BaseCard>
+              </template>
+
+              <template v-else-if="activeTab === 'photos'">
+                <BaseCard title="Ориентир" :class="$style.wide">
+                  <ProgressReferenceView />
+                </BaseCard>
+                <BaseCard title="Добавить фото">
+                  <AddProgressPhotoForm />
+                </BaseCard>
+                <BaseCard title="История фото" :class="$style.wide">
+                  <PhotoHistory />
+                </BaseCard>
+              </template>
+
+              <template v-else-if="activeTab === 'analytics'">
+                <p :class="$style.sectionTitle">Вес</p>
+                <BaseCard title="Путь к цели">
+                  <GoalProgress />
+                </BaseCard>
+                <BaseCard title="Неделя к неделе">
+                  <WeeklyComparison />
+                </BaseCard>
+                <BaseCard title="Динамика веса" :class="$style.wide">
+                  <WeightTrendChart />
+                </BaseCard>
+                <BaseCard title="Темп: факт и идеал" :class="$style.wide">
+                  <PaceForecast />
+                </BaseCard>
+
+                <p :class="$style.sectionTitle">Питание</p>
+                <BaseCard title="Ккал по дням" :class="$style.wide">
+                  <CalorieTrend />
+                </BaseCard>
+              </template>
+            </div>
+          </Transition>
         </template>
       </div>
     </div>
 
-    <nav :class="$style.bottomNav">
-      <button
-        v-for="tab in tabs"
-        :key="tab.key"
-        :class="[$style.bottomNavItem, activeTab === tab.key && $style.navItemActive]"
-        @click="selectTab(tab.key)"
-      >
-        <span :class="$style.navIcon">{{ tab.icon }}</span>
-        <span :class="$style.bottomNavLabel">{{ tab.label }}</span>
-      </button>
-    </nav>
+    <DashboardBottomNav :tabs="DASHBOARD_TABS" :active="activeTab" @select="selectTab" />
   </div>
 </template>
 
@@ -162,7 +131,6 @@ import { useRoute, useRouter } from 'vue-router'
 import { useSessionStore } from '@/entities/Session'
 import { AddWeightForm } from '@/features/AddWeightEntry'
 import { WorkoutSessionForm } from '@/features/LogWorkoutSession'
-import { ExportReportButton } from '@/features/ExportReport'
 import { AddDiaryEntryForm } from '@/features/AddDiaryEntry'
 import { ManageProductsPanel } from '@/features/ManageProducts'
 import { AddProgressPhotoForm } from '@/features/AddProgressPhoto'
@@ -170,15 +138,19 @@ import { MarkCheatDayForm } from '@/features/MarkCheatDay'
 import { ProgressReferenceView } from '@/features/ProgressReference'
 import { PhotoHistory } from '@/widgets/PhotoHistory'
 import { WeightHistory } from '@/widgets/WeightHistory'
-import { WeightGoal } from '@/widgets/WeightGoal'
+import { GoalProgress } from '@/widgets/GoalProgress'
 import { WorkoutHistory } from '@/widgets/WorkoutHistory'
 import { DashboardSummary } from '@/widgets/DashboardSummary'
-import { ProgressSummary } from '@/widgets/ProgressSummary'
 import { WeeklyComparison } from '@/widgets/WeeklyComparison'
 import { DiaryHistory } from '@/widgets/DiaryHistory'
 import { BaseButton, BaseCard } from '@/shared/ui'
 import { usePullToRefresh } from '@/shared/lib/pullToRefresh'
 import { useDashboardSyncStore } from '../../model/store'
+import type { DashboardTabKey, NutritionView } from '../../model/types'
+import { DASHBOARD_TABS, NUTRITION_VIEWS } from '../../config/tabs'
+import DashboardSidebar from '../DashboardSidebar/DashboardSidebar.vue'
+import DashboardHeader from '../DashboardHeader/DashboardHeader.vue'
+import DashboardBottomNav from '../DashboardBottomNav/DashboardBottomNav.vue'
 
 // Тяжёлые графики (echarts) грузим лениво — легче первый рендер на мобилках.
 const WeightTrendChart = defineAsyncComponent(() =>
@@ -191,21 +163,16 @@ const CalorieTrend = defineAsyncComponent(() =>
   import('@/widgets/CalorieTrend').then((m) => m.CalorieTrend),
 )
 
-type TabKey = 'weight' | 'workouts' | 'nutrition' | 'photos' | 'analytics'
-
-const tabs: { key: TabKey; label: string; icon: string }[] = [
-  { key: 'weight', label: 'Вес', icon: '⚖️' },
-  { key: 'workouts', label: 'Тренировки', icon: '🏋️' },
-  { key: 'nutrition', label: 'Питание', icon: '🍽️' },
-  { key: 'photos', label: 'Фото', icon: '📸' },
-  { key: 'analytics', label: 'Аналитика', icon: '📊' },
-]
-
 const route = useRoute()
 const router = useRouter()
-const activeTab = computed<TabKey>(() => (route.params.tab as TabKey) || 'weight')
+const activeTab = computed<DashboardTabKey>(
+  () => (route.params.tab as DashboardTabKey) || 'weight',
+)
+const activeTabLabel = computed(
+  () => DASHBOARD_TABS.find((tab) => tab.key === activeTab.value)?.label ?? 'Fit Tracker',
+)
 
-function selectTab(tab: TabKey) {
+function selectTab(tab: DashboardTabKey) {
   router.push({ name: 'dashboard', params: { tab } })
 }
 
@@ -215,11 +182,6 @@ const sync = useDashboardSyncStore()
 // На телефоне кнопки «Обновить» нет — обновление свайпом вниз от верха страницы.
 const pull = usePullToRefresh(() => sync.loadAll())
 
-type NutritionView = 'diary' | 'products'
-const nutritionViews: { key: NutritionView; label: string }[] = [
-  { key: 'diary', label: 'Рацион' },
-  { key: 'products', label: 'Продукты' },
-]
 const nutritionView = ref<NutritionView>('diary')
 
 // Вернулся во вкладку/приложение или появилась сеть — подтягиваем свежие данные
@@ -250,7 +212,7 @@ async function onSignOut() {
 
 <style module>
 .dashboard {
-  max-width: 1600px;
+  max-width: var(--layout-max-width);
   margin: 0 auto;
   padding: var(--space-l);
 }
@@ -261,81 +223,12 @@ async function onSignOut() {
   gap: var(--space-l);
 }
 
-.sidebar {
-  flex: 0 0 220px;
-  position: sticky;
-  top: var(--space-l);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-m);
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-m);
-  padding: var(--space-m);
-}
-
-.sidebar-brand {
-  font-size: var(--font-size-l);
-  font-weight: 700;
-  color: var(--text-primary);
-  padding: 0 var(--space-s);
-}
-
-.sidebar-nav {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-s);
-  padding: var(--space-s) var(--space-m);
-  background: transparent;
-  border: none;
-  border-radius: var(--radius-s);
-  color: var(--text-secondary);
-  font-size: var(--font-size-m);
-  font-weight: 600;
-  text-align: left;
-}
-
-.nav-icon {
-  font-size: 1.1em;
-  line-height: 1;
-}
-
-.nav-item-active {
-  background: var(--accent);
-  color: var(--accent-contrast);
-}
-
 .main {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   gap: var(--space-l);
-}
-
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-m);
-  flex-wrap: wrap;
-}
-
-.actions {
-  display: flex;
-  gap: var(--space-s);
-  flex-wrap: wrap;
-}
-
-.brand {
-  font-size: var(--font-size-xl);
-  color: var(--text-primary);
 }
 
 .loader {
@@ -350,12 +243,12 @@ async function onSignOut() {
 }
 
 .spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid var(--border);
+  width: var(--spinner-size-l);
+  height: var(--spinner-size-l);
+  border: var(--spinner-stroke) solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+  animation: spin var(--duration-spin) linear infinite;
 }
 
 @keyframes spin {
@@ -373,21 +266,22 @@ async function onSignOut() {
 }
 
 .pull-spinner {
-  width: 24px;
-  height: 24px;
+  width: var(--spinner-size-m);
+  height: var(--spinner-size-m);
   animation: none;
 }
 
 .spinning {
-  animation: spin 0.8s linear infinite;
+  animation: spin var(--duration-spin) linear infinite;
 }
 
+/* Подвкладки — сегментированный переключатель, как в iOS. */
 .sub-tabs {
   display: flex;
   gap: var(--space-xs);
   padding: var(--space-xs);
   background: var(--bg-surface);
-  border: 1px solid var(--border);
+  border: var(--border-width) solid var(--border);
   border-radius: var(--radius-m);
 }
 
@@ -400,11 +294,25 @@ async function onSignOut() {
   color: var(--text-secondary);
   font-size: var(--font-size-m);
   font-weight: 600;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    color var(--duration-fast) var(--ease-out);
 }
 
-.sub-tab-active {
-  background: var(--accent);
-  color: var(--accent-contrast);
+.sub-tab:active {
+  background: var(--bg-pressed);
+}
+
+.sub-tab-active,
+.sub-tab-active:active {
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+@media (hover: hover) {
+  .sub-tab:not(.sub-tab-active):hover {
+    color: var(--text-primary);
+  }
 }
 
 .refresh-bar {
@@ -412,12 +320,12 @@ async function onSignOut() {
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: var(--border-width-accent);
   z-index: 30;
   background: linear-gradient(90deg, transparent, var(--accent), transparent);
   background-size: 50% 100%;
   background-repeat: no-repeat;
-  animation: refresh-slide 1s linear infinite;
+  animation: refresh-slide var(--duration-loop) linear infinite;
 }
 
 @keyframes refresh-slide {
@@ -436,8 +344,8 @@ async function onSignOut() {
   gap: var(--space-m);
   flex-wrap: wrap;
   padding: var(--space-s) var(--space-m);
-  background: var(--bg-elevated);
-  border-left: 3px solid var(--danger);
+  background: var(--danger-soft);
+  border-left: var(--border-width-accent) solid var(--danger);
   border-radius: var(--radius-m);
   color: var(--text-primary);
   font-size: var(--font-size-m);
@@ -445,15 +353,32 @@ async function onSignOut() {
 
 .content {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), 1fr));
   gap: var(--space-l);
   align-items: stretch;
+}
+
+/* Смена вкладки: контент мягко проявляется снизу вверх. */
+.tab-enter-active {
+  animation: tab-in var(--duration-base) var(--ease-out);
+}
+
+@keyframes tab-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-s));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tab-enter-active {
+    animation: none;
+  }
 }
 
 .wide {
   grid-column: 1 / -1;
 }
-
 
 .section-title {
   grid-column: 1 / -1;
@@ -464,70 +389,32 @@ async function onSignOut() {
   color: var(--text-muted);
   margin-top: var(--space-m);
   padding-bottom: var(--space-xs);
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--border-width) solid var(--border);
 }
 
 .section-title:first-child {
   margin-top: 0;
 }
 
-.bottom-nav {
-  display: none;
-}
-
-.bottom-nav-label {
-  font-size: var(--font-size-xs);
-}
-
 @media (max-width: 860px) {
-  .sidebar {
-    display: none;
-  }
-
-  /* На телефоне шапка не нужна: где ты — видно по нижней навигации, отчёт/выход/
-     «Обновить» убраны, обновление свайпом вниз. */
-  .header {
-    display: none;
-  }
-
   .dashboard {
-    padding-bottom: calc(64px + env(safe-area-inset-bottom));
-  }
-
-  .bottom-nav {
-    display: flex;
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 20;
-    background: var(--bg-surface);
-    border-top: 1px solid var(--border);
-    padding: var(--space-xs) var(--space-xs) calc(var(--space-xs) + env(safe-area-inset-bottom));
-  }
-
-  .bottom-nav-item {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    padding: var(--space-xs);
-    background: transparent;
-    border: none;
-    border-radius: var(--radius-s);
-    color: var(--text-secondary);
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
   }
 }
 
 @media (max-width: 520px) {
   .dashboard {
     padding: var(--space-m);
-    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+    padding-bottom: calc(var(--bottom-nav-height) + env(safe-area-inset-bottom));
+  }
+
+  .main {
+    gap: var(--space-m);
   }
 
   .content {
     grid-template-columns: 1fr;
+    gap: var(--space-m);
   }
 }
 </style>

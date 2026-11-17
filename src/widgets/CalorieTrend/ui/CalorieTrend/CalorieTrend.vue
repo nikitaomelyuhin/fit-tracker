@@ -147,7 +147,7 @@ const option = computed(() => {
 
 .chart {
   width: 100%;
-  height: 280px;
+  height: var(--chart-height);
 }
 
 .hint {

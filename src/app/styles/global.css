@@ -11,6 +11,8 @@ body,
 }
 
 html {
+  /* Системные элементы (выбор даты, скроллбары, автозаполнение) — в тёмной теме. */
+  color-scheme: dark;
   overflow-x: hidden;
   /* Отключаем браузерный pull-to-refresh (перезагрузку страницы) — у нас свой, только данные. */
   overscroll-behavior-y: contain;
@@ -24,6 +26,8 @@ body {
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Цифры одной ширины: значения веса/ккал не «прыгают» при обновлении. */
+  font-variant-numeric: tabular-nums;
   overflow-x: hidden;
   width: 100%;
 }
@@ -36,6 +40,29 @@ a {
 button {
   font-family: inherit;
   cursor: pointer;
+  /* Серую вспышку iOS заменяют собственные :active-состояния кнопок. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Видимый фокус только с клавиатуры — мышью и пальцем обводки нет. */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--accent);
+  outline-offset: var(--focus-ring-offset);
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* «Уменьшить движение» в системе: переходы мгновенные. Крутилки загрузки
+   не трогаем — это не украшение, а признак, что идёт загрузка. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 input,

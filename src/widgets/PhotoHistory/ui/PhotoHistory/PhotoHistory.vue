@@ -92,7 +92,7 @@ function onDelete(id: string) {
   justify-content: space-between;
   gap: var(--space-m);
   padding-bottom: var(--space-xs);
-  border-bottom: 1px solid var(--border);
+  border-bottom: var(--border-width) solid var(--border);
 }
 
 .date {
@@ -117,7 +117,7 @@ function onDelete(id: string) {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-  width: 160px;
+  width: var(--photo-thumb-width);
 }
 
 .img {
