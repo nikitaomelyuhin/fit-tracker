@@ -3,18 +3,7 @@
     <li v-for="meal in meals" :key="meal.mealType" :class="$style.meal">
       <div :class="$style.main">
         <span :class="$style.label">{{ meal.label }}</span>
-        <span v-if="meal.names.length" :class="$style.names">{{ namesText(meal.names) }}</span>
-        <button
-          v-else-if="meal.yesterdayKcal != null"
-          type="button"
-          :class="$style.repeat"
-          :disabled="repeating != null"
-          @click="emit('repeat', meal.mealType)"
-        >
-          <AppIcon name="repeat" />
-          {{ repeating === meal.mealType ? 'Копирую…' : `Как вчера · ${meal.yesterdayKcal} ккал` }}
-        </button>
-        <span v-else :class="$style.names">—</span>
+        <span :class="$style.names">{{ meal.names.length ? namesText(meal.names) : '—' }}</span>
       </div>
       <span v-if="meal.kcal != null" :class="$style.kcal">{{ meal.kcal }}</span>
       <button
@@ -34,8 +23,8 @@ import type { MealType } from '@/shared/config/nutrition'
 import { AppIcon } from '@/shared/ui'
 import type { TodayMeal } from '../../model/types'
 
-defineProps<{ meals: TodayMeal[]; repeating: MealType | null }>()
-const emit = defineEmits<{ add: [mealType: MealType]; repeat: [mealType: MealType] }>()
+defineProps<{ meals: TodayMeal[] }>()
+const emit = defineEmits<{ add: [mealType: MealType] }>()
 
 /** «Яйца, хлеб и ещё 2» — подпись не длиннее двух названий. */
 function namesText(names: string[]): string {
@@ -81,30 +70,6 @@ function namesText(names: string[]): string {
   white-space: nowrap;
   font-size: var(--font-size-s);
   color: var(--text-muted);
-}
-
-.repeat {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-xs);
-  padding: 0;
-  background: transparent;
-  border: none;
-  color: var(--accent);
-  font-size: var(--font-size-s);
-  font-weight: 600;
-}
-
-/* Кнопка-ссылка внутри строки: зона нажатия по высоте строки не раздувается. */
-@media (pointer: coarse) {
-  .repeat {
-    min-height: auto;
-    min-width: auto;
-  }
-}
-
-.repeat:disabled {
-  opacity: var(--opacity-disabled);
 }
 
 .kcal {

@@ -10,6 +10,4 @@ export interface TodayMeal {
   kcal: number | null
   /** Названия блюд для подписи строки. */
   names: string[]
-  /** Сколько было в этот приём вчера — для «Как вчера»; null — вчера тоже пусто. */
-  yesterdayKcal: number | null
 }

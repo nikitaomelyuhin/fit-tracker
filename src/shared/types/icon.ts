@@ -20,4 +20,3 @@ export type AppIconName =
   | 'filter'
   | 'flame'
   | 'search'
-  | 'repeat'

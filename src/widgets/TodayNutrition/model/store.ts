@@ -3,9 +3,7 @@ import { useCheatDayStore } from '@/entities/CheatDay'
 import { useDiaryEntryStore, type DailyTotals, type DiaryEntry } from '@/entities/DiaryEntry'
 import { MEAL_TYPES, MEAL_TYPE_LABELS, DAILY_FIBER_RANGE, type MealType } from '@/shared/config/nutrition'
 import { DAILY_KCAL_RANGE, DAILY_KCAL_TARGET } from '@/shared/config/pace'
-import { addDays } from '@/shared/lib/date'
 import { today } from '@/shared/lib/today'
-import { showSaveError, showToast } from '@/shared/lib/toast'
 import type { KcalStatus, TodayMeal } from './types'
 
 function entriesFor(date: string, mealType: MealType): DiaryEntry[] {
@@ -18,11 +16,6 @@ function sumKcal(entries: DiaryEntry[]): number {
 
 /** Питание за сегодня: калории против коридора, БЖУ и приёмы пищи. */
 export const useTodayNutritionStore = defineStore('todayNutrition', {
-  state: () => ({
-    /** Приём пищи, который сейчас копируется «как вчера» (кнопка в ожидании). */
-    repeating: null as MealType | null,
-  }),
-
   getters: {
     target: (): number => DAILY_KCAL_TARGET,
     range: () => DAILY_KCAL_RANGE,
@@ -52,48 +45,15 @@ export const useTodayNutritionStore = defineStore('todayNutrition', {
     },
 
     meals(): TodayMeal[] {
-      const yesterday = addDays(today.value, -1)
       return MEAL_TYPES.map((mealType) => {
         const entries = entriesFor(today.value, mealType)
-        const yesterdayEntries = entries.length ? [] : entriesFor(yesterday, mealType)
         return {
           mealType,
           label: MEAL_TYPE_LABELS[mealType],
           kcal: entries.length ? sumKcal(entries) : null,
           names: entries.map((entry) => entry.productName),
-          yesterdayKcal: yesterdayEntries.length ? sumKcal(yesterdayEntries) : null,
         }
       })
-    },
-  },
-
-  actions: {
-    /** Повторить вчерашний приём пищи сегодня — одним нажатием, теми же порциями. */
-    async repeatYesterday(mealType: MealType): Promise<boolean> {
-      const source = entriesFor(addDays(today.value, -1), mealType)
-      if (!source.length || this.repeating) return false
-
-      this.repeating = mealType
-      const diary = useDiaryEntryStore()
-      const ok = await diary.addMany(
-        source.map((entry) => ({
-          date: today.value,
-          mealType,
-          productId: entry.productId,
-          productName: entry.productName,
-          amount: entry.amount,
-          kcal: entry.kcal,
-          protein: entry.protein,
-          fat: entry.fat,
-          carbs: entry.carbs,
-          fiber: entry.fiber,
-        })),
-      )
-      this.repeating = null
-
-      if (ok) showToast(`${MEAL_TYPE_LABELS[mealType]} — как вчера`)
-      else showSaveError(diary.error)
-      return ok
     },
   },
 })

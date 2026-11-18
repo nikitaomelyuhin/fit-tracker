@@ -14,12 +14,7 @@
       </div>
     </div>
 
-    <TodayMealList
-      :meals="store.meals"
-      :repeating="store.repeating"
-      @add="emit('add', $event)"
-      @repeat="store.repeatYesterday($event)"
-    />
+    <TodayMealList :meals="store.meals" @add="emit('add', $event)" />
   </div>
 </template>
 
