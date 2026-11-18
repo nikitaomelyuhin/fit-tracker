@@ -223,12 +223,6 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
         .map(({ product, stat }) => ({ product, lastAmount: stat.lastAmount }))
     },
 
-    /** Порция продукта в прошлый раз — подставляется при выборе. */
-    lastAmountFor(): (productId: string) => number | null {
-      return (productId: string) =>
-        useDiaryEntryStore().byDateDesc.find((entry) => entry.productId === productId)?.amount ?? null
-    },
-
     validRowsCount(): number {
       return this.rows.filter((row) => this.previewFor(row.key) != null).length
     },
@@ -281,15 +275,13 @@ export const useAddDiaryEntryStore = defineStore('addDiaryEntry', {
       this.searchRowKey = null
     },
 
-    /** Выбор продукта; порция подставляется из прошлого раза, если он был. */
+    /** Выбор продукта; порцию вводишь сам — прошлая не подставляется, она почти всегда другая. */
     selectProduct(key: string, product: Product) {
       const row = this.rows.find((r) => r.key === key)
       if (!row) return
       this.searchRowKey = null
       row.selectedId = product.id
       row.query = product.name
-      const last = this.lastAmountFor(product.id)
-      if (last != null && row.amount.trim() === '') row.amount = String(last)
     },
 
     setMealType(mealType: MealType) {
