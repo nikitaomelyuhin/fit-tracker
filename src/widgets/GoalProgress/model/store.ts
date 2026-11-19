@@ -7,8 +7,7 @@ import { FAT_SHARE_OF_LOSS } from '@/shared/config/profile'
 import { estimateBodyFatPct, projectBodyFatPct } from '@/shared/lib/bodyFat'
 import { addDays, todayISO } from '@/shared/lib/date'
 import { milestonePoints } from '../helpers/milestonePoints'
-import { paceBand } from '../helpers/paceBand'
-import type { GoalMilestone, PaceBand } from './types'
+import type { GoalMilestone, RateTone } from './types'
 
 /**
  * «Путь к цели» — производные от журнала веса: прогресс, темп, контрольные точки.
@@ -87,8 +86,12 @@ export const useGoalProgressStore = defineStore('goalProgress', {
         })
     },
 
-    pace(): PaceBand {
-      return paceBand(this.ratePerWeek)
+    /** Направление темпа для цвета: вес уходит — down, растёт — up. Без оценок «быстро/медленно». */
+    rateTone(): RateTone {
+      const rate = this.ratePerWeek != null ? Math.round(this.ratePerWeek * 100) / 100 : 0
+      if (rate > 0) return 'down'
+      if (rate < 0) return 'up'
+      return 'flat'
     },
 
     /**

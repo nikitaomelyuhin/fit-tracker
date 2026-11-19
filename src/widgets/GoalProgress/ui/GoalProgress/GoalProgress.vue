@@ -34,8 +34,7 @@
       </div>
       <div :class="$style.stat">
         <dt :class="$style.statLabel">Темп</dt>
-        <dd :class="$style.statValue">{{ rateText }}</dd>
-        <dd :class="[$style.band, $style[store.pace.tone]]">{{ store.pace.label }}</dd>
+        <dd :class="[$style.statValue, $style[store.rateTone]]">{{ rateText }}</dd>
       </div>
       <div :class="$style.stat">
         <dt :class="$style.statLabel">Жир (оценка)</dt>
@@ -86,9 +85,13 @@ const lostText = computed(() => {
   return lost >= 0 ? `−${lost.toFixed(1)} кг` : `+${Math.abs(lost).toFixed(1)} кг`
 })
 
-const rateText = computed(() =>
-  store.ratePerWeek != null ? `−${store.ratePerWeek.toFixed(2)} кг/нед` : '—',
-)
+/** Темп положительный, когда вес уходит, — на экране это минус. */
+const rateText = computed(() => {
+  const rate = store.ratePerWeek
+  if (rate == null) return '—'
+  const sign = store.rateTone === 'down' ? '−' : store.rateTone === 'up' ? '+' : ''
+  return `${sign}${Math.abs(rate).toFixed(2)} кг/нед`
+})
 
 function milestoneText(point: GoalMilestone): string {
   if (point.reached) return 'пройдено'
@@ -191,19 +194,15 @@ function milestoneText(point: GoalMilestone): string {
   color: var(--text-primary);
 }
 
-.band {
-  font-size: var(--font-size-s);
-}
-
-.good {
+.down {
   color: var(--success);
 }
 
-.warn {
-  color: var(--warning);
+.up {
+  color: var(--danger);
 }
 
-.muted {
+.flat {
   color: var(--text-muted);
 }
 

@@ -13,24 +13,18 @@
           </div>
           <div :class="$style.rowBottom">
             <template v-if="isCurrent(week)">
-              <span :class="$style.rowMeta">▸ ещё собирается · {{ week.entries }} взв.</span>
+              <span :class="$style.rowMeta">идёт · {{ week.entries }} взв.</span>
             </template>
             <template v-else-if="week.deltaKg == null">
               <span :class="$style.rowMeta">старт отсчёта</span>
             </template>
             <template v-else>
               <span :class="$style.rowMeta" />
-              <span :class="[$style.rowDelta, $style[hintFor(week).tone]]">{{ hintFor(week).text }}</span>
+              <span :class="[$style.rowDelta, $style[deltaFor(week).tone]]">{{ deltaFor(week).text }}</span>
             </template>
           </div>
         </li>
       </ul>
-
-      <p :class="$style.hint">
-        Неделя считается со среды по вторник. Ярлык «быстро/медленно» ставится только законченным
-        неделям — на 2-3 взвешиваниях он был бы враньём, экстраполяция такого куска шумит слишком
-        сильно.
-      </p>
     </template>
     <p v-else :class="$style.empty">
       Недельные средние появятся, как только будет хотя бы одно взвешивание.
@@ -58,26 +52,25 @@ function weekLabel(week: WeeklyAverage): string {
   return `${formatHuman(week.weekStart)} – ${formatHuman(addDays(week.weekStart, 6))}`
 }
 
-interface Hint {
+interface Delta {
   text: string
-  tone: 'good' | 'warn' | 'muted'
+  /** down — вес ушёл, up — пришёл, flat — в пределах округления. */
+  tone: 'down' | 'up' | 'flat'
 }
 
-function hintFor(week: WeeklyAverage): Hint {
-  const value = week.deltaKg
-  if (value == null) return { text: 'старт', tone: 'muted' }
+/** Изменение к прошлой неделе — просто число со знаком, цветом по направлению. */
+function deltaFor(week: WeeklyAverage): Delta {
+  const value = week.deltaKg ?? 0
+  const rounded = Math.round(value * 10) / 10
+  const sign = rounded < 0 ? '−' : rounded > 0 ? '+' : ''
+  const amount = `${sign}${Math.abs(rounded).toFixed(1)} кг`
+  const tone = rounded < 0 ? 'down' : rounded > 0 ? 'up' : 'flat'
 
-  const sign = value < 0 ? '−' : value > 0 ? '+' : ''
-  const amount = `${sign}${Math.abs(value).toFixed(1)}`
-
+  // Разрыв в данных — изменение набежало за несколько недель, это надо видеть.
   if (week.gapWeeks != null && week.gapWeeks > 1) {
-    return { text: `${amount} · пропуск ${week.gapWeeks - 1} нед.`, tone: 'muted' }
+    return { text: `${amount} · за ${week.gapWeeks} нед.`, tone }
   }
-  if (value <= -1.2) return { text: `${amount} · очень быстро`, tone: 'warn' }
-  if (value <= -0.4) return { text: `${amount} · в коридоре`, tone: 'good' }
-  if (value < -0.1) return { text: `${amount} · медленно`, tone: 'good' }
-  if (value <= 0.1) return { text: `${amount} · стоит`, tone: 'muted' }
-  return { text: `${amount} · рост`, tone: 'warn' }
+  return { text: amount, tone }
 }
 </script>
 
@@ -152,20 +145,15 @@ function hintFor(week: WeeklyAverage): Hint {
   white-space: nowrap;
 }
 
-.good {
+.down {
   color: var(--success);
 }
 
-.warn {
-  color: var(--warning);
+.up {
+  color: var(--danger);
 }
 
-.muted {
-  color: var(--text-muted);
-}
-
-.hint {
-  font-size: var(--font-size-s);
+.flat {
   color: var(--text-muted);
 }
 

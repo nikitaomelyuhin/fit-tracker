@@ -1,9 +1,5 @@
-export type PaceTone = 'good' | 'warn' | 'muted'
-
-export interface PaceBand {
-  label: string
-  tone: PaceTone
-}
+/** Куда идёт вес: down — уходит, up — растёт, flat — на месте. */
+export type RateTone = 'down' | 'up' | 'flat'
 
 /** main — основная отметка (и цель), minor — промежуточная «для интереса». */
 export type MilestoneKind = 'main' | 'minor'
