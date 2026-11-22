@@ -2,6 +2,7 @@ import { watch } from 'vue'
 import { defineStore } from 'pinia'
 import { useWeightLogStore, type WeightLog } from '@/entities/WeightLog'
 import { useWorkoutStore, type Workout } from '@/entities/Workout'
+import { useExerciseStore, type Exercise } from '@/entities/Exercise'
 import { useProductStore, type Product } from '@/entities/Product'
 import { useDiaryEntryStore, type DiaryEntry } from '@/entities/DiaryEntry'
 import { useProgressPhotoStore } from '@/entities/ProgressPhoto'
@@ -31,24 +32,28 @@ let cacheBound = false
 function bindLocalCache(): boolean {
   const weightLog = useWeightLogStore()
   const workouts = useWorkoutStore()
+  const exercises = useExerciseStore()
   const products = useProductStore()
   const diary = useDiaryEntryStore()
   const cheatDays = useCheatDayStore()
 
   const cachedWeight = readCache<WeightLog[]>('weight')
   const cachedWorkouts = readCache<Workout[]>('workouts')
+  const cachedExercises = readCache<Exercise[]>('exercises')
   const cachedProducts = readCache<Product[]>('products')
   const cachedDiary = readCache<DiaryEntry[]>('diary')
   const cachedCheatDays = readCache<CheatDay[]>('cheat-days')
 
   if (cachedWeight && !weightLog.items.length) weightLog.items = cachedWeight
   if (cachedWorkouts && !workouts.items.length) workouts.items = cachedWorkouts
+  if (cachedExercises && !exercises.items.length) exercises.items = cachedExercises
   if (cachedProducts && !products.items.length) products.items = cachedProducts
   if (cachedDiary && !diary.items.length) diary.items = cachedDiary
   if (cachedCheatDays && !cheatDays.items.length) cheatDays.items = cachedCheatDays
 
   watch(() => weightLog.items, (items) => writeCache('weight', items), { deep: true })
   watch(() => workouts.items, (items) => writeCache('workouts', items), { deep: true })
+  watch(() => exercises.items, (items) => writeCache('exercises', items), { deep: true })
   watch(() => products.items, (items) => writeCache('products', items), { deep: true })
   watch(() => diary.items, (items) => writeCache('diary', items), { deep: true })
   watch(() => cheatDays.items, (items) => writeCache('cheat-days', items), { deep: true })
@@ -61,7 +66,7 @@ export const useDashboardSyncStore = defineStore('dashboardSync', {
 
   actions: {
     /**
-     * Отправляет накопленное офлайн (вес, тренировки, еда) и грузит все данные дашборда.
+     * Отправляет накопленное офлайн (вес, тренировки, упражнения, еда) и грузит все данные дашборда.
      * Параллельные вызовы склеиваются в один запрос.
      */
     loadAll(): Promise<void> {
@@ -74,12 +79,13 @@ export const useDashboardSyncStore = defineStore('dashboardSync', {
 
       const weightLog = useWeightLogStore()
       const workouts = useWorkoutStore()
+      const exercises = useExerciseStore()
       const diary = useDiaryEntryStore()
-      const stores = [weightLog, workouts, useProductStore(), diary, useProgressPhotoStore(), useCheatDayStore()]
+      const stores = [weightLog, workouts, exercises, useProductStore(), diary, useProgressPhotoStore(), useCheatDayStore()]
 
       this.loading = true
       // Сначала отправляем сохранённое без сети, потом грузим — чтобы загрузка уже включала его.
-      inFlight = Promise.all([weightLog.flushQueue(), workouts.flushQueue(), diary.flushQueue()])
+      inFlight = Promise.all([weightLog.flushQueue(), workouts.flushQueue(), exercises.flushQueue(), diary.flushQueue()])
         .then(() => Promise.all(stores.map((store) => store.load())))
         .then(() => {
           const errors = stores.map((store) => store.error).filter((error): error is string => Boolean(error))

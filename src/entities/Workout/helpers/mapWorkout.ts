@@ -1,4 +1,3 @@
-import type { WorkoutType } from '@/shared/config/workouts'
 import type { Workout, WorkoutRow } from '../model/types'
 
 function num(value: number | string | null): number | null {
@@ -10,7 +9,7 @@ export function mapWorkout(row: WorkoutRow): Workout {
   return {
     id: row.id,
     date: row.date,
-    type: (row.workout_type as WorkoutType | null) ?? null,
+    type: row.workout_type ?? null,
     exercise: row.exercise,
     weight: num(row.weight),
     sets: row.sets ?? null,
@@ -19,5 +18,6 @@ export function mapWorkout(row: WorkoutRow): Workout {
     nextSets: row.next_sets ?? null,
     nextReps: row.next_reps ?? null,
     note: row.note ?? null,
+    position: row.position ?? null,
   }
 }

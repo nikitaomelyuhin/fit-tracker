@@ -2,14 +2,20 @@
   <div :class="$style.exercise">
     <div :class="$style.head">
       <span :class="$style.name">{{ item.exercise }}</span>
-      <span v-if="planned" :class="$style.planned">план: {{ planned }}</span>
-      <span v-else :class="$style.last">{{ lastSummary }}</span>
+      <button
+        type="button"
+        :class="$style.remove"
+        :aria-label="`Убрать «${item.exercise}» из тренировки`"
+        @click="store.removeExercise(item.exercise)"
+      >
+        <AppIcon name="close" />
+      </button>
     </div>
-    <p v-if="planned" :class="$style.last">прошлый раз: {{ lastSummary }}</p>
-    <p v-if="item.assist" :class="$style.assist">Вес помощи — чем меньше, тем лучше</p>
+    <p v-if="planned" :class="$style.planned">план: {{ planned }}</p>
+    <p :class="$style.last">прошлый раз: {{ lastSummary }}</p>
 
     <div :class="$style.inputs">
-      <BaseTextField v-model="item.weight" :label="item.assist ? 'Помощь, кг' : 'Вес, кг'" inputmode="decimal" />
+      <BaseTextField v-model="item.weight" label="Вес, кг" inputmode="decimal" />
       <BaseTextField v-model="item.sets" label="Подходы" inputmode="numeric" />
       <BaseTextField v-model="item.reps" label="Повторы" inputmode="numeric" />
     </div>
@@ -24,7 +30,7 @@
       Цель на следующий раз
     </button>
     <div v-if="nextOpen" :class="$style.inputs">
-      <BaseTextField v-model="item.nextWeight" :label="item.assist ? 'Помощь, кг' : 'Вес, кг'" inputmode="decimal" />
+      <BaseTextField v-model="item.nextWeight" label="Вес, кг" inputmode="decimal" />
       <BaseTextField v-model="item.nextSets" label="Подходы" inputmode="numeric" />
       <BaseTextField v-model="item.nextReps" label="Повторы" inputmode="numeric" />
     </div>
@@ -59,16 +65,33 @@ const nextOpen = computed(() => store.isNextOpen(item.value.exercise))
 
 .head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: var(--space-xs) var(--space-s);
+  gap: var(--space-s);
+  margin: calc(-1 * var(--space-xs)) calc(-1 * var(--space-s)) 0 0;
 }
 
 .name {
   font-size: var(--font-size-m);
   font-weight: 600;
   color: var(--text-primary);
+}
+
+.remove {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--touch-target);
+  height: var(--touch-target);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+}
+
+.remove:active {
+  background: var(--bg-pressed);
 }
 
 .planned {
@@ -80,11 +103,6 @@ const nextOpen = computed(() => store.isNextOpen(item.value.exercise))
 .last {
   font-size: var(--font-size-s);
   color: var(--text-muted);
-}
-
-.assist {
-  font-size: var(--font-size-s);
-  color: var(--text-secondary);
 }
 
 .inputs {
@@ -108,5 +126,11 @@ const nextOpen = computed(() => store.isNextOpen(item.value.exercise))
 
 .next-toggle-open {
   color: var(--accent);
+}
+
+@media (hover: hover) {
+  .remove:hover {
+    color: var(--text-primary);
+  }
 }
 </style>

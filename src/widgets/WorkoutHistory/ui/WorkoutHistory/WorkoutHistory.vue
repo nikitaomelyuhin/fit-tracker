@@ -7,19 +7,19 @@
     <div v-else :class="$style.list">
       <section
         v-for="session in visibleSessions"
-        :key="session.date + (session.type ?? '')"
+        :key="session.date"
         :class="$style.session"
       >
         <div :class="$style.head">
           <span :class="$style.title">
-            Тренировка {{ session.type ?? '?' }} · {{ formatHuman(session.date) }}
-            <span v-if="workouts.isPendingSession(session.date, session.type)" :class="$style.pending">
+            Тренировка{{ session.type ? ` ${session.type}` : '' }} · {{ formatHuman(session.date) }}
+            <span v-if="workouts.isPendingSession(session.date)" :class="$style.pending">
               не отправлено
             </span>
           </span>
-          <BaseButton variant="subtle" aria-label="Удалить" @click="onDelete(session.date, session.type)">
-<AppIcon name="trash" />
-</BaseButton>
+          <BaseButton variant="subtle" aria-label="Удалить" @click="workouts.removeSession(session.date)">
+            <AppIcon name="trash" />
+          </BaseButton>
         </div>
         <ul :class="$style.exercises">
           <li v-for="entry in session.entries" :key="entry.id" :class="$style.ex">
@@ -45,7 +45,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useWorkoutStore, type Workout, type WorkoutType } from '@/entities/Workout'
+import { useWorkoutStore, type Workout } from '@/entities/Workout'
 import { AppIcon, BaseButton, DateRangeFilter } from '@/shared/ui'
 import { formatHuman } from '@/shared/lib/date'
 
@@ -72,10 +72,6 @@ const visibleSessions = computed(() => {
   return expanded.value ? sessions : sessions.slice(0, DEFAULT_SHOWN)
 })
 
-
-function onDelete(date: string, type: WorkoutType | null) {
-  workouts.removeSession(date, type)
-}
 
 function summary(entry: Workout): string {
   const weight = entry.weight != null ? `${entry.weight}` : '—'

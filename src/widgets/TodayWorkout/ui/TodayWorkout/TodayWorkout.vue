@@ -1,18 +1,19 @@
 <template>
   <div :class="$style.workout">
     <template v-if="store.todaySession">
-      <span :class="$style.title">Тренировка {{ store.todaySession.type ?? '' }}</span>
+      <span :class="$style.title">Тренировка</span>
       <span :class="$style.done">
         <AppIcon name="check" />
         сделана · {{ store.todaySession.entries.length }} {{ exercisesWord(store.todaySession.entries.length) }}
       </span>
     </template>
     <template v-else>
-      <span :class="$style.caption">Следующая</span>
-      <span :class="$style.title">Тренировка {{ store.nextType }}</span>
+      <span :class="$style.caption">Сегодня ещё не было</span>
+      <span :class="$style.title">Тренировка</span>
       <span v-if="store.lastSession" :class="$style.muted">
-        прошлая: {{ store.lastSession.type ?? '—' }} · {{ formatHuman(store.lastSession.date) }}
+        прошлая: {{ formatHuman(store.lastSession.date) }}
         <template v-if="store.daysSinceLast != null">({{ daysAgoText(store.daysSinceLast) }})</template>
+        · {{ store.lastSession.entries.length }} {{ exercisesWord(store.lastSession.entries.length) }}
       </span>
     </template>
 

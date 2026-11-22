@@ -1,20 +1,20 @@
 <template>
   <form :class="$style.form" @submit.prevent="onSubmit">
-    <div :class="$style.top">
-      <BaseSegmented
-        :model-value="store.type"
-        :options="typeOptions"
-        aria-label="Тренировка"
-        @update:model-value="store.setType($event)"
-      />
-      <DateChip :model-value="store.date" aria-label="Дата тренировки" @update:model-value="store.setDate($event)" />
-    </div>
+    <DateChip :model-value="store.date" aria-label="Дата тренировки" @update:model-value="store.setDate($event)" />
 
-    <div :class="$style.exercises">
+    <p v-if="!store.exercises.length" :class="$style.empty">
+      Пока пусто — добавь упражнения, которые делаешь сегодня.
+    </p>
+    <div v-else :class="$style.exercises">
       <ExerciseEntryCard v-for="(exercise, index) in store.exercises" :key="exercise.exercise" :index="index" />
     </div>
 
-    <div :class="$style.footer">
+    <BaseButton :variant="store.exercises.length ? 'ghost' : 'primary'" @click="picker.openPicker()">
+      <AppIcon name="plus" />
+      Добавить упражнение
+    </BaseButton>
+
+    <div v-if="store.exercises.length" :class="$style.footer">
       <p v-if="workouts.pendingCount" :class="$style.pending">
         Сохранено на телефоне, ещё не отправлено ({{ workouts.pendingCount }}) — уйдёт само, когда появится интернет.
       </p>
@@ -22,40 +22,49 @@
         {{ store.submitting ? 'Сохраняю…' : submitLabel }}
       </BaseButton>
     </div>
+
+    <BaseSheet
+      :open="picker.open"
+      :title="picker.creating ? 'Новое упражнение' : 'Добавить упражнение'"
+      expanded
+      @close="picker.close()"
+    >
+      <NewExerciseForm v-if="picker.creating" />
+      <ExercisePicker v-else />
+    </BaseSheet>
   </form>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
 import { useWorkoutStore } from '@/entities/Workout'
-import { WORKOUT_TYPES } from '@/shared/config/workouts'
-import { BaseButton, BaseSegmented, DateChip } from '@/shared/ui'
+import { AppIcon, BaseButton, BaseSheet, DateChip } from '@/shared/ui'
 import { useFreshDate } from '@/shared/lib/freshDate'
 import { pluralRu } from '@/shared/lib/plural'
 import { useLogWorkoutStore } from '../../model/store'
+import { useExercisePickerStore } from '../../model/picker'
 import ExerciseEntryCard from '../ExerciseEntryCard/ExerciseEntryCard.vue'
+import ExercisePicker from '../ExercisePicker/ExercisePicker.vue'
+import NewExerciseForm from '../NewExerciseForm/NewExerciseForm.vue'
 
 const store = useLogWorkoutStore()
+const picker = useExercisePickerStore()
 const workouts = useWorkoutStore()
-
-const typeOptions = WORKOUT_TYPES.map((type) => ({ value: type, label: `Тренировка ${type}` }))
 
 onMounted(() => store.init())
 useFreshDate(() => store.refreshDateIfUntouched())
 
-// Данные грузятся асинхронно — когда подъедут, перезаполняем форму (если ещё не начал вводить).
+// Данные грузятся асинхронно — когда подъедут, показываем сохранённую тренировку дня (если форму не трогали).
 watch(
-  () => workouts.items.length,
-  () => {
-    if (store.isPristine) store.setType(store.type)
-  },
+  () => workouts.items,
+  () => store.syncWithSaved(),
 )
 
 const submitLabel = computed(() => {
   const count = store.filledCount
   return count
     ? `Сохранить · ${count} ${pluralRu(count, ['упражнение', 'упражнения', 'упражнений'])}`
-    : 'Сохранить тренировку'
+    : 'Заполни хотя бы одно упражнение'
 })
 
 async function onSubmit() {
@@ -70,10 +79,11 @@ async function onSubmit() {
   gap: var(--space-m);
 }
 
-.top {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-s);
+.empty {
+  padding: var(--space-m) 0;
+  font-size: var(--font-size-m);
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .exercises {
