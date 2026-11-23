@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { supabase } from '@/shared/supabase'
 import { readCache, writeCache } from '@/shared/lib/offlineCache'
 import { isOfflineError } from '@/shared/lib/network'
+import { deleteWithUndo } from '@/shared/lib/toast'
 import type { ExerciseCategory } from '@/shared/config/exercises'
 import { mapExercise } from '../helpers/mapExercise'
 import type { Exercise, ExerciseInput, ExerciseRow } from './types'
@@ -112,6 +113,77 @@ export const useExerciseStore = defineStore('exercise', {
       const saved = mapExercise(data as ExerciseRow)
       this.items.push(saved)
       return saved
+    },
+
+    /**
+     * Изменить упражнение в справочнике: название, группу, «Основу».
+     * Только с интернетом — переименование потом переносится и на записи тренировок.
+     */
+    async update(id: string, input: ExerciseInput): Promise<Exercise | null> {
+      this.error = null
+      const name = normalizeName(input.name)
+      if (!name) return null
+      const clash = this.byName(name)
+      if (clash && clash.id !== id) {
+        this.error = 'Такое упражнение уже есть'
+        return null
+      }
+      if (id.startsWith(LOCAL_ID_PREFIX)) {
+        this.error = 'Упражнение ещё не отправлено — изменить можно, когда появится интернет'
+        return null
+      }
+
+      const { data, error } = await supabase
+        .from('exercises')
+        .update(toRow({ ...input, name }))
+        .eq('id', id)
+        .select()
+        .single()
+      if (error) {
+        this.error = error.message
+        return null
+      }
+      const saved = mapExercise(data as ExerciseRow)
+      const index = this.items.findIndex((item) => item.id === id)
+      if (index >= 0) this.items[index] = saved
+      return saved
+    },
+
+    /** Убрать упражнение из справочника — с отменой. Записи тренировок по нему остаются в истории. */
+    remove(id: string) {
+      const index = this.items.findIndex((item) => item.id === id)
+      if (index < 0) return
+      const exercise = this.items[index]
+      const queued = this.queue.find((entry) => `${LOCAL_ID_PREFIX}${entry.id}` === id) ?? null
+
+      deleteWithUndo({
+        text: `«${exercise.name}» удалено из списка`,
+        apply: () => {
+          this.items = this.items.filter((item) => item.id !== id)
+          if (queued) {
+            this.queue = this.queue.filter((entry) => entry.id !== queued.id)
+            this.persistQueue()
+          }
+        },
+        revert: () => {
+          if (!this.items.some((item) => item.id === id)) {
+            const next = [...this.items]
+            next.splice(Math.min(index, next.length), 0, exercise)
+            this.items = next
+          }
+          if (queued && !this.queue.some((entry) => entry.id === queued.id)) {
+            this.queue.push(queued)
+            this.persistQueue()
+          }
+        },
+        commit: async () => {
+          // Ещё не отправленное в базу — удалять на сервере нечего.
+          if (queued) return true
+          const { error } = await supabase.from('exercises').delete().eq('id', id)
+          if (error) this.error = error.message
+          return !error
+        },
+      })
     },
 
     /** Отправить упражнения, созданные без интернета. Останавливается на первой сетевой ошибке. */

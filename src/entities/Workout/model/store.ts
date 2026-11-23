@@ -166,6 +166,31 @@ export const useWorkoutStore = defineStore('workout', {
       writeCache(QUEUE_KEY, this.queue)
     },
 
+    /**
+     * Переименовать упражнение во всей истории (упражнение в справочнике переименовали).
+     * Неотправленные тренировки тоже получают новое название, чтобы не вернуть старое.
+     */
+    async renameExercise(from: string, to: string): Promise<boolean> {
+      this.error = null
+      if (from === to) return true
+      const { error } = await supabase.from('workouts').update({ exercise: to }).eq('exercise', from)
+      if (error) {
+        this.error = error.message
+        return false
+      }
+      const swap = (name: string) => (name === from ? to : name)
+      this.items = this.items.map((item) => (item.exercise === from ? { ...item, exercise: to } : item))
+      if (this.queue.some((session) => session.entries.some((entry) => entry.exercise === from) || session.removed?.includes(from))) {
+        this.queue = this.queue.map((session) => ({
+          ...session,
+          entries: session.entries.map((entry) => ({ ...entry, exercise: swap(entry.exercise) })),
+          removed: session.removed?.map(swap),
+        }))
+        this.persistQueue()
+      }
+      return true
+    },
+
     /** Записать тренировку в базу: обновить/добавить упражнения и удалить убранные. */
     async send(date: string, entries: WorkoutEntryInput[], removed: string[]): Promise<string | null> {
       if (entries.length) {

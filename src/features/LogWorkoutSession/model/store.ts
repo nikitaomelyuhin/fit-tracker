@@ -191,6 +191,17 @@ export const useLogWorkoutStore = defineStore('logWorkout', {
       })
     },
 
+    /** Упражнение переименовали в справочнике — новое название и в открытой форме, без пометки «изменено». */
+    renameExercise(from: string, to: string) {
+      const swap = (name: string) => (name === from ? to : name)
+      const rename = (items: ExerciseForm[]) =>
+        items.map((item) => (item.exercise === from ? { ...item, exercise: to } : item))
+      this.exercises = rename(this.exercises)
+      this.baseline = JSON.stringify(rename(JSON.parse(this.baseline) as ExerciseForm[]))
+      this.loaded = { ...this.loaded, names: this.loaded.names.map(swap) }
+      this.nextOpen = this.nextOpen.map(swap)
+    },
+
     toggleNext(exercise: string) {
       this.nextOpen = this.nextOpen.includes(exercise)
         ? this.nextOpen.filter((name) => name !== exercise)

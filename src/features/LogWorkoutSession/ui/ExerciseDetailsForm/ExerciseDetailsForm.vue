@@ -1,14 +1,14 @@
 <template>
-  <form :class="$style.form" @submit.prevent="picker.create()">
-    <BaseTextField v-model="picker.newExercise.name" label="Название" enterkeyhint="done" autofocus />
+  <form :class="$style.form" @submit.prevent="picker.submitDetails()">
+    <BaseTextField v-model="picker.details.name" label="Название" enterkeyhint="done" :autofocus="!editing" />
 
     <div :class="$style.field">
       <span :class="$style.label">Группа мышц</span>
-      <BaseChips v-model="picker.newExercise.category" :options="EXERCISE_CATEGORIES" aria-label="Группа мышц" />
+      <BaseChips v-model="picker.details.category" :options="EXERCISE_CATEGORIES" aria-label="Группа мышц" />
     </div>
 
     <label :class="$style.check">
-      <input v-model="picker.newExercise.isCore" type="checkbox" :class="$style.checkbox" />
+      <input v-model="picker.details.isCore" type="checkbox" :class="$style.checkbox" />
       <span>
         В «Основу»
         <span :class="$style.hint">— будет на первой вкладке при добавлении</span>
@@ -16,20 +16,33 @@
     </label>
 
     <div :class="$style.actions">
-      <BaseButton variant="ghost" @click="picker.cancelCreate()">Назад</BaseButton>
-      <BaseButton type="submit" :disabled="!picker.canCreate">
-        {{ picker.saving ? 'Сохраняю…' : 'Добавить в тренировку' }}
+      <BaseButton variant="ghost" @click="picker.cancelDetails()">Назад</BaseButton>
+      <BaseButton type="submit" :disabled="!picker.canSubmitDetails">
+        {{ submitLabel }}
       </BaseButton>
     </div>
+
+    <BaseButton v-if="editing" variant="danger" :disabled="picker.saving" @click="picker.removeEditing()">
+      <AppIcon name="trash" />
+      Удалить из списка
+    </BaseButton>
   </form>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { EXERCISE_CATEGORIES } from '@/shared/config/exercises'
-import { BaseButton, BaseChips, BaseTextField } from '@/shared/ui'
+import { AppIcon, BaseButton, BaseChips, BaseTextField } from '@/shared/ui'
 import { useExercisePickerStore } from '../../model/picker'
 
 const picker = useExercisePickerStore()
+
+const editing = computed(() => picker.detailsMode === 'edit')
+
+const submitLabel = computed(() => {
+  if (picker.saving) return 'Сохраняю…'
+  return editing.value ? 'Сохранить' : 'Добавить в тренировку'
+})
 </script>
 
 <style module>

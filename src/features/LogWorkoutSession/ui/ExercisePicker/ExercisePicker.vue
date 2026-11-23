@@ -27,17 +27,15 @@
         <li v-for="option in group.options" :key="option.exercise.id">
           <button
             type="button"
-            :class="[$style.option, option.inSession && $style.optionAdded]"
-            :disabled="option.inSession"
+            :class="[$style.option, added(option) && $style.optionAdded]"
+            :disabled="added(option)"
             @click="picker.pick(option.exercise)"
           >
             <span :class="$style.optionText">
               <span :class="$style.optionName">{{ option.exercise.name }}</span>
-              <span :class="$style.meta">
-                {{ option.inSession ? 'уже в тренировке' : (option.lastSummary ?? 'ещё не делал') }}
-              </span>
+              <span :class="$style.meta">{{ metaText(option) }}</span>
             </span>
-            <AppIcon :name="option.inSession ? 'check' : 'plus'" :class="$style.optionIcon" />
+            <AppIcon :name="iconName(option)" :class="$style.optionIcon" />
           </button>
         </li>
       </ul>
@@ -47,12 +45,23 @@
       {{ searching ? 'Такого упражнения пока нет' : 'В этой группе пока пусто' }}
     </p>
 
-    <button type="button" :class="$style.create" @click="picker.startCreate()">
-      <AppIcon name="plus" />
-      {{ searching ? `Создать «${picker.query.trim()}»` : 'Новое упражнение' }}
-    </button>
+    <div :class="$style.tools">
+      <button type="button" :class="$style.tool" @click="picker.startCreate()">
+        <AppIcon name="plus" />
+        {{ searching ? `Создать «${picker.query.trim()}»` : 'Новое упражнение' }}
+      </button>
+      <button
+        type="button"
+        :class="[$style.tool, picker.managing && $style.toolActive]"
+        :aria-pressed="picker.managing"
+        @click="picker.toggleManaging()"
+      >
+        <AppIcon :name="picker.managing ? 'check' : 'edit'" />
+        {{ picker.managing ? 'Закончить' : 'Изменить' }}
+      </button>
+    </div>
 
-    <div :class="$style.footer">
+    <div v-if="!picker.managing" :class="$style.footer">
       <BaseButton @click="picker.close()">
         Готово<template v-if="session.exercises.length"> · в тренировке {{ session.exercises.length }}</template>
       </BaseButton>
@@ -63,13 +72,31 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { AppIcon, BaseButton, BaseChips } from '@/shared/ui'
+import type { AppIconName } from '@/shared/types/icon'
 import { useExercisePickerStore } from '../../model/picker'
 import { useLogWorkoutStore } from '../../model/store'
+import type { PickerOption } from '../../model/types'
 
 const picker = useExercisePickerStore()
 const session = useLogWorkoutStore()
 
 const searching = computed(() => picker.query.trim() !== '')
+
+/** Уже в тренировке — повторно не добавить; при правке списка открывается всё. */
+function added(option: PickerOption): boolean {
+  return option.inSession && !picker.managing
+}
+
+function metaText(option: PickerOption): string {
+  if (picker.managing) return option.catalogSummary
+  if (option.inSession) return 'уже в тренировке'
+  return option.lastSummary ?? 'ещё не делал'
+}
+
+function iconName(option: PickerOption): AppIconName {
+  if (picker.managing) return 'edit'
+  return option.inSession ? 'check' : 'plus'
+}
 </script>
 
 <style module>
@@ -193,10 +220,15 @@ const searching = computed(() => picker.query.trim() !== '')
   text-align: center;
 }
 
-.create {
+.tools {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-s);
+}
+
+.tool {
   display: inline-flex;
   align-items: center;
-  align-self: flex-start;
   gap: var(--space-xs);
   min-height: var(--touch-target);
   padding: 0 var(--space-xs);
@@ -205,6 +237,10 @@ const searching = computed(() => picker.query.trim() !== '')
   color: var(--accent);
   font-size: var(--font-size-s);
   font-weight: 600;
+}
+
+.tool-active {
+  color: var(--success);
 }
 
 /* «Готово» прилипает к низу шторки, пока листаешь список. */

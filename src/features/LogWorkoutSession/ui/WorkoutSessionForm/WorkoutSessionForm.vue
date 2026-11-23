@@ -25,11 +25,11 @@
 
     <BaseSheet
       :open="picker.open"
-      :title="picker.creating ? 'Новое упражнение' : 'Добавить упражнение'"
+      :title="picker.sheetTitle"
       expanded
       @close="picker.close()"
     >
-      <NewExerciseForm v-if="picker.creating" />
+      <ExerciseDetailsForm v-if="picker.detailsMode" />
       <ExercisePicker v-else />
     </BaseSheet>
   </form>
@@ -45,7 +45,7 @@ import { useLogWorkoutStore } from '../../model/store'
 import { useExercisePickerStore } from '../../model/picker'
 import ExerciseEntryCard from '../ExerciseEntryCard/ExerciseEntryCard.vue'
 import ExercisePicker from '../ExercisePicker/ExercisePicker.vue'
-import NewExerciseForm from '../NewExerciseForm/NewExerciseForm.vue'
+import ExerciseDetailsForm from '../ExerciseDetailsForm/ExerciseDetailsForm.vue'
 
 const store = useLogWorkoutStore()
 const picker = useExercisePickerStore()

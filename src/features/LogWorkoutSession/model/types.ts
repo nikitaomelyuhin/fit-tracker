@@ -21,11 +21,15 @@ export interface WorkoutDraft {
 /** Вкладка выбора упражнения: «Основа», группа мышц или все сразу. */
 export type PickerTab = 'core' | ExerciseCategory | 'all'
 
-export interface NewExerciseForm {
+/** Поля упражнения справочника в форме создания/правки. */
+export interface ExerciseDetails {
   name: string
   category: ExerciseCategory
   isCore: boolean
 }
+
+/** Что открыто в шторке вместо списка: создание нового или правка существующего. */
+export type ExerciseDetailsMode = 'create' | 'edit'
 
 export interface PickerOption {
   exercise: Exercise
@@ -33,6 +37,8 @@ export interface PickerOption {
   inSession: boolean
   /** «105 × 3 × 8 · 3 дня назад» или null, если ещё не делал. */
   lastSummary: string | null
+  /** «Спина · Основа» — подпись в режиме правки списка. */
+  catalogSummary: string
 }
 
 /** Группа в списке выбора; title null — без заголовка (одна вкладка или поиск). */
