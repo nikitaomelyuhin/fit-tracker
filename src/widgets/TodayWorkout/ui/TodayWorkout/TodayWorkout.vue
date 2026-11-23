@@ -8,7 +8,6 @@
       </span>
     </template>
     <template v-else>
-      <span :class="$style.caption">Сегодня ещё не было</span>
       <span :class="$style.title">Тренировка</span>
       <span v-if="store.lastSession" :class="$style.muted">
         прошлая: {{ formatHuman(store.lastSession.date) }}
@@ -48,11 +47,6 @@ function daysAgoText(days: number): string {
   display: flex;
   flex-direction: column;
   gap: var(--space-xs);
-}
-
-.caption {
-  font-size: var(--font-size-xs);
-  color: var(--text-muted);
 }
 
 .title {
